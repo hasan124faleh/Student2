@@ -1,5 +1,5 @@
 {
-  "name": "student-records",
+  "name": "سجل-قيود-الطلاب",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,17 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "lucide-react": "^0.263.1",
+    "react": "^19.2.4",
+    "lucide-react": "0.263.1",
     "xlsx": "latest",
-    "firebase": "^10.8.0"
+    "react-dom": "^19.2.4",
+    "firebase": "^12.8.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@vitejs/plugin-react": "^4.2.1",
-    "typescript": "^5.2.2",
-    "vite": "^5.0.0"
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }

@@ -316,6 +316,9 @@ export default function App() {
   const [view, setView] = useState<'list' | 'add' | 'edit' | 'settings' | 'detail'>('list');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
+  // Custom Delete Modal State
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+
   // Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(''); 
@@ -355,10 +358,24 @@ export default function App() {
   }, [students]);
 
   useEffect(() => {
+    // 1. Load from LocalStorage Cache immediately for speed
+    const cachedData = localStorage.getItem('students_cache');
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStudents(parsed);
+          setLoading(false); // Immediate render
+        }
+      } catch (e) {
+        console.error("Cache load failed", e);
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        fetchStudents();
+        fetchStudents(); // Fetch fresh data in background
       } else {
         setLoading(false);
       }
@@ -413,7 +430,9 @@ export default function App() {
   }, []);
 
   const fetchStudents = async () => {
-    setLoading(true);
+    // Only set loading if we don't have data yet (to avoid flickering if cache loaded)
+    if (students.length === 0) setLoading(true);
+    
     try {
       const querySnapshot = await getDocs(studentsCollection);
       const loadedStudents: Student[] = [];
@@ -421,10 +440,14 @@ export default function App() {
         loadedStudents.push({ id: doc.id, status: 'active', ...doc.data() } as Student);
       });
       loadedStudents.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      
       setStudents(loadedStudents);
+      // 2. Save to LocalStorage
+      localStorage.setItem('students_cache', JSON.stringify(loadedStudents));
+      
     } catch (e) {
       console.error("Error fetching", e);
-      alert("فشل تحميل البيانات");
+      // Don't alert here to avoid disturbing the user if cache is working
     } finally {
       setLoading(false);
     }
@@ -490,15 +513,23 @@ export default function App() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
-      try {
-        await deleteDoc(doc(db, "students", id));
-        setStudents(prev => prev.filter(s => s.id !== id));
-        if (view === 'detail') setView('list');
-      } catch (e) {
-        alert("فشل الحذف");
-      }
+  const handleDeleteClick = (id: string) => {
+    // Show custom modal instead of native confirm
+    setStudentToDelete(id);
+  };
+
+  const confirmDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    try {
+      await deleteDoc(doc(db, "students", studentToDelete));
+      const updatedList = students.filter(s => s.id !== studentToDelete);
+      setStudents(updatedList);
+      localStorage.setItem('students_cache', JSON.stringify(updatedList)); // Update cache
+      
+      if (view === 'detail') setView('list');
+      setStudentToDelete(null);
+    } catch (e) {
+      alert("فشل الحذف");
     }
   };
 
@@ -518,6 +549,7 @@ export default function App() {
        }
        
        setStudents([]);
+       localStorage.removeItem('students_cache'); // Clear cache
        setView('list');
      } catch (e) {
        console.error(e);
@@ -551,14 +583,17 @@ export default function App() {
     }
 
     try {
+      let updatedList = [...students];
       if (isEdit && selectedStudentId) {
         await updateDoc(doc(db, "students", selectedStudentId), data);
-        setStudents(prev => prev.map(s => s.id === selectedStudentId ? { ...s, ...data } : s));
+        updatedList = students.map(s => s.id === selectedStudentId ? { ...s, ...data } : s);
       } else {
         const newStudent = { ...data, createdAt: Date.now() };
         const docRef = await addDoc(studentsCollection, newStudent);
-        setStudents(prev => [{ id: docRef.id, ...newStudent } as Student, ...prev]);
+        updatedList = [{ id: docRef.id, ...newStudent } as Student, ...students];
       }
+      setStudents(updatedList);
+      localStorage.setItem('students_cache', JSON.stringify(updatedList)); // Update cache
       setView('list');
     } catch (err) {
       alert("فشل الحفظ");
@@ -624,7 +659,9 @@ export default function App() {
       }
 
       if (count > 0) {
-        setStudents(prev => [...newItems, ...prev]);
+        const updatedList = [...newItems, ...students];
+        setStudents(updatedList);
+        localStorage.setItem('students_cache', JSON.stringify(updatedList)); // Update cache
         alert(`تم استيراد ${count} سجل بنجاح`);
       } else { 
         alert("لم يتم العثور على سجلات جديدة (ربما جميعها مكررة)"); 
@@ -1015,7 +1052,7 @@ export default function App() {
                     <div className="grid grid-cols-3 gap-2 pt-4 mt-4 border-t border-slate-100">
                         <button onClick={handleSingleStudentPrint} className="col-span-3 bg-slate-800 text-white py-2.5 rounded-lg font-bold hover:bg-slate-900 flex items-center justify-center gap-2 text-sm mb-2"><Printer size={16}/> طباعة معلومات الطالب</button>
                         <button onClick={() => setView('edit')} className="bg-slate-100 text-slate-700 py-2.5 rounded-lg font-bold hover:bg-slate-200 flex items-center justify-center gap-2 text-sm"><Settings size={16}/> تعديل</button>
-                        <button onClick={() => handleDelete(s.id)} className="bg-red-50 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><Trash2 size={16}/> حذف</button>
+                        <button onClick={() => handleDeleteClick(s.id)} className="bg-red-50 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><Trash2 size={16}/> حذف</button>
                     </div>
                  </div>
               </div>
@@ -1061,7 +1098,7 @@ export default function App() {
           </Modal>
         )}
         
-        {/* Custom Professional Delete Confirmation Modal */}
+        {/* Custom Professional Delete Confirmation Modal (Delete All) */}
         {showDeleteAllConfirm && (
           <Modal onClose={() => setShowDeleteAllConfirm(false)}>
             <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center shadow-2xl transform transition-all scale-100">
@@ -1081,6 +1118,36 @@ export default function App() {
                         نعم، حذف الكل
                     </button>
                 </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Custom Professional Delete Confirmation Modal (Delete Single Student) */}
+        {studentToDelete && (
+          <Modal onClose={() => setStudentToDelete(null)}>
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-auto text-center shadow-2xl animate-fade-in">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="text-red-600 w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">حذف الطالب؟</h3>
+              <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+                هل أنت متأكد من رغبتك في حذف هذا السجل نهائياً؟ <br/>
+                <span className="text-red-500 font-semibold">لا يمكن استرجاع البيانات بعد الحذف.</span>
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setStudentToDelete(null)}
+                  className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button 
+                  onClick={confirmDeleteStudent}
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                >
+                  نعم، حذف
+                </button>
+              </div>
             </div>
           </Modal>
         )}
