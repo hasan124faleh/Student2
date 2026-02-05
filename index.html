@@ -421,6 +421,9 @@
           // Scroll To Top State
           const [showTopBtn, setShowTopBtn] = useState(false);
           const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+          
+          // NEW: Single Delete Modal State
+          const [studentToDelete, setStudentToDelete] = useState(null);
 
           const [importing, setImporting] = useState(false);
           const [showPrint, setShowPrint] = useState(false);
@@ -436,9 +439,21 @@
           }, [students]);
 
           useEffect(() => {
+            // 1. FAST LOAD: Load from LocalStorage first
+            const cached = localStorage.getItem('students_cache');
+            if (cached) {
+               try {
+                   const parsed = JSON.parse(cached);
+                   if (Array.isArray(parsed)) {
+                       setStudents(parsed);
+                       setLoading(false); // Show UI immediately
+                   }
+               } catch(e) { console.error("Cache error", e); }
+            }
+
             const unsub = onAuthStateChanged(auth, (u) => {
               setUser(u);
-              if (u) loadData();
+              if (u) loadData(); // Then fetch fresh data
               else setLoading(false);
             });
             return () => unsub();
@@ -464,27 +479,25 @@
           }, []);
 
           const loadData = async () => {
-            setLoading(true);
+            // Note: We don't set loading(true) here to avoid screen flickering if cache is present
             try {
               const snap = await getDocs(studentsCollection);
               const data = snap.docs.map(d => ({id: d.id, status: 'active', ...d.data()}));
               data.sort((a,b) => b.createdAt - a.createdAt);
               setStudents(data);
-            } catch (e) { alert("خطأ في التحميل"); }
+              // 2. SAVE TO CACHE
+              localStorage.setItem('students_cache', JSON.stringify(data));
+            } catch (e) { console.error("Load error"); }
             setLoading(false);
           };
 
           const checkDuplicate = (val) => {
              if (!val || val.length < 2) { setNameWarning(''); return; }
-             
-             // Check if name exists (contains)
              const matches = students.filter(s => 
                 s.firstName.trim().includes(val.trim()) && 
                 s.id !== selectedId
              );
-             
              if (matches.length > 0) {
-               // Get top 3 matches to display
                const info = matches.slice(0, 5).map(m => `• ${m.firstName} (قيد: ${m.regNumber} - صفحة: ${m.pageNumber})`).join('\n');
                setNameWarning(`تنبيه: يوجد ${matches.length} طلاب بأسماء مشابهة:\n${info}${matches.length > 5 ? '\n...والمزيد' : ''}`);
              } else {
@@ -495,22 +508,18 @@
           const filtered = useMemo(() => {
             let res = students;
 
-            // 1. Reg Filter (Criterion)
             if (selectedRegFilter) {
                res = res.filter(s => s.regNumber === selectedRegFilter);
             }
 
-            // 2. Letter Filter
             if (letterFilter !== 'ALL') {
                res = res.filter(s => s.firstName.startsWith(letterFilter));
             }
             
-            // 3. Status Filter
             if (statusFilter !== 'ALL') {
                res = res.filter(s => s.status === statusFilter);
             }
 
-            // 4. Search (Name Only)
             if (search) {
                const q = search.toLowerCase();
                res = res.filter(s => 
@@ -519,14 +528,12 @@
                );
             }
             
-            // Sort
             if (sortBy === 'alpha') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
             else res.sort((a,b) => b.createdAt - a.createdAt);
             
             return res;
           }, [students, search, selectedRegFilter, statusFilter, letterFilter, sortBy]);
 
-          // Infinite Scroll Logic
           const displayedStudents = useMemo(() => {
             return filtered.slice(0, visibleCount);
           }, [filtered, visibleCount]);
@@ -540,11 +547,7 @@
               },
               { threshold: 0.5, rootMargin: '100px' }
             );
-
-            if (loadMoreRef.current) {
-              observer.observe(loadMoreRef.current);
-            }
-
+            if (loadMoreRef.current) observer.observe(loadMoreRef.current);
             return () => observer.disconnect();
           }, [displayedStudents.length, filtered.length]);
 
@@ -568,25 +571,36 @@
             }
 
             try {
+              let updatedList = [...students];
               if (selectedId) {
                 await updateDoc(doc(db, "students", selectedId), data);
-                setStudents(prev => prev.map(s => s.id === selectedId ? {...s, ...data} : s));
+                updatedList = students.map(s => s.id === selectedId ? {...s, ...data} : s);
               } else {
                 const ref = await addDoc(studentsCollection, data);
-                setStudents(prev => [{id: ref.id, ...data}, ...prev]);
+                updatedList = [{id: ref.id, ...data}, ...students];
               }
+              setStudents(updatedList);
+              localStorage.setItem('students_cache', JSON.stringify(updatedList)); // Update Cache
               setView('list');
               setSelectedId(null);
             } catch (err) { alert("فشل الحفظ"); }
           };
 
-          const handleDelete = async (id) => {
-            if (!confirm("هل أنت متأكد من الحذف؟")) return;
-            try {
-              await deleteDoc(doc(db, "students", id));
-              setStudents(prev => prev.filter(s => s.id !== id));
-              if (view === 'detail') setView('list');
-            } catch (e) { alert("فشل الحذف"); }
+          // NEW: Replace window.confirm with Modal
+          const handleDeleteClick = (id) => {
+             setStudentToDelete(id);
+          };
+
+          const confirmDeleteStudent = async () => {
+             if (!studentToDelete) return;
+             try {
+               await deleteDoc(doc(db, "students", studentToDelete));
+               const updated = students.filter(s => s.id !== studentToDelete);
+               setStudents(updated);
+               localStorage.setItem('students_cache', JSON.stringify(updated)); // Update Cache
+               if (view === 'detail') setView('list');
+               setStudentToDelete(null);
+             } catch (e) { alert("فشل الحذف"); }
           };
           
           const executeDeleteAll = async () => {
@@ -604,6 +618,7 @@
                }
                
                setStudents([]);
+               localStorage.removeItem('students_cache'); // Clear Cache
                alert("تم الحذف بنجاح");
                setView('list');
              } catch(e) {
@@ -665,7 +680,9 @@
               if (batchCount > 0) await currentBatch.commit();
 
               if (count > 0) {
-                setStudents(prev => [...newItems, ...prev]);
+                const updatedList = [...newItems, ...students];
+                setStudents(updatedList);
+                localStorage.setItem('students_cache', JSON.stringify(updatedList)); // Update Cache
                 alert(`تم استيراد ${count} سجل`);
               } else { alert("لم يتم العثور على سجلات جديدة"); }
             } catch (e) { console.error(e); alert("فشل الاستيراد"); }
@@ -945,7 +962,8 @@
                              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
                                <button onClick={handleSinglePrint} className="col-span-3 bg-slate-800 text-white py-2.5 rounded-lg font-bold hover:bg-slate-900 flex items-center justify-center gap-2 text-sm mb-2"><Printer size={16}/> طباعة معلومات الطالب</button>
                                <button onClick={() => setView('edit')} className="bg-slate-100 text-slate-700 py-2.5 rounded-lg font-bold hover:bg-slate-200 flex items-center justify-center gap-2 text-sm"><Settings size={16}/> تعديل</button>
-                               <button onClick={() => handleDelete(s.id)} className="bg-red-50 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><Trash2 size={16}/> حذف</button>
+                               {/* UPDATED: Call handleDeleteClick instead of handleDelete with confirm */}
+                               <button onClick={() => handleDeleteClick(s.id)} className="bg-red-50 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><Trash2 size={16}/> حذف</button>
                              </div>
                            </div>
                          </div>
@@ -1021,7 +1039,7 @@
                     <ArrowUp size={24} />
                    </button>
                 
-                  {/* Custom Professional Delete Confirmation Modal */}
+                  {/* Custom Professional Delete Confirmation Modal (Delete All) */}
                   {showDeleteAllConfirm && (
                     <Modal onClose={() => setShowDeleteAllConfirm(false)}>
                         <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center shadow-2xl transform transition-all scale-100">
@@ -1044,6 +1062,36 @@
                         </div>
                     </Modal>
                   )}
+
+                  {/* Custom Professional Delete Confirmation Modal (Delete Single Student) - REPLACES BROWSER CONFIRM */}
+                  {studentToDelete && (
+                    <Modal onClose={() => setStudentToDelete(null)}>
+                        <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-auto text-center shadow-2xl animate-fade-in">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Trash2 className="text-red-600 w-8 h-8" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">حذف الطالب؟</h3>
+                        <p className="text-slate-500 text-sm mb-6 leading-relaxed">
+                            هل أنت متأكد من رغبتك في حذف هذا السجل نهائياً؟ <br/>
+                            <span className="text-red-500 font-semibold">لا يمكن استرجاع البيانات بعد الحذف.</span>
+                        </p>
+                        <div className="flex gap-3">
+                            <button 
+                            onClick={() => setStudentToDelete(null)}
+                            className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                            >
+                            إلغاء
+                            </button>
+                            <button 
+                            onClick={confirmDeleteStudent}
+                            className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                            >
+                            نعم، حذف
+                            </button>
+                        </div>
+                        </div>
+                    </Modal>
+                   )}
                 </main>
               </div>
               
