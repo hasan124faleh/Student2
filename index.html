@@ -55,73 +55,6 @@
         scrollbar-color: #94a3b8 #f1f5f9;
       }
 
-      /* Alphabet Sidebar Styles */
-      .alphabet-bar {
-        position: fixed;
-        left: 2px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 40;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(4px);
-        padding: 4px 2px;
-        border-radius: 99px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        border: 1px solid rgba(0,0,0,0.05);
-        user-select: none;
-        touch-action: none; /* Crucial for touch dragging */
-        max-height: 80vh;
-      }
-
-      .alphabet-char {
-        font-size: 10px;
-        color: #64748b;
-        font-weight: 700;
-        cursor: pointer;
-        width: 20px;
-        height: 18px; /* Compact height */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.1s;
-      }
-      
-      .alphabet-char.active {
-        color: #0f172a;
-        transform: scale(1.5);
-      }
-
-      /* The Big Bubble Indicator */
-      .letter-bubble {
-        position: fixed;
-        left: 50px; /* Offset from sidebar */
-        top: 50%;
-        transform: translateY(-50%);
-        width: 80px;
-        height: 80px;
-        background-color: #0f172a; /* Slate-900 */
-        color: white;
-        border-radius: 50% 50% 50% 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 32px;
-        font-weight: bold;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        z-index: 50;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.2s, top 0.1s;
-      }
-      
-      .letter-bubble.visible {
-        opacity: 1;
-      }
-
       /* Animation Classes */
       @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
       .animate-fade-in { animation: fade-in 0.3s ease-out; }
@@ -154,7 +87,7 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module" data-presets="react,typescript">
-        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+        import React, { useState, useEffect, useMemo, useRef } from 'react';
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
@@ -216,8 +149,14 @@
             const n3 = midNames[Math.floor(Math.random() * midNames.length)];
             const n4 = midNames[Math.floor(Math.random() * midNames.length)];
             const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+            
+            // To ensure 1000 unique records:
+            // Reg goes 1-10, repeating every 10 records
             const regNum = (i % 10) + 1;
+            // Page increments every 10 records (Page 1 has 1-10, Page 2 has 1-10...)
             const pageNum = Math.floor(i / 10) + 1;
+            
+            // Status probability
             const rand = Math.random();
             let status = 'مستمر';
             if (rand > 0.95) status = 'تارك';
@@ -260,71 +199,7 @@
         // COMPONENTS
         // ==========================================
         
-        // --- Interactive Alphabet Scrollbar ---
-        const AlphabetSidebar = ({ onSelectLetter, currentLetter }) => {
-          const letters = ['أ','ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','هـ','و','ي'];
-          const sidebarRef = useRef(null);
-          const [touching, setTouching] = useState(false);
-          const [bubbleY, setBubbleY] = useState(0);
-
-          const handleInteraction = (clientY) => {
-            if (!sidebarRef.current) return;
-            const rect = sidebarRef.current.getBoundingClientRect();
-            
-            // Ensure touch is within the vertical bounds of the bar (with some buffer)
-            const relativeY = clientY - rect.top;
-            const heightPerChar = rect.height / letters.length;
-            const index = Math.floor(relativeY / heightPerChar);
-
-            if (index >= 0 && index < letters.length) {
-               const char = letters[index];
-               onSelectLetter(char);
-               setBubbleY(rect.top + (index * heightPerChar) + (heightPerChar / 2));
-            }
-          };
-
-          const onTouchMove = (e) => {
-             e.preventDefault(); // Prevent scrolling body
-             setTouching(true);
-             handleInteraction(e.touches[0].clientY);
-          };
-
-          const onMouseMove = (e) => {
-             if (e.buttons === 1) { // Only if mouse is pressed
-               setTouching(true);
-               handleInteraction(e.clientY);
-             }
-          };
-
-          return (
-            <>
-               <div 
-                  ref={sidebarRef}
-                  className="alphabet-bar no-print"
-                  onTouchStart={(e) => { setTouching(true); handleInteraction(e.touches[0].clientY); }}
-                  onTouchMove={onTouchMove}
-                  onTouchEnd={() => setTimeout(() => setTouching(false), 300)}
-                  onMouseDown={(e) => { setTouching(true); handleInteraction(e.clientY); }}
-                  onMouseMove={onMouseMove}
-                  onMouseUp={() => setTouching(false)}
-                  onMouseLeave={() => setTouching(false)}
-               >
-                 {letters.map(l => (
-                   <div key={l} className={`alphabet-char ${currentLetter === l ? 'active' : ''}`}>{l}</div>
-                 ))}
-               </div>
-               
-               {/* The Big Bubble */}
-               <div 
-                 className={`letter-bubble ${touching ? 'visible' : ''}`}
-                 style={{ top: bubbleY }}
-               >
-                 {currentLetter}
-               </div>
-            </>
-          );
-        };
-
+        // Modal Wrapper Component
         const Modal = ({ children, onClose }) => (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto" onClick={onClose}>
             <div className="w-full max-w-xl relative" onClick={e => e.stopPropagation()}>
@@ -554,9 +429,6 @@
           // Form States
           const [nameWarning, setNameWarning] = useState('');
           const [formData, setFormData] = useState({ firstName: '', lastName: '', status: 'active' });
-          
-          // Alphabet Scroller State
-          const [activeScrollerLetter, setActiveScrollerLetter] = useState(null);
 
           const uniqueRegNumbers = useMemo(() => {
              const regs = new Set(students.map(s => s.regNumber));
@@ -604,11 +476,15 @@
 
           const checkDuplicate = (val) => {
              if (!val || val.length < 2) { setNameWarning(''); return; }
+             
+             // Check if name exists (contains)
              const matches = students.filter(s => 
                 s.firstName.trim().includes(val.trim()) && 
                 s.id !== selectedId
              );
+             
              if (matches.length > 0) {
+               // Get top 3 matches to display
                const info = matches.slice(0, 5).map(m => `• ${m.firstName} (قيد: ${m.regNumber} - صفحة: ${m.pageNumber})`).join('\n');
                setNameWarning(`تنبيه: يوجد ${matches.length} طلاب بأسماء مشابهة:\n${info}${matches.length > 5 ? '\n...والمزيد' : ''}`);
              } else {
@@ -617,24 +493,33 @@
           };
 
           const filtered = useMemo(() => {
+            let res = students;
+
+            // 1. Reg Filter (Criterion)
             if (selectedRegFilter) {
-               return students.filter(s => s.regNumber === selectedRegFilter);
+               res = res.filter(s => s.regNumber === selectedRegFilter);
             }
 
-            let res = students.filter(s => {
-              if (letterFilter !== 'ALL' && !s.firstName.startsWith(letterFilter)) return false;
-              if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
-
-              if (!search) return true;
-              const q = search.toLowerCase();
-              return s.firstName.toLowerCase().includes(q) || 
-                     s.lastName?.toLowerCase().includes(q) || 
-                     s.regNumber.toLowerCase().includes(q);
-            });
+            // 2. Letter Filter
+            if (letterFilter !== 'ALL') {
+               res = res.filter(s => s.firstName.startsWith(letterFilter));
+            }
             
-            // Note: If using Alphabet Scroller, we effectively behave like 'alpha' sort if needed,
-            // but for now we respect the user's sort choice.
-            // However, typical alphabet scrollers imply alphabetical sorting.
+            // 3. Status Filter
+            if (statusFilter !== 'ALL') {
+               res = res.filter(s => s.status === statusFilter);
+            }
+
+            // 4. Search (Name Only)
+            if (search) {
+               const q = search.toLowerCase();
+               res = res.filter(s => 
+                  s.firstName.toLowerCase().includes(q) || 
+                  (s.lastName && s.lastName.toLowerCase().includes(q))
+               );
+            }
+            
+            // Sort
             if (sortBy === 'alpha') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
             else res.sort((a,b) => b.createdAt - a.createdAt);
             
@@ -662,30 +547,6 @@
 
             return () => observer.disconnect();
           }, [displayedStudents.length, filtered.length]);
-          
-          // --- ALPHABET SCROLL LOGIC ---
-          const scrollToLetter = useCallback((letter) => {
-             setActiveScrollerLetter(letter);
-             
-             // Find index of first student starting with this letter in the FILTERED list
-             // Note: We search in 'filtered', not just 'displayedStudents'
-             const index = filtered.findIndex(s => s.firstName.trim().startsWith(letter));
-             
-             if (index !== -1) {
-                // If the target is outside currently visible, expand visible count
-                if (index >= visibleCount) {
-                   setVisibleCount(index + 50);
-                   // Give React a moment to render the new rows
-                   setTimeout(() => {
-                      const el = document.getElementById(`student-row-${index}`);
-                      if (el) el.scrollIntoView({ behavior: 'auto', block: 'center' });
-                   }, 50);
-                } else {
-                   const el = document.getElementById(`student-row-${index}`);
-                   if (el) el.scrollIntoView({ behavior: 'auto', block: 'center' });
-                }
-             }
-          }, [filtered, visibleCount]);
 
 
           const handleSave = async (e) => {
@@ -734,12 +595,14 @@
              try {
                const allIds = students.map(s => s.id);
                const CHUNK_SIZE = 400; 
+               
                for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
                   const batch = writeBatch(db);
                   const chunk = allIds.slice(i, i + CHUNK_SIZE);
                   chunk.forEach(id => batch.delete(doc(db, "students", id)));
                   await batch.commit();
                }
+               
                setStudents([]);
                alert("تم الحذف بنجاح");
                setView('list');
@@ -844,16 +707,8 @@
 
           return (
             <>
-              {/* Insert Alphabet Sidebar */}
-              {view === 'list' && (
-                 <AlphabetSidebar 
-                    onSelectLetter={scrollToLetter} 
-                    currentLetter={activeScrollerLetter} 
-                 />
-              )}
-
-              <div className="min-h-screen no-print pb-20 pl-6"> {/* Added padding-left to avoid overlap with sidebar */}
-                <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm backdrop-blur-sm bg-white/90">
+              <div className="min-h-screen no-print pb-20">
+                <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-sm bg-white/90">
                   <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-lg text-slate-800 cursor-pointer" onClick={() => setView('list')}>
                       <div className="bg-slate-900 text-white p-1.5 rounded-lg"><Users size={18} /></div>
@@ -880,18 +735,16 @@
                         <div className="flex-1 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-2">
                            <div className="flex items-center w-full sm:w-auto flex-1 gap-2">
                                <Search className="text-slate-400 mr-1" size={18} />
-                               <input className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 bg-transparent min-w-[120px]" placeholder="بحث بالاسم..." value={search} onChange={(e) => {setSearch(e.target.value); if(e.target.value) setSelectedRegFilter('');}} />
+                               <input className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 bg-transparent min-w-[120px]" placeholder="بحث بالاسم..." value={search} onChange={(e) => setSearch(e.target.value)} />
                                {search && <button onClick={() => setSearch('')} className="p-1 text-slate-400 hover:text-red-500"><X size={16}/></button>}
                            </div>
                            
                            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 sm:border-r border-slate-100 pt-2 sm:pt-0 sm:pr-2 mt-2 sm:mt-0">
+                               {/* NEW: Reg Dropdown in Filter */}
                                <div className="relative">
                                    <select 
                                        value={selectedRegFilter} 
-                                       onChange={(e) => {
-                                           setSelectedRegFilter(e.target.value);
-                                           if(e.target.value) setSearch('');
-                                       }}
+                                       onChange={(e) => setSelectedRegFilter(e.target.value)}
                                        className="bg-transparent text-sm text-slate-600 outline-none cursor-pointer p-1 pr-6 appearance-none hover:text-sky-600 font-medium min-w-[100px]"
                                    >
                                        <option value="">جميع القيود</option>
@@ -925,7 +778,6 @@
                         </div>
                       </div>
 
-                      {/* Filter Bar */}
                       <div className="flex flex-wrap gap-1 justify-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
                         <button onClick={() => setLetterFilter('ALL')} className={`px-3 py-1 text-xs rounded-md transition-colors ${letterFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>الكل</button>
                         {['أ','ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','هـ','و','ي'].map(l => (
@@ -946,12 +798,7 @@
                             </thead>
                             <tbody className="divide-y divide-slate-100 text-sm">
                               {displayedStudents.map((s, idx) => (
-                                <tr 
-                                  key={s.id} 
-                                  id={`student-row-${idx}`} /* Added ID for scrolling */
-                                  onClick={() => { setSelectedId(s.id); setView('detail'); }} 
-                                  className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
-                                >
+                                <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
                                   <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
                                   <td className="p-3 font-semibold text-slate-800 flex items-center gap-2">
                                     <div className={`w-2.5 h-2.5 rounded-full ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
