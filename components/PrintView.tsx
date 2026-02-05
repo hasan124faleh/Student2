@@ -41,10 +41,10 @@ export const PrintView: React.FC<PrintViewProps> = ({ students, title }) => {
                      <table className="w-full border-collapse border border-black">
                        <thead>
                          <tr className="bg-gray-100">
-                           <th className="border border-black p-1 text-center w-[45px]">م</th>
+                           <th className="border border-black p-1 text-center w-[30px]">م</th>
                            <th className="border border-black p-1 text-right">الاسم الكامل</th>
-                           <th className="border border-black p-1 text-center w-[60px] font-bold">قيد</th>
-                           <th className="border border-black p-1 text-center w-[45px] font-bold">ص</th>
+                           <th className="border border-black p-1 text-center w-[35px] font-bold">ق</th>
+                           <th className="border border-black p-1 text-center w-[35px] font-bold">ص</th>
                          </tr>
                        </thead>
                        <tbody>
