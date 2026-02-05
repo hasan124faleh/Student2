@@ -338,6 +338,9 @@ export default function App() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printRegInput, setPrintRegInput] = useState('');
 
+  // Delete All Modal State
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+
   // Import State
   const [importing, setImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
@@ -499,30 +502,29 @@ export default function App() {
     }
   };
 
-  const handleDeleteAll = async () => {
-    if (confirm('تحذير: هل أنت متأكد من حذف جميع البيانات؟') && confirm('تأكيد نهائي؟')) {
-       setLoading(true);
-       try {
-         const allIds = students.map(s => s.id);
-         const CHUNK_SIZE = 400; 
-         
-         for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
-            const batch = writeBatch(db);
-            const chunk = allIds.slice(i, i + CHUNK_SIZE);
-            chunk.forEach(id => batch.delete(doc(db, "students", id)));
-            await batch.commit();
-         }
-         
-         setStudents([]);
-         alert("تم الحذف");
-         setView('list');
-       } catch (e) {
-         console.error(e);
-         alert("حدث خطأ أثناء الحذف");
-       } finally {
-         setLoading(false);
+  const executeDeleteAll = async () => {
+     setShowDeleteAllConfirm(false);
+     setLoading(true);
+     
+     try {
+       const allIds = students.map(s => s.id);
+       const CHUNK_SIZE = 400; 
+       
+       for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
+          const batch = writeBatch(db);
+          const chunk = allIds.slice(i, i + CHUNK_SIZE);
+          chunk.forEach(id => batch.delete(doc(db, "students", id)));
+          await batch.commit();
        }
-    }
+       
+       setStudents([]);
+       setView('list');
+     } catch (e) {
+       console.error(e);
+       alert("حدث خطأ أثناء الحذف");
+     } finally {
+       setLoading(false);
+     }
   };
 
   const handleSaveStudent = async (e: React.FormEvent<HTMLFormElement>, isEdit: boolean) => {
@@ -965,7 +967,7 @@ export default function App() {
                     </button>
                  </div>
                  <div className="pt-4 border-t-2 border-red-100">
-                    <button onClick={handleDeleteAll} className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-100">
+                    <button onClick={() => setShowDeleteAllConfirm(true)} className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-100">
                        <Trash2 size={18} /> حذف جميع البيانات
                     </button>
                  </div>
@@ -1056,6 +1058,30 @@ export default function App() {
                    إلغاء
                 </button>
              </div>
+          </Modal>
+        )}
+        
+        {/* Custom Professional Delete Confirmation Modal */}
+        {showDeleteAllConfirm && (
+          <Modal onClose={() => setShowDeleteAllConfirm(false)}>
+            <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center shadow-2xl transform transition-all scale-100">
+                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Trash2 size={40} className="text-red-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-2">حذف جميع البيانات؟</h3>
+                <p className="text-slate-500 mb-8 leading-relaxed">
+                    هل أنت متأكد من رغبتك في حذف كافة سجلات الطلاب؟ <br/>
+                    <span className="text-red-500 font-bold text-sm">هذا الإجراء نهائي ولا يمكن التراجع عنه.</span>
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => setShowDeleteAllConfirm(false)} className="py-3 px-6 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                        إلغاء
+                    </button>
+                    <button onClick={executeDeleteAll} className="py-3 px-6 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30">
+                        نعم، حذف الكل
+                    </button>
+                </div>
+            </div>
           </Modal>
         )}
 
