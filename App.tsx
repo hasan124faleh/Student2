@@ -58,17 +58,16 @@ const generateTemplate = () => {
 
   const templateData = [];
 
-  for (let i = 1; i <= 1000; i++) {
+  for (let i = 0; i < 1000; i++) {
     const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
     const n2 = midNames[Math.floor(Math.random() * midNames.length)];
     const n3 = midNames[Math.floor(Math.random() * midNames.length)];
     const n4 = midNames[Math.floor(Math.random() * midNames.length)];
     const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
     
-    // Generate regNumber between 1 and 10
-    const regNum = Math.floor(Math.random() * 10) + 1;
-    // Generate pageNumber between 1 and 10 (similar pages)
-    const pageNum = Math.floor(Math.random() * 10) + 1;
+    // Ensure uniqueness: 100 pages, 10 students per page
+    const regNum = (i % 10) + 1;
+    const pageNum = Math.floor(i / 10) + 1;
     
     // Status probability
     const rand = Math.random();
@@ -524,22 +523,72 @@ export default function App() {
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
     setImporting(true);
     setImportProgress(0);
 
     try {
-      const jsonData = await readExcel(e.target.files[0]);
-      if (!jsonData.length) {
-        alert("الملف فارغ");
-        return;
+      const rows = await readExcel(file);
+      let count = 0;
+      const signatures = new Set(students.map(s => `${s.regNumber}-${s.pageNumber}`));
+      const newItems: Student[] = [];
+      
+      const BATCH_SIZE = 400;
+      let currentBatch = writeBatch(db);
+      let batchCount = 0;
+
+      for (const row of rows) {
+         const fName = row['firstName'] || row['الاسم الأول'];
+         const reg = row['regNumber'] || row['رقم القيد'];
+         const page = row['pageNumber'] || row['رقم الصفحة'];
+         const st = row['status'] || row['الحالة'] || 'active';
+         let statusKey = 'active';
+         if (st === 'منقول' || st === 'transferred') statusKey = 'transferred';
+         if (st === 'تارك' || st === 'left') statusKey = 'left';
+
+         if (fName && reg) {
+           const sig = `${reg}-${page}`;
+           if (!signatures.has(sig)) {
+             const item = {
+               firstName: String(fName).trim(),
+               lastName: String(row['lastName'] || row['اللقب'] || '').trim(),
+               regNumber: String(reg).trim(),
+               pageNumber: String(page || '').trim(),
+               notes: String(row['notes'] || row['الملاحظات'] || ''),
+               status: statusKey,
+               createdAt: Date.now() + count
+             };
+             
+             const ref = doc(studentsCollection);
+             currentBatch.set(ref, item);
+             newItems.push({id: ref.id, ...item} as Student);
+             signatures.add(sig);
+             count++;
+             batchCount++;
+             
+             if (batchCount >= BATCH_SIZE) {
+               await currentBatch.commit();
+               currentBatch = writeBatch(db);
+               batchCount = 0;
+             }
+           }
+         }
       }
-      // ... same import logic as index.html (simplified for brevity) ...
-      // Just alerting for consistency, assuming logic is mirrored.
-      alert('يرجى استخدام النسخة المحدثة');
-      setView('list');
+
+      if (batchCount > 0) {
+        await currentBatch.commit();
+      }
+
+      if (count > 0) {
+        setStudents(prev => [...newItems, ...prev]);
+        alert(`تم استيراد ${count} سجل بنجاح`);
+      } else { 
+        alert("لم يتم العثور على سجلات جديدة (ربما جميعها مكررة)"); 
+      }
 
     } catch (err) {
+      console.error(err);
       alert("خطأ أثناء الاستيراد");
     } finally {
       setImporting(false);

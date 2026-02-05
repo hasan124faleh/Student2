@@ -117,17 +117,18 @@
 
           const templateData = [];
 
-          for (let i = 1; i <= 1000; i++) {
+          for (let i = 0; i < 1000; i++) {
             const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
             const n2 = midNames[Math.floor(Math.random() * midNames.length)];
             const n3 = midNames[Math.floor(Math.random() * midNames.length)];
             const n4 = midNames[Math.floor(Math.random() * midNames.length)];
             const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
             
-            // Generate regNumber between 1 and 10
-            const regNum = Math.floor(Math.random() * 10) + 1;
-            // Generate pageNumber between 1 and 10 (similar pages)
-            const pageNum = Math.floor(Math.random() * 10) + 1;
+            // To ensure 1000 unique records:
+            // Reg goes 1-10, repeating every 10 records
+            const regNum = (i % 10) + 1;
+            // Page increments every 10 records (Page 1 has 1-10, Page 2 has 1-10...)
+            const pageNum = Math.floor(i / 10) + 1;
             
             // Status probability
             const rand = Math.random();
@@ -498,12 +499,16 @@
             setImporting(true);
             try {
               const rows = await readExcel(file);
-              const batch = writeBatch(db);
               let count = 0;
               const signatures = new Set(students.map(s => `${s.regNumber}-${s.pageNumber}`));
               const newItems = [];
+              
+              // Firestore batch limit is 500. We use 400 to be safe.
+              const BATCH_SIZE = 400;
+              let currentBatch = writeBatch(db);
+              let batchCount = 0;
 
-              rows.forEach(row => {
+              for (const row of rows) {
                  const fName = row['firstName'] || row['الاسم الأول'];
                  const reg = row['regNumber'] || row['رقم القيد'];
                  const page = row['pageNumber'] || row['رقم الصفحة'];
@@ -522,24 +527,41 @@
                        pageNumber: String(page || '').trim(),
                        notes: String(row['notes'] || row['الملاحظات'] || ''),
                        status: statusKey,
-                       createdAt: Date.now()
+                       createdAt: Date.now() + count // slightly offset time to keep order
                      };
+                     
                      const ref = doc(studentsCollection);
-                     batch.set(ref, item);
+                     currentBatch.set(ref, item);
                      newItems.push({id: ref.id, ...item});
                      signatures.add(sig);
                      count++;
+                     batchCount++;
+                     
+                     if (batchCount >= BATCH_SIZE) {
+                       await currentBatch.commit();
+                       currentBatch = writeBatch(db);
+                       batchCount = 0;
+                     }
                    }
                  }
-              });
+              }
+
+              if (batchCount > 0) {
+                await currentBatch.commit();
+              }
 
               if (count > 0) {
-                await batch.commit();
                 setStudents(prev => [...newItems, ...prev]);
-                alert(`تم استيراد ${count} سجل`);
-              } else { alert("لم يتم العثور على سجلات جديدة"); }
-            } catch (e) { console.error(e); alert("فشل الاستيراد"); }
+                alert(`تم استيراد ${count} سجل بنجاح`);
+              } else { 
+                alert("لم يتم العثور على سجلات جديدة (ربما جميعها مكررة)"); 
+              }
+            } catch (e) { 
+              console.error(e); 
+              alert("حدث خطأ أثناء الاستيراد"); 
+            }
             setImporting(false);
+            e.target.value = '';
           };
           
           // Force numeric input

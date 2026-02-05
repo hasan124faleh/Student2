@@ -24,17 +24,16 @@ export const generateTemplate = () => {
 
   const templateData = [];
 
-  for (let i = 1; i <= 1000; i++) {
+  for (let i = 0; i < 1000; i++) {
     const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
     const n2 = midNames[Math.floor(Math.random() * midNames.length)];
     const n3 = midNames[Math.floor(Math.random() * midNames.length)];
     const n4 = midNames[Math.floor(Math.random() * midNames.length)];
     const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
     
-    // Generate regNumber between 1 and 10
-    const regNum = Math.floor(Math.random() * 10) + 1;
-    // Generate pageNumber between 1 and 10 (similar pages)
-    const pageNum = Math.floor(Math.random() * 10) + 1;
+    // Ensure uniqueness: 100 pages, 10 students per page
+    const regNum = (i % 10) + 1;
+    const pageNum = Math.floor(i / 10) + 1;
     
     // Status probability
     const rand = Math.random();
