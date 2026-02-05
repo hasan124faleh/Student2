@@ -52,18 +52,44 @@ const exportToExcel = (students: Student[]) => {
 };
 
 const generateTemplate = () => {
-  const templateData = Array.from({length: 5}).map((_, i) => ({
-    'الاسم الأول': `اسم افتراضي ${i+1}`,
-    'اللقب': 'اللقب',
-    'رقم القيد': `REG-10${i}`,
-    'رقم الصفحة': `${Math.ceil((i+1)/2)}`,
-    'الحالة': 'مستمر', 
-    'الملاحظات': ''
-  }));
+  const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'عبدالرحمن', 'إبراهيم', 'يوسف', 'محمود', 'حسن', 'حسين', 'ماجد', 'نايف', 'سلطان'];
+  const midNames = ['محمد', 'علي', 'صالح', 'عبدالله', 'حمد', 'سليمان', 'عبدالعزيز', 'سالم', 'ناصر', 'راشد', 'خلف', 'سعود', 'فواز', 'عادل', 'منصور', 'تركي'];
+  const lastNames = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'الغامدي', 'المطيري', 'الدوسري', 'السبيعي', 'المالكي', 'عسيري', 'الشهري', 'الرويلي', 'الخالدي'];
+
+  const templateData = [];
+
+  for (let i = 1; i <= 1000; i++) {
+    const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const n2 = midNames[Math.floor(Math.random() * midNames.length)];
+    const n3 = midNames[Math.floor(Math.random() * midNames.length)];
+    const n4 = midNames[Math.floor(Math.random() * midNames.length)];
+    const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+    
+    // Generate regNumber between 1 and 10
+    const regNum = Math.floor(Math.random() * 10) + 1;
+    // Generate pageNumber between 1 and 10 (similar pages)
+    const pageNum = Math.floor(Math.random() * 10) + 1;
+    
+    // Status probability
+    const rand = Math.random();
+    let status = 'مستمر';
+    if (rand > 0.95) status = 'تارك';
+    else if (rand > 0.9) status = 'منقول';
+
+    templateData.push({
+      'الاسم الأول': `${n1} ${n2} ${n3} ${n4}`,
+      'اللقب': ln,
+      'رقم القيد': regNum.toString(),
+      'رقم الصفحة': pageNum.toString(),
+      'الحالة': status,
+      'الملاحظات': ''
+    });
+  }
+  
   const worksheet = XLSX.utils.json_to_sheet(templateData);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج الطلاب");
-  XLSX.writeFile(workbook, "نموذج_سجل_الطلاب.xlsx");
+  XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 1000 طالب");
+  XLSX.writeFile(workbook, "نموذج_سجل_الطلاب_الكبير.xlsx");
 };
 
 const readExcel = (file: File): Promise<Record<string, any>[]> => {
@@ -808,6 +834,11 @@ export default function App() {
                  <div className="pb-8 border-b border-slate-100">
                     <button onClick={() => exportToExcel(students)} className="w-full flex items-center gap-2 px-5 py-2.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors font-medium">
                        <Download size={18} /> تصدير إلى Excel
+                    </button>
+                 </div>
+                 <div className="pb-8 border-b border-slate-100">
+                    <button onClick={generateTemplate} className="w-full flex items-center gap-2 px-5 py-2.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-medium">
+                       <FileSpreadsheet size={18} /> تحميل نموذج فارغ (1000 طالب)
                     </button>
                  </div>
                  <div className="pt-4 border-t-2 border-red-100">
