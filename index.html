@@ -65,7 +65,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, Filter
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, Filter, ArrowUp
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -290,6 +290,9 @@
           const [visibleCount, setVisibleCount] = useState(50);
           const loadMoreRef = useRef(null);
 
+          // Scroll To Top State
+          const [showTopBtn, setShowTopBtn] = useState(false);
+
           const [importing, setImporting] = useState(false);
           const [showPrint, setShowPrint] = useState(false);
           const [printReg, setPrintReg] = useState('');
@@ -312,6 +315,19 @@
             setVisibleCount(50);
             window.scrollTo(0, 0);
           }, [search, regFilter, statusFilter, sortBy, letterFilter]);
+
+          // Scroll event listener
+          useEffect(() => {
+            const handleScroll = () => {
+              if (window.scrollY > 400) {
+                setShowTopBtn(true);
+              } else {
+                setShowTopBtn(false);
+              }
+            };
+            window.addEventListener('scroll', handleScroll);
+            return () => window.removeEventListener('scroll', handleScroll);
+          }, []);
 
           const loadData = async () => {
             setLoading(true);
@@ -798,6 +814,14 @@
                        </div>
                     </div>
                   )}
+
+                   {/* SCROLL TO TOP BUTTON */}
+                   <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className={`fixed bottom-6 left-6 p-3 rounded-full shadow-lg text-white transition-all transform z-30 ${showTopBtn ? 'bg-slate-900 translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}
+                   >
+                    <ArrowUp size={24} />
+                   </button>
                 </main>
               </div>
               <PrintView students={studentsToPrint} />

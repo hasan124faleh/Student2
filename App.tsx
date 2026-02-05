@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, LogOut, Settings, Search, Plus, Printer, 
-  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle
+  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { 
@@ -272,6 +272,9 @@ export default function App() {
   const [visibleCount, setVisibleCount] = useState(50);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
+  // Scroll To Top State
+  const [showTopBtn, setShowTopBtn] = useState(false);
+
   // Print Modal State
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printRegInput, setPrintRegInput] = useState('');
@@ -327,6 +330,19 @@ export default function App() {
 
     return () => observer.disconnect();
   }, [students.length, debouncedQuery]); 
+
+  // Scroll event listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowTopBtn(true);
+      } else {
+        setShowTopBtn(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -883,6 +899,14 @@ export default function App() {
              </div>
           </Modal>
         )}
+
+         {/* SCROLL TO TOP BUTTON */}
+         <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className={`fixed bottom-6 left-6 p-3 rounded-full shadow-lg text-white transition-all transform z-30 ${showTopBtn ? 'bg-slate-900 translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}
+         >
+          <ArrowUp size={24} />
+         </button>
       </div>
       
       {/* Hidden Print View */}
