@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, LogOut, Settings, Search, Plus, Printer, 
-  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp
+  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { 
@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db, studentsCollection } from './firebase';
 import * as XLSX from 'xlsx';
+import { PrintView } from './components/PrintView';
 
 // --- Types & Interfaces ---
 
@@ -125,57 +126,87 @@ const Modal: React.FC<{ children: React.ReactNode, onClose: () => void }> = ({ c
   </div>
 );
 
-const PrintView: React.FC<{ students: Student[] }> = ({ students }) => {
-  const sortedStudents = [...students].sort((a, b) => a.firstName.localeCompare(b.firstName));
-  const ROWS_PER_COLUMN = 30;
-  const COLUMNS_PER_PAGE = 2;
-  const ITEMS_PER_PAGE = ROWS_PER_COLUMN * COLUMNS_PER_PAGE;
-  
-  const pages = [];
-  for (let i = 0; i < sortedStudents.length; i += ITEMS_PER_PAGE) {
-    pages.push(sortedStudents.slice(i, i + ITEMS_PER_PAGE));
-  }
+// --- Elegant Single Student Print Component ---
+const SingleStudentPrint: React.FC<{ student: Student }> = ({ student }) => {
+  const statusLabels: Record<string, string> = {
+    'active': 'مستمر',
+    'transferred': 'منقول',
+    'left': 'تارك'
+  };
 
   return (
-    <div className="print-only text-[10pt] dir-rtl">
-      {pages.map((pageStudents, pageIndex) => (
-        <div key={pageIndex} className="flex flex-row w-full h-[100vh] box-border p-[1cm] gap-[1cm] break-after-page">
-           {[0, 1].map((colIndex) => {
-             const colStart = colIndex * ROWS_PER_COLUMN;
-             const colStudents = pageStudents.slice(colStart, colStart + ROWS_PER_COLUMN);
-             
-             return (
-               <div key={colIndex} className="flex-1 flex flex-col">
-                 {colStudents.length > 0 && (
-                   <table className="w-full border-collapse border border-black">
-                     <thead>
-                       <tr className="bg-gray-100">
-                         <th className="border border-black p-1 text-center w-[45px]">التسلسل</th>
-                         <th className="border border-black p-1 text-right">الاسم الكامل</th>
-                         <th className="border border-black p-1 text-center w-[75px] font-bold">ق</th>
-                         <th className="border border-black p-1 text-center w-[55px] font-bold">ص</th>
-                       </tr>
-                     </thead>
-                     <tbody>
-                       {colStudents.map((s, idx) => {
-                         const globalIndex = (pageIndex * ITEMS_PER_PAGE) + colStart + idx + 1;
-                         return (
-                           <tr key={s.id}>
-                             <td className="border border-black p-1 text-center">{globalIndex}</td>
-                             <td className="border border-black p-1">{s.firstName} {s.lastName ? `/ ${s.lastName}` : ''}</td>
-                             <td className="border border-black p-1 text-center font-bold font-mono" dir="ltr">{s.regNumber}</td>
-                             <td className="border border-black p-1 text-center font-bold font-mono">{s.pageNumber}</td>
-                           </tr>
-                         );
-                       })}
-                     </tbody>
-                   </table>
-                 )}
-               </div>
-             );
-           })}
+    <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-8">
+      <div className="w-full max-w-[21cm] border-[3px] border-double border-slate-800 p-8 rounded-xl relative overflow-hidden">
+        {/* Decorative corner */}
+        <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100 -translate-y-1/2 translate-x-1/2 rounded-full opacity-50"></div>
+        
+        {/* Header */}
+        <div className="text-center border-b-2 border-slate-200 pb-6 mb-8 relative z-10">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">بطاقة معلومات الطالب</h1>
+          <p className="text-slate-500 font-medium">نظام سجلات الطلاب العام</p>
         </div>
-      ))}
+
+        {/* Main Info Grid */}
+        <div className="grid grid-cols-12 gap-6 relative z-10">
+          
+          <div className="col-span-12 md:col-span-8 space-y-6">
+             <div className="flex flex-col">
+                <span className="text-sm font-bold text-slate-400 mb-1">الاسم الكامل</span>
+                <div className="text-2xl font-bold text-slate-900 border-b border-dashed border-slate-300 pb-1">
+                   {student.firstName} {student.lastName}
+                </div>
+             </div>
+
+             <div className="grid grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-400 mb-1">حالة الطالب</span>
+                  <div className="text-lg font-semibold text-slate-800">
+                     {statusLabels[student.status || 'active']}
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-slate-400 mb-1">تاريخ التسجيل</span>
+                  <div className="text-lg font-semibold text-slate-800">
+                     {new Date(student.createdAt).toLocaleDateString('ar-EG')}
+                  </div>
+                </div>
+             </div>
+          </div>
+
+          <div className="col-span-12 md:col-span-4 flex flex-col gap-4">
+             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center">
+                <span className="text-xs font-bold text-slate-500 uppercase">رقم القيد</span>
+                <div className="text-4xl font-mono font-bold text-slate-900 mt-1">{student.regNumber}</div>
+             </div>
+             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center">
+                <span className="text-xs font-bold text-slate-500 uppercase">رقم الصفحة</span>
+                <div className="text-4xl font-mono font-bold text-slate-900 mt-1">{student.pageNumber}</div>
+             </div>
+          </div>
+
+          {/* Notes Section */}
+          <div className="col-span-12 mt-4">
+             <div className="border border-slate-200 rounded-lg p-6 min-h-[150px] bg-slate-50/50">
+                <span className="text-sm font-bold text-slate-400 block mb-2">الملاحظات</span>
+                <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">
+                   {student.notes || "لا توجد ملاحظات مسجلة."}
+                </p>
+             </div>
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="mt-12 pt-6 border-t border-slate-200 flex justify-between items-end">
+           <div className="text-xs text-slate-400">
+              تم الاستخراج: {new Date().toLocaleDateString('ar-EG')}
+           </div>
+           <div className="text-center">
+              <div className="w-32 border-b border-slate-300 mb-2"></div>
+              <span className="text-sm font-bold text-slate-500">توقيع المسؤول</span>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -288,11 +319,14 @@ export default function App() {
   // Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(''); 
-  const [filterRegOnly, setFilterRegOnly] = useState(false);
+  const [selectedRegFilter, setSelectedRegFilter] = useState(''); // NEW: Selected Reg dropdown
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [letterFilter, setLetterFilter] = useState('ALL');
   
+  // Print Mode State (to separate single student print from list print)
+  const [printMode, setPrintMode] = useState<'list' | 'single'>('list');
+
   // Infinite Scroll State
   const [visibleCount, setVisibleCount] = useState(50);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -310,6 +344,12 @@ export default function App() {
 
   // Form State
   const [nameWarning, setNameWarning] = useState('');
+
+  // Derived Data
+  const uniqueRegNumbers = useMemo(() => {
+    const regs = new Set(students.map(s => s.regNumber));
+    return Array.from(regs).sort((a, b) => Number(a) - Number(b));
+  }, [students]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -336,7 +376,7 @@ export default function App() {
   useEffect(() => {
     setVisibleCount(50);
     window.scrollTo(0, 0);
-  }, [debouncedQuery, filterRegOnly, statusFilter, sortBy, letterFilter]);
+  }, [debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter]);
 
   // Infinite Scroll Observer
   useEffect(() => {
@@ -403,6 +443,11 @@ export default function App() {
 
   // Filter Logic
   const filteredStudents = useMemo(() => {
+    // If a Reg Number is selected from dropdown, it overrides other filters usually
+    if (selectedRegFilter) {
+       return students.filter(s => s.regNumber === selectedRegFilter);
+    }
+
     let result = students.filter(s => {
       const sName = s.firstName.trim();
       if (letterFilter !== 'ALL' && !sName.startsWith(letterFilter)) return false;
@@ -415,10 +460,6 @@ export default function App() {
       const query = debouncedQuery.toLowerCase();
       const reg = (s.regNumber || '').toLowerCase();
       
-      if (filterRegOnly) {
-        return reg === query; 
-      }
-      
       const first = (s.firstName || '').toLowerCase();
       const last = (s.lastName || '').toLowerCase();
       return first.includes(query) || last.includes(query) || reg.includes(query);
@@ -430,7 +471,7 @@ export default function App() {
       result.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     }
     return result;
-  }, [students, debouncedQuery, filterRegOnly, statusFilter, sortBy, letterFilter]);
+  }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter]);
 
   // Visible Students (Sliced)
   const displayedStudents = useMemo(() => {
@@ -602,11 +643,17 @@ export default function App() {
 
   const handlePrint = (reg?: string) => {
      if (reg) {
-        setSearchQuery(reg);
-        setFilterRegOnly(true);
+        setSelectedRegFilter(reg); // Filter by this reg
      }
+     setPrintMode('list');
      setShowPrintModal(false);
      setTimeout(() => window.print(), 500);
+  };
+  
+  // New handler for single student elegant print
+  const handleSingleStudentPrint = () => {
+     setPrintMode('single');
+     setTimeout(() => window.print(), 300);
   };
 
   // Render Views
@@ -619,12 +666,22 @@ export default function App() {
     totalPages: new Set(students.map(s => s.pageNumber).filter(p => !!p)).size
   };
   
-  let studentsToPrint = students;
-  if (view === 'detail' && selectedStudentId) {
-     studentsToPrint = students.filter(s => s.id === selectedStudentId);
-  } else if (filterRegOnly && debouncedQuery) {
-     studentsToPrint = filteredStudents;
+  // Decide what to print based on printMode
+  let studentsToPrint: Student[] = [];
+  let printTitle = "فهرس القيد العام";
+
+  if (printMode === 'list') {
+      if (selectedRegFilter) {
+          studentsToPrint = filteredStudents; // already filtered by reg
+          printTitle = `فهرس القيد ${selectedRegFilter}`;
+      } else {
+          studentsToPrint = filteredStudents;
+          printTitle = "فهرس القيد العام";
+      }
   }
+
+  // Selected student for single print
+  const singleStudentData = students.find(s => s.id === selectedStudentId);
 
   return (
     <>
@@ -679,10 +736,13 @@ export default function App() {
                     <Search className="text-slate-400 mx-2" size={20} />
                     <input 
                       type="text" 
-                      placeholder="بحث..." 
+                      placeholder="بحث بالاسم..." 
                       className="flex-1 p-2 outline-none min-w-[120px]"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          if(e.target.value) setSelectedRegFilter(''); // Clear reg filter if searching by name
+                      }}
                     />
                      {searchQuery && (
                         <button onClick={() => setSearchQuery('')} className="p-1 text-slate-400 hover:text-red-500">
@@ -691,10 +751,24 @@ export default function App() {
                       )}
                     
                     <div className="w-px h-6 bg-slate-200 mx-2"></div>
-                    <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer px-2 select-none hover:text-sky-600">
-                      <input type="checkbox" checked={filterRegOnly} onChange={(e) => setFilterRegOnly(e.target.checked)} className="w-4 h-4 rounded text-sky-600" />
-                      قيد فقط
-                    </label>
+                    
+                    {/* NEW: Reg Dropdown */}
+                    <div className="relative group">
+                        <select 
+                            value={selectedRegFilter} 
+                            onChange={(e) => {
+                                setSelectedRegFilter(e.target.value);
+                                if(e.target.value) setSearchQuery(''); // Clear name search if selecting Reg
+                            }}
+                            className="bg-transparent text-sm text-slate-600 outline-none cursor-pointer p-1 pr-6 appearance-none hover:text-sky-600 font-medium min-w-[100px]"
+                        >
+                            <option value="">جميع القيود</option>
+                            {uniqueRegNumbers.map(r => (
+                                <option key={r} value={r}>قيد {r}</option>
+                            ))}
+                        </select>
+                        <Filter size={14} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
 
                     <div className="w-px h-6 bg-slate-200 mx-2"></div>
                     <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-transparent text-sm text-slate-600 outline-none cursor-pointer p-1">
@@ -937,7 +1011,7 @@ export default function App() {
                       </div>
                     )}
                     <div className="grid grid-cols-3 gap-2 pt-4 mt-4 border-t border-slate-100">
-                        <button onClick={() => window.print()} className="col-span-3 bg-slate-800 text-white py-2.5 rounded-lg font-bold hover:bg-slate-900 flex items-center justify-center gap-2 text-sm mb-2"><Printer size={16}/> طباعة معلومات الطالب</button>
+                        <button onClick={handleSingleStudentPrint} className="col-span-3 bg-slate-800 text-white py-2.5 rounded-lg font-bold hover:bg-slate-900 flex items-center justify-center gap-2 text-sm mb-2"><Printer size={16}/> طباعة معلومات الطالب</button>
                         <button onClick={() => setView('edit')} className="bg-slate-100 text-slate-700 py-2.5 rounded-lg font-bold hover:bg-slate-200 flex items-center justify-center gap-2 text-sm"><Settings size={16}/> تعديل</button>
                         <button onClick={() => handleDelete(s.id)} className="bg-red-50 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><Trash2 size={16}/> حذف</button>
                     </div>
@@ -954,7 +1028,7 @@ export default function App() {
           <Modal onClose={() => setShowPrintModal(false)}>
              <div className="bg-white rounded-2xl w-full p-6 shadow-2xl">
                 <h3 className="text-xl font-bold text-center mb-6">خيارات الطباعة</h3>
-                <button onClick={() => handlePrint()} className="w-full py-3 bg-slate-900 text-white rounded-lg font-bold mb-4 hover:bg-slate-800">
+                <button onClick={() => { setSelectedRegFilter(''); handlePrint(); }} className="w-full py-3 bg-slate-900 text-white rounded-lg font-bold mb-4 hover:bg-slate-800">
                    طباعة جميع السجلات
                 </button>
                 <div className="relative text-center my-6">
@@ -963,14 +1037,19 @@ export default function App() {
                 </div>
                 <div className="mb-4">
                    <label className="block text-sm font-medium mb-2 text-slate-600">طباعة قيد محدد</label>
-                   <input 
+                   {/* Reg Dropdown in Modal as well */}
+                   <select 
                      value={printRegInput}
                      onChange={(e) => setPrintRegInput(e.target.value)}
-                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-sky-500"
-                     placeholder="أدخل رقم القيد..." 
-                   />
+                     className="w-full px-4 py-2 border border-slate-300 rounded-lg outline-none focus:border-sky-500 bg-white"
+                   >
+                     <option value="">اختر رقم القيد...</option>
+                     {uniqueRegNumbers.map(r => (
+                        <option key={r} value={r}>قيد {r}</option>
+                     ))}
+                   </select>
                 </div>
-                <button onClick={() => handlePrint(printRegInput)} className="w-full py-2 bg-slate-100 text-slate-600 rounded-lg font-bold mb-2 hover:bg-slate-200">
+                <button onClick={() => handlePrint(printRegInput)} className="w-full py-2 bg-slate-100 text-slate-600 rounded-lg font-bold mb-2 hover:bg-slate-200" disabled={!printRegInput}>
                    طباعة القيد المحدد
                 </button>
                 <button onClick={() => setShowPrintModal(false)} className="w-full py-2 text-slate-400 font-medium hover:text-slate-600 mt-2">
@@ -989,8 +1068,14 @@ export default function App() {
          </button>
       </div>
       
-      {/* Hidden Print View */}
-      <PrintView students={studentsToPrint} />
+      {/* Hidden Print Views */}
+      {printMode === 'list' && (
+         <PrintView students={studentsToPrint} title={printTitle} />
+      )}
+      
+      {printMode === 'single' && singleStudentData && (
+         <SingleStudentPrint student={singleStudentData} />
+      )}
     </>
   );
 }
