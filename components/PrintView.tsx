@@ -19,6 +19,8 @@ export const PrintView: React.FC<PrintViewProps> = ({ students, title }) => {
     pages.push(sortedStudents.slice(i, i + ITEMS_PER_PAGE));
   }
 
+  const extractionDate = new Date().toLocaleDateString('ar-EG');
+
   return (
     <div className="print-only text-[10pt] dir-rtl font-cairo">
       {pages.map((pageStudents, pageIndex) => (
@@ -51,7 +53,7 @@ export const PrintView: React.FC<PrintViewProps> = ({ students, title }) => {
                            return (
                              <tr key={s.id}>
                                <td className="border border-black p-1 text-center">{globalIndex}</td>
-                               <td className="border border-black p-1 text-right">{s.firstName} {s.lastName ? `/ ${s.lastName}` : ''}</td>
+                               <td className="border border-black p-1 text-right font-bold">{s.firstName} {s.lastName ? `/ ${s.lastName}` : ''}</td>
                                <td className="border border-black p-1 text-center font-bold font-mono" dir="ltr">{s.regNumber}</td>
                                <td className="border border-black p-1 text-center font-bold font-mono">{s.pageNumber}</td>
                              </tr>
@@ -65,9 +67,10 @@ export const PrintView: React.FC<PrintViewProps> = ({ students, title }) => {
              })}
            </div>
            
-           {/* Footer Page Number */}
-           <div className="absolute bottom-4 left-0 w-full text-center text-xs text-gray-500">
-              صفحة {pageIndex + 1} من {pages.length}
+           {/* Footer with Page Number and Date */}
+           <div className="absolute bottom-4 left-0 w-full px-[1cm] flex justify-between items-center text-xs text-gray-500">
+              <span>تم الاستخراج: {extractionDate}</span>
+              <span>صفحة {pageIndex + 1} من {pages.length}</span>
            </div>
         </div>
       ))}

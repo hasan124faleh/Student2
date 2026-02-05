@@ -50,8 +50,8 @@
     "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
     "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs",
-    "react/": "https://esm.sh/react@^19.2.4/",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
     "firebase/": "https://esm.sh/firebase@^12.8.0/"
   }
 }
@@ -310,11 +310,13 @@
           for (let i = 0; i < sortedStudents.length; i += ITEMS_PER_PAGE) {
             pages.push(sortedStudents.slice(i, i + ITEMS_PER_PAGE));
           }
+          
+          const extractionDate = new Date().toLocaleDateString('ar-EG');
 
           return (
             <div className="print-only text-[9pt] dir-rtl">
               {pages.map((pageStudents, pageIndex) => (
-                <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page">
+                <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page relative">
                    <div className="w-full text-center border-b-2 border-black pb-2 mb-4">
                       <h1 className="text-xl font-bold">{title || "فهرس القيد العام"}</h1>
                    </div>
@@ -340,7 +342,7 @@
                                    return (
                                      <tr key={s.id} className="h-[28px]">
                                        <td className="border border-black px-1 text-center font-medium">{globalIndex}</td>
-                                       <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed">
+                                       <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
                                          {s.firstName} {s.lastName ? <span className="text-gray-700">/ {s.lastName}</span> : ''}
                                        </td>
                                        <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle dir-ltr">{s.regNumber}</td>
@@ -355,7 +357,12 @@
                        );
                      })}
                    </div>
-                   <div className="text-center text-xs mt-2">صفحة {pageIndex+1}</div>
+                   
+                   {/* Footer with Date and Page Number */}
+                   <div className="absolute bottom-4 left-0 w-full px-[1cm] flex justify-between items-center text-xs text-gray-500">
+                      <span>تم الاستخراج: {extractionDate}</span>
+                      <span>صفحة {pageIndex+1} من {pages.length}</span>
+                   </div>
                 </div>
               ))}
             </div>
