@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, LogOut, Settings, Search, Plus, Printer, 
-  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck
+  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { 
@@ -243,7 +243,18 @@ export default function App() {
       const querySnapshot = await getDocs(studentsCollection);
       const loadedStudents: Student[] = [];
       querySnapshot.forEach((doc) => {
-        loadedStudents.push({ id: doc.id, status: 'active', ...doc.data() } as Student);
+        const data = doc.data();
+        // Safe mapping to avoid circular refs and ensure primitives
+        loadedStudents.push({ 
+            id: doc.id, 
+            firstName: String(data.firstName || ''),
+            lastName: String(data.lastName || ''),
+            regNumber: String(data.regNumber || ''),
+            pageNumber: String(data.pageNumber || ''),
+            notes: String(data.notes || ''),
+            status: String(data.status || 'active'),
+            createdAt: typeof data.createdAt === 'number' ? data.createdAt : (data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now())
+        });
       });
       loadedStudents.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       setStudents(loadedStudents);
@@ -560,7 +571,7 @@ export default function App() {
                         <tr key={s.id} onClick={() => { setSelectedStudentId(s.id); setView('detail'); }} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
                           <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
                           <td className="p-3">
-                             <div className="flex items-start gap-3">
+                             <div className="flex items-center gap-3">
                                 <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-2 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                 <span className="font-semibold text-slate-800 leading-relaxed text-base">
                                   {s.firstName} <span className="text-slate-400 font-normal text-xs">{s.lastName}</span>
@@ -820,7 +831,7 @@ export default function App() {
         </main>
       </div>
       
-      {printMode === 'list' && <PrintView students={studentsToPrint} title={printTitle} />}
+      {printMode === 'list' && <PrintView students={filteredStudents} title={printTitle} />}
       {printMode === 'single' && singleStudentData && <SingleStudentPrint student={singleStudentData} />}
     </>
   );
