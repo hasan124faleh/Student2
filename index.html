@@ -36,7 +36,7 @@
       }
       /* Print Styles */
       @media print {
-        @page { size: A4; margin: 0; }
+        @page { size: A4; margin: 1cm; } /* هوامش الصفحة للطباعة */
         body { background-color: white; margin: 0; }
         .no-print { display: none !important; }
         .print-only { display: block !important; }
@@ -89,7 +89,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -141,17 +141,29 @@
         };
 
         const generateTemplate = () => {
-          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان'];
-          const lastNames = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني'];
+          // قوائم أسماء لتوليد أسماء رباعية
+          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم'];
+          const secondNames = ['حسين', 'حسن', 'عبدالرحمن', 'محمود', 'مصطفى', 'جعفر', 'عباس', 'كاظم', 'رضا', 'مهدي'];
+          const thirdNames = ['علي', 'محمد', 'جاسم', 'كريم', 'خلف', 'سالم', 'حمزة', 'فاضل'];
+          const fourthNames = ['عبدالله', 'ناصر', 'منصور', 'خليفة', 'سلطان', 'يحيى', 'زكريا'];
+          const titles = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'المالكي', 'الدوسري', 'التميمي'];
+
           const templateData = [];
           for (let i = 0; i < 1000; i++) {
             const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const n2 = secondNames[Math.floor(Math.random() * secondNames.length)];
+            const n3 = thirdNames[Math.floor(Math.random() * thirdNames.length)];
+            const n4 = fourthNames[Math.floor(Math.random() * fourthNames.length)];
+            const title = titles[Math.floor(Math.random() * titles.length)];
+            
+            const fullName = `${n1} ${n2} ${n3} ${n4}`; // اسم رباعي
+            
             const regNum = (i % 10) + 1;
             const pageNum = Math.floor(i / 10) + 1;
+            
             templateData.push({
-              'الاسم الأول': n1, // Removed ${i} to prevent numbers in names
-              'اللقب': ln,
+              'الاسم الأول': fullName, 
+              'اللقب': title,
               'رقم القيد': regNum.toString(),
               'رقم الصفحة': pageNum.toString(),
               'الحالة': 'مستمر',
@@ -184,8 +196,9 @@
         // ==========================================
         // UI COMPONENTS
         // ==========================================
-        const Modal = ({ children, onClose }) => (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto" onClick={onClose}>
+        // Updated Modal to accept zIndex prop
+        const Modal = ({ children, onClose, zIndex = "z-50" }) => (
+          <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}>
             <div className="w-full max-w-lg relative transform transition-all scale-100" onClick={e => e.stopPropagation()}>
                {children}
             </div>
@@ -196,7 +209,7 @@
         const AlertModal = ({ message, type, onClose }) => {
             const isError = type === 'error';
             return (
-                <Modal onClose={onClose}>
+                <Modal onClose={onClose} zIndex="z-[60]">
                     <div className="bg-white rounded-2xl p-6 text-center shadow-2xl animate-slide-up border border-slate-100">
                         <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 ${isError ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-500'}`}>
                             {isError ? <AlertCircle size={32} /> : <CheckCircle2 size={32} />}
@@ -214,7 +227,7 @@
         // Custom Confirm Component
         const ConfirmModal = ({ title, message, onConfirm, onCancel, confirmText = "نعم", cancelText = "إلغاء", isDestructive = false }) => {
             return (
-                <Modal onClose={onCancel}>
+                <Modal onClose={onCancel} zIndex="z-[60]">
                     <div className="bg-white rounded-2xl p-6 text-center shadow-2xl animate-slide-up border border-slate-100">
                         <div className={`w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4 ${isDestructive ? 'bg-red-100 text-red-500' : 'bg-blue-100 text-blue-500'}`}>
                             {isDestructive ? <Trash2 size={32} /> : <Info size={32} />}
@@ -252,12 +265,16 @@
 
         const SingleStudentPrint = ({ student }) => {
           const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
+          const printDate = new Date().toLocaleDateString('ar-EG');
           return (
             <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-8">
               <div className="w-full max-w-[21cm] border-[3px] border-double border-slate-800 p-8 rounded-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100 -translate-y-1/2 translate-x-1/2 rounded-full opacity-50"></div>
                 <div className="text-center border-b-2 border-slate-200 pb-6 mb-8 relative z-10">
-                  <h1 className="text-3xl font-bold text-slate-900 mb-2">بطاقة معلومات الطالب</h1>
+                  <div className="flex justify-between w-full absolute top-0 text-[10px] text-slate-400">
+                    <span>تاريخ: {printDate}</span>
+                  </div>
+                  <h1 className="text-3xl font-bold text-slate-900 mb-2 mt-4">بطاقة معلومات الطالب</h1>
                   <p className="text-slate-500 font-medium">نظام سجلات الطلاب العام</p>
                 </div>
                 <div className="grid grid-cols-12 gap-6 relative z-10">
@@ -300,6 +317,8 @@
           const ROWS_PER_COLUMN = 30;
           const COLUMNS_PER_PAGE = 2;
           const ITEMS_PER_PAGE = ROWS_PER_COLUMN * COLUMNS_PER_PAGE;
+          const totalPages = Math.ceil(sortedStudents.length / ITEMS_PER_PAGE);
+          const printDate = new Date().toLocaleDateString('ar-EG');
           
           const pages = [];
           for (let i = 0; i < sortedStudents.length; i += ITEMS_PER_PAGE) {
@@ -310,9 +329,13 @@
             <div className="print-only text-[9pt] dir-rtl">
               {pages.map((pageStudents, pageIndex) => (
                 <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page relative">
-                   <div className="w-full text-center border-b-2 border-black pb-2 mb-4">
-                      <h1 className="text-xl font-bold">{title || "فهرس القيد العام"}</h1>
+                   {/* Print Header with Date and Page Number */}
+                   <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full">
+                        <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
+                        <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
+                        <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
                    </div>
+
                    <div className="flex flex-row gap-[1cm] h-full">
                      {[0, 1].map((colIndex) => {
                        const colStart = colIndex * ROWS_PER_COLUMN;
@@ -562,10 +585,15 @@
           };
 
           const handleSoftDelete = async (id) => {
+             setConfirmConfig(null); // Close the confirmation modal first
              try {
                await updateDoc(doc(db, "students", id), { isDeleted: true });
                setStudents(prev => prev.map(s => s.id === id ? { ...s, isDeleted: true } : s));
-               if (view === 'detail') setView('list');
+               
+               // Ensure we close the detail view and return to list
+               setView('list'); 
+               setSelectedId(null);
+               
                showAlert("تم نقل الطالب إلى سلة المهملات", 'success');
              } catch (e) { showAlert("خطأ في الحذف", 'error'); }
           };
@@ -694,12 +722,7 @@
                       <span className="hidden xs:inline">سجل القيود</span>
                     </div>
                     <div className="flex items-center gap-2">
-                       {/* Trash Button */}
-                       <button onClick={() => setView('trash')} className={`relative p-2.5 rounded-full transition-colors ${view === 'trash' ? 'bg-red-50 text-red-600' : 'text-slate-500 hover:bg-slate-100'}`}>
-                          <Trash2 size={22} />
-                          {stats.deleted > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>}
-                       </button>
-
+                       {/* REMOVED TRASH BUTTON FROM HEADER */}
                       <button onClick={() => setView('settings')} className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={22} /></button>
                       <button onClick={() => showConfirm("تسجيل خروج", "هل أنت متأكد من تسجيل الخروج؟", () => signOut(auth))} className="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={22} /></button>
                     </div>
@@ -881,14 +904,8 @@
                     </div>
                 </main>
 
-                {/* Modals */}
-                {/* Alert Modal */}
-                {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
+                {/* Modals - REORDERED FOR Z-INDEX STACKING */}
                 
-                {/* Confirm Modal */}
-                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
-
-
                 {(view === 'add' || view === 'edit') && (
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up border border-slate-100">
@@ -996,6 +1013,18 @@
                             <button onClick={() => setView('list')}><X size={20} className="text-slate-400"/></button>
                         </div>
                         <div className="space-y-3 pt-2">
+                            {/* Trash Link Moved Here */}
+                            <button onClick={() => setView('trash')} className="w-full py-4 bg-slate-50 text-slate-700 rounded-xl font-bold border border-slate-200 flex items-center justify-between px-4 hover:bg-slate-100 transition-colors group">
+                                <span className="flex items-center gap-2">
+                                    <div className="relative">
+                                        <Trash2 size={20} className="text-slate-500"/>
+                                        {stats.deleted > 0 && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>}
+                                    </div>
+                                    عرض سلة المهملات
+                                </span>
+                                <ArrowRight size={16} className="opacity-50 group-hover:translate-x-1 transition-transform"/>
+                            </button>
+
                            <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold border border-emerald-100 flex items-center justify-between px-4 hover:bg-emerald-100 transition-colors">
                               <span className="flex items-center gap-2"><Download size={20}/> تصدير البيانات (Excel)</span>
                               <ArrowRight size={16} className="opacity-50"/>
@@ -1067,6 +1096,11 @@
                        </div>
                     </Modal>
                 )}
+
+                {/* Confirm & Alert Modals (Placed Last for Higher Stacking) */}
+                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
+                {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
+
               </div>
               
               {/* Print Views */}
