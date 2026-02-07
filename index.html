@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>سجل قيود الطلاب</title>
     
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    
     <!-- Styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -56,7 +59,7 @@
         /* الحاوية الرئيسية لكل صفحة ورق */
         .print-page-container {
             width: 210mm;
-            height: 296mm; /* أقل بـ 1مل لضمان عدم كسر الصفحة */
+            height: 297mm; /* الارتفاع الكامل لصفحة A4 */
             padding: 10mm 15mm; /* هوامش داخلية للورقة */
             box-sizing: border-box;
             page-break-after: always;
@@ -424,7 +427,7 @@
                .map((s, i) => ({ ...s, printIndex: i + 1 }));
           }, [students]);
 
-          const ROWS_PER_COLUMN_MAX = 28; // قيمة محسوبة بدقة لـ A4
+          const ROWS_PER_COLUMN_MAX = 31; // زيادة عدد الصفوف لملء الفراغ
           const COLUMNS_PER_PAGE = 2;
           const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
           
@@ -468,7 +471,7 @@
                                {colStudents.length > 0 && (
                                  <table className="w-full border-collapse border border-black table-fixed">
                                    <thead>
-                                     <tr className="bg-gray-100 h-[32px]">
+                                     <tr className="bg-gray-100 h-[34px]">
                                        <th className="border border-black p-1 text-center w-[35px] text-[8.5pt]">ت</th>
                                        <th className="border border-black p-1 text-right">الاسم الكامل</th>
                                        <th className="border border-black p-1 text-center w-[40px] font-bold text-[8.5pt]">ق</th>
@@ -478,7 +481,7 @@
                                    <tbody>
                                      {colStudents.map((s) => {
                                        return (
-                                         <tr key={s.id} className="h-[29px]">
+                                         <tr key={s.id} className="h-[31px]">
                                            <td className="border border-black px-1 text-center font-medium">{s.printIndex}</td>
                                            <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
                                              {cleanName(s.firstName)}
