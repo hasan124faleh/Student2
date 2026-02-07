@@ -378,68 +378,96 @@
         };
 
         const PrintView = ({ students, title }) => {
-          const sortedStudents = [...students].sort((a, b) => a.firstName.localeCompare(b.firstName));
-          const ROWS_PER_COLUMN = 30;
+          // 1. تحضير البيانات مع الفهرس العام
+          // نستخدم useMemo للحساب مرة واحدة عند تغير البيانات
+          const sortedStudents = useMemo(() => {
+             return [...students]
+               .sort((a, b) => a.firstName.localeCompare(b.firstName))
+               .map((s, i) => ({ ...s, printIndex: i + 1 }));
+          }, [students]);
+
+          const ROWS_PER_COLUMN_MAX = 30; // الحد الأقصى للأسطر في العمود كما في الكود الحالي
           const COLUMNS_PER_PAGE = 2;
-          const ITEMS_PER_PAGE = ROWS_PER_COLUMN * COLUMNS_PER_PAGE;
-          const totalPages = Math.ceil(sortedStudents.length / ITEMS_PER_PAGE);
+          const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
+          
+          const totalItems = sortedStudents.length;
+          // حساب عدد الصفحات الكلي بناءً على السعة القصوى
+          const totalPages = Math.ceil(totalItems / MAX_ITEMS_PER_PAGE);
           const printDate = new Date().toLocaleDateString('ar-EG');
           
+          // 2. خوارزمية التوزيع المتوازن (Balanced Pagination)
           const pages = [];
-          for (let i = 0; i < sortedStudents.length; i += ITEMS_PER_PAGE) {
-            pages.push(sortedStudents.slice(i, i + ITEMS_PER_PAGE));
+          let startIndex = 0;
+          
+          for (let i = 0; i < totalPages; i++) {
+            const remainingItems = totalItems - startIndex;
+            const remainingPages = totalPages - i;
+            
+            // نأخذ (المتبقي / الصفحات المتبقية) ونقرب للأعلى
+            // مثال: 61 عنصر، صفحتين (السعة 60). الصفحة الأولى تأخذ ceil(61/2) = 31، الثانية 30.
+            // بدلاً من 60 ثم 1.
+            const itemsForThisPage = Math.ceil(remainingItems / remainingPages);
+            
+            pages.push(sortedStudents.slice(startIndex, startIndex + itemsForThisPage));
+            startIndex += itemsForThisPage;
           }
           
           return (
             <div className="print-only text-[9pt] dir-rtl">
-              {pages.map((pageStudents, pageIndex) => (
-                <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page relative">
-                   {/* Print Header with Date and Page Number */}
-                   <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full">
-                        <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
-                        <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
-                        <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
-                   </div>
+              {pages.map((pageStudents, pageIndex) => {
+                // حساب توزيع الأعمدة داخل هذه الصفحة تحديداً
+                const itemsInThisPage = pageStudents.length;
+                // نوزع العناصر على عمودين بالتساوي داخل هذه الصفحة
+                const rowsInThisPage = Math.ceil(itemsInThisPage / COLUMNS_PER_PAGE);
 
-                   <div className="flex flex-row gap-[1cm] h-full">
-                     {[0, 1].map((colIndex) => {
-                       const colStart = colIndex * ROWS_PER_COLUMN;
-                       const colStudents = pageStudents.slice(colStart, colStart + ROWS_PER_COLUMN);
-                       return (
-                         <div key={colIndex} className="flex-1 flex flex-col h-full border border-black/10">
-                           {colStudents.length > 0 && (
-                             <table className="w-full border-collapse border border-black table-fixed h-full">
-                               <thead>
-                                 <tr className="bg-gray-100 h-[30px]">
-                                   <th className="border border-black p-1 text-center w-[30px] text-[8pt]">ت</th>
-                                   <th className="border border-black p-1 text-right">الاسم الكامل</th>
-                                   <th className="border border-black p-1 text-center w-[35px] font-bold text-[8pt]">ق</th>
-                                   <th className="border border-black p-1 text-center w-[35px] font-bold text-[8pt]">ص</th>
-                                 </tr>
-                               </thead>
-                               <tbody>
-                                 {colStudents.map((s, idx) => {
-                                   const globalIndex = (pageIndex * ITEMS_PER_PAGE) + colStart + idx + 1;
-                                   return (
-                                     <tr key={s.id} className="h-[28px]">
-                                       <td className="border border-black px-1 text-center font-medium">{globalIndex}</td>
-                                       <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
-                                         {cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}
-                                       </td>
-                                       <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle dir-ltr">{s.regNumber}</td>
-                                       <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle">{s.pageNumber}</td>
+                return (
+                    <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page relative">
+                       {/* Print Header with Date and Page Number */}
+                       <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full">
+                            <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
+                            <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
+                            <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
+                       </div>
+
+                       <div className="flex flex-row gap-[1cm] h-full">
+                         {[0, 1].map((colIndex) => {
+                           const colStart = colIndex * rowsInThisPage;
+                           const colStudents = pageStudents.slice(colStart, colStart + rowsInThisPage);
+                           return (
+                             <div key={colIndex} className="flex-1 flex flex-col h-full border border-black/10">
+                               {colStudents.length > 0 && (
+                                 <table className="w-full border-collapse border border-black table-fixed h-full">
+                                   <thead>
+                                     <tr className="bg-gray-100 h-[30px]">
+                                       <th className="border border-black p-1 text-center w-[30px] text-[8pt]">ت</th>
+                                       <th className="border border-black p-1 text-right">الاسم الكامل</th>
+                                       <th className="border border-black p-1 text-center w-[35px] font-bold text-[8pt]">ق</th>
+                                       <th className="border border-black p-1 text-center w-[35px] font-bold text-[8pt]">ص</th>
                                      </tr>
-                                   );
-                                 })}
-                               </tbody>
-                             </table>
-                           )}
-                         </div>
-                       );
-                     })}
-                   </div>
-                </div>
-              ))}
+                                   </thead>
+                                   <tbody>
+                                     {colStudents.map((s) => {
+                                       return (
+                                         <tr key={s.id} className="h-[28px]">
+                                           <td className="border border-black px-1 text-center font-medium">{s.printIndex}</td>
+                                           <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
+                                             {cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}
+                                           </td>
+                                           <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle dir-ltr">{s.regNumber}</td>
+                                           <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle">{s.pageNumber}</td>
+                                         </tr>
+                                       );
+                                     })}
+                                   </tbody>
+                                 </table>
+                               )}
+                             </div>
+                           );
+                         })}
+                       </div>
+                    </div>
+                );
+              })}
             </div>
           );
         };
