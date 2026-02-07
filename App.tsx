@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, LogOut, Settings, Search, Plus, Printer, 
-  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter
+  Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck
 } from 'lucide-react';
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut, User } from 'firebase/auth';
 import { 
@@ -23,7 +23,6 @@ const Modal: React.FC<{ children: React.ReactNode, onClose: () => void }> = ({ c
   </div>
 );
 
-// --- Elegant Single Student Print Component ---
 const SingleStudentPrint: React.FC<{ student: Student }> = ({ student }) => {
   const statusLabels: Record<string, string> = {
     'active': 'مستمر',
@@ -34,16 +33,11 @@ const SingleStudentPrint: React.FC<{ student: Student }> = ({ student }) => {
   return (
     <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-8">
       <div className="w-full max-w-[21cm] border-[3px] border-double border-slate-800 p-8 rounded-xl relative overflow-hidden">
-        {/* Decorative corner */}
         <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100 -translate-y-1/2 translate-x-1/2 rounded-full opacity-50"></div>
-        
-        {/* Header */}
         <div className="text-center border-b-2 border-slate-200 pb-6 mb-8 relative z-10">
           <h1 className="text-3xl font-bold text-slate-900 mb-2">بطاقة معلومات الطالب</h1>
           <p className="text-slate-500 font-medium">نظام سجلات الطلاب العام</p>
         </div>
-
-        {/* Main Info Grid */}
         <div className="grid grid-cols-12 gap-6 relative z-10">
           <div className="col-span-12 md:col-span-8 space-y-6">
              <div className="flex flex-col">
@@ -165,15 +159,11 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Data State
   const [students, setStudents] = useState<Student[]>([]);
   const [view, setView] = useState<'list' | 'add' | 'edit' | 'settings' | 'detail'>('list');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  
-  // Custom Delete Modal State
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
 
-  // Filter State
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState(''); 
   const [selectedRegFilter, setSelectedRegFilter] = useState(''); 
@@ -181,32 +171,24 @@ export default function App() {
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [letterFilter, setLetterFilter] = useState('ALL');
   
-  // Print Mode State
   const [printMode, setPrintMode] = useState<'list' | 'single'>('list');
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printRegInput, setPrintRegInput] = useState('');
 
-  // Infinite Scroll State
   const [visibleCount, setVisibleCount] = useState(50);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   
-  // Scroll To Top State
   const [showTopBtn, setShowTopBtn] = useState(false);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
-
-  // Import State
   const [importing, setImporting] = useState(false);
-
-  // Form State
   const [nameWarning, setNameWarning] = useState('');
-  // In the monolithic code, formData state was used for temp storage, but here we can check duplicates directly in input
 
-  // Derived Data
   const uniqueRegNumbers = useMemo(() => {
     const regs = new Set(students.map(s => s.regNumber));
     return Array.from(regs).sort((a, b) => Number(a) - Number(b));
   }, [students]);
 
+  // Load cache immediately for maximum speed
   useEffect(() => {
     const cachedData = localStorage.getItem('students_cache');
     if (cachedData) {
@@ -214,7 +196,7 @@ export default function App() {
         const parsed = JSON.parse(cachedData);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setStudents(parsed);
-          setLoading(false);
+          setLoading(false); // UI becomes interactive instantly
         }
       } catch (e) { console.error("Cache load failed", e); }
     }
@@ -230,7 +212,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Debounce
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300); 
     return () => clearTimeout(timer);
@@ -244,9 +225,7 @@ export default function App() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => prev + 50);
-        }
+        if (entries[0].isIntersecting) setVisibleCount((prev) => prev + 50);
       },
       { threshold: 0.5, rootMargin: '100px' }
     );
@@ -255,16 +234,12 @@ export default function App() {
   }, [students.length, debouncedQuery]); 
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 400) setShowTopBtn(true);
-      else setShowTopBtn(false);
-    };
+    const handleScroll = () => setShowTopBtn(window.scrollY > 400);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const fetchStudents = async () => {
-    if (students.length === 0) setLoading(true); // Only show loading if no cache
     try {
       const querySnapshot = await getDocs(studentsCollection);
       const loadedStudents: Student[] = [];
@@ -285,8 +260,8 @@ export default function App() {
        s.id !== selectedStudentId
     );
     if (matches.length > 0) {
-      const info = matches.slice(0, 5).map(m => `• ${m.firstName} (قيد: ${m.regNumber} - صفحة: ${m.pageNumber})`).join('\n');
-      setNameWarning(`تنبيه: يوجد ${matches.length} طلاب بأسماء مشابهة:\n${info}${matches.length > 5 ? '\n...والمزيد' : ''}`);
+      const info = matches.slice(0, 5).map(m => `• ${m.firstName} (${m.regNumber})`).join('\n');
+      setNameWarning(`تنبيه: يوجد ${matches.length} طلاب بأسماء مشابهة:\n${info}`);
     } else {
       setNameWarning('');
     }
@@ -295,18 +270,22 @@ export default function App() {
   const filteredStudents = useMemo(() => {
     let result = students;
 
+    // Filter by Reg Number FIRST
     if (selectedRegFilter) {
        result = result.filter(s => s.regNumber === selectedRegFilter);
     }
 
+    // Then Filter by Letter
     if (letterFilter !== 'ALL') {
        result = result.filter(s => s.firstName.startsWith(letterFilter));
     }
 
+    // Then Filter by Status
     if (statusFilter !== 'ALL') {
        result = result.filter(s => (s.status || 'active') === statusFilter);
     }
 
+    // Then SEARCH WITHIN THE ALREADY FILTERED RESULTS
     if (debouncedQuery) {
        const q = debouncedQuery.toLowerCase();
        result = result.filter(s => 
@@ -359,10 +338,8 @@ export default function App() {
        localStorage.removeItem('students_cache');
        alert("تم الحذف بنجاح");
        setView('list');
-     } catch (e) {
-       console.error(e);
-       alert("حدث خطأ أثناء الحذف");
-     } finally { setLoading(false); }
+     } catch (e) { alert("خطأ أثناء الحذف"); } 
+     finally { setLoading(false); }
   };
 
   const handleSaveStudent = async (e: React.FormEvent<HTMLFormElement>, isEdit: boolean) => {
@@ -377,12 +354,7 @@ export default function App() {
       status: formData.get('status') as string || 'active'
     };
 
-    const exists = students.some(s => 
-      s.id !== selectedStudentId && 
-      s.regNumber === data.regNumber && 
-      s.pageNumber === data.pageNumber
-    );
-    if (exists) {
+    if (students.some(s => s.id !== selectedStudentId && s.regNumber === data.regNumber && s.pageNumber === data.pageNumber)) {
       alert('خطأ: هذا القيد مسجل في نفس الصفحة مسبقاً!');
       return;
     }
@@ -453,14 +425,13 @@ export default function App() {
          }
       }
       if (batchCount > 0) await currentBatch.commit();
-
       if (count > 0) {
         const updatedList = [...newItems, ...students];
         setStudents(updatedList);
         localStorage.setItem('students_cache', JSON.stringify(updatedList));
         alert(`تم استيراد ${count} سجل بنجاح`);
       } else { alert("لم يتم العثور على سجلات جديدة"); }
-    } catch (err) { console.error(err); alert("خطأ أثناء الاستيراد"); } 
+    } catch (err) { alert("خطأ أثناء الاستيراد"); } 
     finally { setImporting(false); e.target.value = ''; }
   };
   
@@ -480,29 +451,22 @@ export default function App() {
      setTimeout(() => window.print(), 300);
   };
 
-  // Render Views
-  if (loading) return <div className="h-screen flex items-center justify-center text-slate-500">جاري التحميل...</div>;
+  if (loading && students.length === 0) return <div className="h-screen flex items-center justify-center text-slate-500">جاري التحميل...</div>;
   if (!user) return <Login />;
 
-  const stats: Stats = {
-    totalStudents: students.length,
-    uniqueRegNumbers: new Set(students.map(s => s.regNumber)).size,
-    totalPages: new Set(students.map(s => s.pageNumber).filter(p => !!p)).size
+  const stats = {
+    total: students.length,
+    active: students.filter(s => (s.status || 'active') === 'active').length,
+    regs: uniqueRegNumbers.length,
+    pages: new Set(students.map(s => s.pageNumber).filter(p => !!p)).size
   };
   
   let studentsToPrint: Student[] = [];
   let printTitle = "فهرس القيد العام";
-
   if (printMode === 'list') {
-      if (selectedRegFilter) {
-          studentsToPrint = filteredStudents;
-          printTitle = `فهرس القيد ${selectedRegFilter}`;
-      } else {
-          studentsToPrint = filteredStudents;
-          printTitle = "فهرس القيد العام";
-      }
+      studentsToPrint = filteredStudents;
+      printTitle = selectedRegFilter ? `فهرس القيد ${selectedRegFilter}` : "فهرس القيد العام";
   }
-
   const singleStudentData = students.find(s => s.id === selectedStudentId);
 
   return (
@@ -523,34 +487,30 @@ export default function App() {
 
         <main className="max-w-7xl mx-auto px-4 py-6">
             <div className="animate-fade-in space-y-5">
-              {/* Compact Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <StatCard title="الطلاب" value={stats.totalStudents} icon={<Users size={16}/>} colorClass="bg-blue-500" />
-                <StatCard title="القيود" value={stats.uniqueRegNumbers} icon={<FileSpreadsheet size={16}/>} colorClass="bg-emerald-500" />
-                <StatCard title="الصفحات" value={stats.totalPages} icon={<FileText size={16}/>} colorClass="bg-purple-500" />
-                <StatCard title="تارك/منقول" value={students.filter(s=>s.status!=='active').length} icon={<AlertTriangle size={16}/>} colorClass="bg-amber-500" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={16}/>} colorClass="bg-blue-500" />
+                <StatCard title="الطلاب المستمرون" value={stats.active} icon={<UserCheck size={16}/>} colorClass="bg-emerald-500" />
+                <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={16}/>} colorClass="bg-indigo-500" />
+                <StatCard title="الصفحات" value={stats.pages} icon={<FileText size={16}/>} colorClass="bg-purple-500" />
               </div>
 
               <div className="flex flex-col md:flex-row gap-3">
                 <div className="flex-1 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-2">
                    <div className="flex items-center w-full sm:w-auto flex-1 gap-2">
                        <Search className="text-slate-400 mr-1" size={18} />
-                       <input className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 bg-transparent min-w-[120px]" placeholder="بحث بالاسم..." value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); if(e.target.value) setSelectedRegFilter(''); }} />
+                       <input className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 bg-transparent min-w-[120px]" placeholder="بحث بالاسم..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                        {searchQuery && <button onClick={() => setSearchQuery('')} className="p-1 text-slate-400 hover:text-red-500"><X size={16}/></button>}
                    </div>
                    
                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 sm:border-r border-slate-100 pt-2 sm:pt-0 sm:pr-2 mt-2 sm:mt-0">
-                       {/* Reg Dropdown in Filter */}
                        <div className="relative">
                            <select 
                                value={selectedRegFilter} 
-                               onChange={(e) => { setSelectedRegFilter(e.target.value); if(e.target.value) setSearchQuery(''); }}
+                               onChange={(e) => setSelectedRegFilter(e.target.value)}
                                className="bg-transparent text-sm text-slate-600 outline-none cursor-pointer p-1 pr-6 appearance-none hover:text-sky-600 font-medium min-w-[100px]"
                            >
                                <option value="">جميع القيود</option>
-                               {uniqueRegNumbers.map(r => (
-                                   <option key={r} value={r}>قيد {r}</option>
-                               ))}
+                               {uniqueRegNumbers.map(r => <option key={r} value={r}>قيد {r}</option>)}
                            </select>
                            <Filter size={14} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                        </div>
@@ -600,15 +560,17 @@ export default function App() {
                       {displayedStudents.map((s, idx) => (
                         <tr key={s.id} onClick={() => { setSelectedStudentId(s.id); setView('detail'); }} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
                           <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
-                          <td className="p-3 font-semibold text-slate-800 flex items-center gap-2">
-                            <div className={`w-2.5 h-2.5 rounded-full ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                            {s.firstName} <span className="text-slate-400 font-normal text-xs">{s.lastName}</span>
+                          <td className="p-3">
+                             <div className="flex items-start gap-2.5 pt-0.5">
+                                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                <span className="font-semibold text-slate-800 leading-relaxed">{s.firstName} <span className="text-slate-400 font-normal text-xs">{s.lastName}</span></span>
+                             </div>
                           </td>
                           <td className="p-3 text-center"><span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-mono font-bold dir-ltr">{s.regNumber}</span></td>
                           <td className="p-3 text-center"><span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-mono font-bold border border-amber-200">{s.pageNumber}</span></td>
                         </tr>
                       ))}
-                      {displayedStudents.length === 0 && <tr><td colSpan={4} className="p-10 text-center text-slate-400">لا توجد بيانات</td></tr>}
+                      {displayedStudents.length === 0 && <tr><td colSpan={4} className="p-10 text-center text-slate-400">لا توجد بيانات تطابق هذا البحث في هذا القيد</td></tr>}
                     </tbody>
                   </table>
                   
@@ -620,7 +582,7 @@ export default function App() {
                   )}
                   
                    {displayedStudents.length > 0 && displayedStudents.length === filteredStudents.length && (
-                    <div className="p-6 text-center w-full text-slate-400 text-xs border-t border-slate-50">
+                    <div className="p-4 text-center w-full text-slate-400 text-xs border-t border-slate-50">
                        تم عرض جميع النتائج ({filteredStudents.length})
                     </div>
                   )}
@@ -778,13 +740,12 @@ export default function App() {
           )}
 
           {showPrintModal && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowPrintModal(false)}>
-               <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()}>
+            <Modal onClose={() => setShowPrintModal(false)}>
+               <div className="bg-white rounded-2xl w-full p-6 shadow-2xl">
                   <h3 className="text-lg font-bold text-center mb-6">خيارات الطباعة</h3>
                   <div className="space-y-3">
                      <button onClick={() => { setSelectedRegFilter(''); handlePrint(); setShowPrintModal(false); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 text-sm">طباعة السجل بالكامل</button>
                      <div className="text-center text-slate-400 text-xs">- أو -</div>
-                     
                      <div className="relative">
                        <select 
                            value={printRegInput}
@@ -792,18 +753,15 @@ export default function App() {
                            className="w-full p-3 border rounded-xl outline-none focus:border-blue-500 text-center text-sm appearance-none bg-white font-mono dir-ltr"
                        >
                            <option value="">اختر رقم القيد...</option>
-                           {uniqueRegNumbers.map(r => (
-                               <option key={r} value={r}>قيد {r}</option>
-                           ))}
+                           {uniqueRegNumbers.map(r => <option key={r} value={r}>قيد {r}</option>)}
                        </select>
                        <ArrowUp size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-180" />
                      </div>
-
                      <button onClick={() => { handlePrint(printRegInput); setShowPrintModal(false); }} className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 text-sm" disabled={!printRegInput}>طباعة القيد المحدد</button>
                      <button onClick={() => setShowPrintModal(false)} className="w-full py-2 text-slate-400 hover:text-slate-600 text-sm">إلغاء</button>
                   </div>
                </div>
-            </div>
+            </Modal>
           )}
 
            <button
@@ -825,12 +783,8 @@ export default function App() {
                         <span className="text-red-500 font-bold text-sm">هذا الإجراء نهائي ولا يمكن التراجع عنه.</span>
                     </p>
                     <div className="grid grid-cols-2 gap-4">
-                        <button onClick={() => setShowDeleteAllConfirm(false)} className="py-3 px-6 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
-                            إلغاء
-                        </button>
-                        <button onClick={executeDeleteAll} className="py-3 px-6 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30">
-                            نعم، حذف الكل
-                        </button>
+                        <button onClick={() => setShowDeleteAllConfirm(false)} className="py-3 px-6 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">إلغاء</button>
+                        <button onClick={executeDeleteAll} className="py-3 px-6 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30">نعم، حذف الكل</button>
                     </div>
                 </div>
             </Modal>
@@ -848,18 +802,8 @@ export default function App() {
                     <span className="text-red-500 font-semibold">لا يمكن استرجاع البيانات بعد الحذف.</span>
                 </p>
                 <div className="flex gap-3">
-                    <button 
-                    onClick={() => setStudentToDelete(null)}
-                    className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors"
-                    >
-                    إلغاء
-                    </button>
-                    <button 
-                    onClick={confirmDeleteStudent}
-                    className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
-                    >
-                    نعم، حذف
-                    </button>
+                    <button onClick={() => setStudentToDelete(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">إلغاء</button>
+                    <button onClick={confirmDeleteStudent} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20">نعم، حذف</button>
                 </div>
                 </div>
             </Modal>
@@ -867,12 +811,8 @@ export default function App() {
         </main>
       </div>
       
-      {printMode === 'list' && (
-         <PrintView students={studentsToPrint} title={printTitle} />
-      )}
-      {printMode === 'single' && singleStudentData && (
-         <SingleStudentPrint student={singleStudentData} />
-      )}
+      {printMode === 'list' && <PrintView students={studentsToPrint} title={printTitle} />}
+      {printMode === 'single' && singleStudentData && <SingleStudentPrint student={singleStudentData} />}
     </>
   );
 }
