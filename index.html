@@ -379,7 +379,7 @@
 
         const PrintView = ({ students, title }) => {
           const sortedStudents = [...students].sort((a, b) => a.firstName.localeCompare(b.firstName));
-          const ROWS_PER_COLUMN = 33;
+          const ROWS_PER_COLUMN = 30;
           const COLUMNS_PER_PAGE = 2;
           const ITEMS_PER_PAGE = ROWS_PER_COLUMN * COLUMNS_PER_PAGE;
           const totalPages = Math.ceil(sortedStudents.length / ITEMS_PER_PAGE);
@@ -393,9 +393,9 @@
           return (
             <div className="print-only text-[9pt] dir-rtl">
               {pages.map((pageStudents, pageIndex) => (
-                <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border px-[1cm] pt-[0.5cm] pb-[0.5cm] break-after-page relative">
+                <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page relative">
                    {/* Print Header with Date and Page Number */}
-                   <div className="flex justify-between items-end border-b-2 border-black pb-1 mb-2 w-full">
+                   <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full">
                         <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
                         <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
                         <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
