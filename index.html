@@ -89,7 +89,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -121,6 +121,12 @@
         const cleanName = (name) => {
             if (!name) return "";
             return name.replace(/\s+\d+$/, '');
+        };
+
+        // Helper to format date for input type="date"
+        const formatDateForInput = (timestamp) => {
+            if (!timestamp) return new Date().toISOString().split('T')[0];
+            return new Date(timestamp).toISOString().split('T')[0];
         };
 
         const exportToExcel = (students) => {
@@ -441,11 +447,14 @@
           
           const [showPrintModal, setShowPrintModal] = useState(false);
           const [printRegInput, setPrintRegInput] = useState('');
-          const [visibleCount, setVisibleCount] = useState(50);
+          const [visibleCount, setVisibleCount] = useState(150); // Increased default limit
           const loadMoreRef = useRef(null);
           const [importing, setImporting] = useState(false);
           const [nameWarning, setNameWarning] = useState('');
           const [printMode, setPrintMode] = useState('list');
+          
+          // Scroll To Top State
+          const [showScrollTop, setShowScrollTop] = useState(false);
 
           // Alert & Confirm States
           const [alertConfig, setAlertConfig] = useState(null);
@@ -501,9 +510,18 @@
           }, [search]);
 
           useEffect(() => {
-            setVisibleCount(50);
+            setVisibleCount(150);
             window.scrollTo(0, 0);
           }, [debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter, view]);
+
+          // Scroll Event Listener
+          useEffect(() => {
+            const handleScroll = () => {
+                setShowScrollTop(window.scrollY > 300);
+            };
+            window.addEventListener('scroll', handleScroll);
+            return () => window.removeEventListener('scroll', handleScroll);
+          }, []);
 
           // Infinite Scroll Observer
           useEffect(() => {
@@ -542,6 +560,10 @@
               localStorage.setItem('students_cache', JSON.stringify(data));
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
+          };
+          
+          const scrollToTop = () => {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
           };
 
           const handleImport = async (e) => {
@@ -904,6 +926,17 @@
                     </div>
                 </main>
 
+                {/* Scroll To Top Button */}
+                {showScrollTop && (
+                    <button 
+                        onClick={scrollToTop} 
+                        className="fixed bottom-6 left-6 bg-slate-900 text-white p-3 rounded-full shadow-xl shadow-slate-900/30 hover:bg-slate-800 transition-all z-30 animate-fade-in print:hidden"
+                        title="العودة للأعلى"
+                    >
+                        <ArrowUp size={24} />
+                    </button>
+                )}
+
                 {/* Modals - REORDERED FOR Z-INDEX STACKING */}
                 
                 {(view === 'add' || view === 'edit') && (
@@ -933,17 +966,26 @@
                                 return;
                             }
 
+                            // Handle Date
+                            const dateStr = form.get('createdAt');
+                            const createdAt = dateStr ? new Date(dateStr).getTime() : Date.now();
+
                             const data = {
                                 firstName: form.get('firstName'),
                                 lastName: form.get('lastName'),
                                 regNumber: reg,
                                 pageNumber: page,
                                 notes: form.get('notes'),
-                                status: form.get('status') || 'active'
+                                status: form.get('status') || 'active',
+                                createdAt: view === 'edit' ? createdAt : createdAt // In edit we update, in add we set
                             };
                             try {
-                                if (view === 'edit') await updateDoc(doc(db, "students", selectedId), data);
-                                else await addDoc(studentsCollection, { ...data, createdAt: Date.now(), isDeleted: false });
+                                if (view === 'edit') {
+                                    // Preserve createdAt if user didn't change it, or update if they did. 
+                                    // Actually the form input will have the value, so we just use data.createdAt
+                                    await updateDoc(doc(db, "students", selectedId), data);
+                                }
+                                else await addDoc(studentsCollection, { ...data, isDeleted: false });
                                 fetchStudents();
                                 setView('list');
                                 showAlert('تم حفظ البيانات بنجاح', 'success');
@@ -981,6 +1023,18 @@
                                 <input name="pageNumber" required onInput={handleNumericInput} className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
                              </div>
                            </div>
+                           
+                           {/* Added Date Field */}
+                           <div>
+                                <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">تاريخ التسجيل</label>
+                                <input 
+                                    type="date" 
+                                    name="createdAt" 
+                                    className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold shadow-inner" 
+                                    defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} 
+                                />
+                           </div>
+
                            <div>
                               <label className="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">حالة الطالب الحالية</label>
                               <div className="grid grid-cols-3 gap-3">
@@ -1065,12 +1119,25 @@
                                   <h1 className="text-2xl font-bold text-slate-800">{cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}</h1>
                                   <StatusBadge status={s.status} />
                                </div>
-                               <div className="text-slate-400 text-xs">رقم القيد: {s.regNumber} | صفحة: {s.pageNumber}</div>
+                               <div className="text-slate-400 text-xs flex items-center gap-1"><Clock size={12}/> تمت الإضافة: {new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
                              </div>
                              <button onClick={() => setView('list')} className="p-2 hover:bg-slate-200 rounded-full"><X size={20}/></button>
                            </div>
-                           <div className="p-6 flex flex-col gap-3">
-                               {s.notes && <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 mb-2 border">{s.notes}</div>}
+                           <div className="p-6 flex flex-col gap-4">
+                               {/* Highlighted Reg & Page Numbers */}
+                               <div className="grid grid-cols-2 gap-4">
+                                   <div className="bg-violet-50 border border-violet-100 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm">
+                                       <span className="text-xs font-bold text-violet-400 uppercase tracking-widest mb-1">رقم القيد</span>
+                                       <span className="text-4xl font-mono font-black text-violet-700">{s.regNumber}</span>
+                                   </div>
+                                   <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl flex flex-col items-center justify-center text-center shadow-sm">
+                                       <span className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-1">رقم الصفحة</span>
+                                       <span className="text-4xl font-mono font-black text-orange-600">{s.pageNumber}</span>
+                                   </div>
+                               </div>
+
+                               {s.notes && <div className="bg-slate-50 p-4 rounded-xl text-sm text-slate-600 border relative"><span className="absolute -top-2 right-4 bg-white px-1 text-xs text-slate-400 font-bold">ملاحظات</span>{s.notes}</div>}
+                               
                                <button onClick={() => handleSinglePrint(s)} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Printer size={18}/> طباعة بطاقة الطالب</button>
                                <div className="grid grid-cols-2 gap-2">
                                   <button onClick={() => setView('edit')} className="bg-slate-100 text-slate-700 py-2.5 rounded-xl font-bold hover:bg-slate-200">تعديل</button>
