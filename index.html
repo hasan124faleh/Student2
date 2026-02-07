@@ -37,25 +37,31 @@
       /* Print Styles */
       @media print {
         @page { size: A4; margin: 10mm; } 
-        body { background-color: white; margin: 0; }
+        html, body { 
+            background-color: white; 
+            margin: 0; 
+            padding: 0;
+            height: auto;
+        }
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         
-        /* Ensure container fits the page without forcing huge height that causes overflow */
+        /* Container for each page */
         .print-page-container {
             width: 100%;
-            height: 100vh; /* Use viewport height of the print page */
+            height: 276mm; /* Fixed height for A4 printable area (approx 297mm - 20mm margins) */
             page-break-after: always;
             break-after: page;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            justify-content: flex-start; /* Start content from top */
         }
         .print-page-container:last-child {
             page-break-after: auto;
             break-after: auto;
+            height: auto;
         }
       }
       .print-only { display: none; }
@@ -162,7 +168,6 @@
         };
 
         const generateTemplate = () => {
-          // قوائم أسماء لتوليد أسماء رباعية
           const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم'];
           const secondNames = ['حسين', 'حسن', 'عبدالرحمن', 'محمود', 'مصطفى', 'جعفر', 'عباس', 'كاظم', 'رضا', 'مهدي'];
           const thirdNames = ['علي', 'محمد', 'جاسم', 'كريم', 'خلف', 'سالم', 'حمزة', 'فاضل'];
@@ -177,7 +182,7 @@
             const n4 = fourthNames[Math.floor(Math.random() * fourthNames.length)];
             const title = titles[Math.floor(Math.random() * titles.length)];
             
-            const fullName = `${n1} ${n2} ${n3} ${n4}`; // اسم رباعي
+            const fullName = `${n1} ${n2} ${n3} ${n4}`;
             
             const regNum = (i % 10) + 1;
             const pageNum = Math.floor(i / 10) + 1;
@@ -217,10 +222,8 @@
         // ==========================================
         // UI COMPONENTS
         // ==========================================
-        // Skeleton Loader Component
         const SkeletonLoader = () => (
           <div className="animate-pulse space-y-6">
-            {/* Stats Cards Skeleton */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 h-24 flex flex-col items-center justify-center gap-2">
@@ -230,11 +233,7 @@
                 </div>
               ))}
             </div>
-
-            {/* Search Bar Skeleton */}
             <div className="bg-white p-2 rounded-2xl border border-slate-100 h-20 md:h-14"></div>
-
-            {/* Desktop Table Skeleton */}
             <div className="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                <div className="p-4 border-b border-slate-100 flex gap-4 bg-slate-50/50">
                   <div className="h-4 w-8 bg-slate-200 rounded"></div>
@@ -257,8 +256,6 @@
                    ))}
                </div>
             </div>
-
-            {/* Mobile Cards Skeleton */}
             <div className="md:hidden space-y-3">
                {[...Array(6)].map((_, i) => (
                   <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 h-32 relative">
@@ -276,7 +273,6 @@
           </div>
         );
 
-        // Updated Modal to accept zIndex prop
         const Modal = ({ children, onClose, zIndex = "z-50" }) => (
           <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}>
             <div className="w-full max-w-lg relative transform transition-all scale-100" onClick={e => e.stopPropagation()}>
@@ -285,7 +281,6 @@
           </div>
         );
 
-        // Custom Alert Component
         const AlertModal = ({ message, type, onClose }) => {
             const isError = type === 'error';
             return (
@@ -304,7 +299,6 @@
             );
         };
 
-        // Custom Confirm Component
         const ConfirmModal = ({ title, message, onConfirm, onCancel, confirmText = "نعم", cancelText = "إلغاء", isDestructive = false }) => {
             return (
                 <Modal onClose={onCancel} zIndex="z-[60]">
