@@ -55,21 +55,18 @@
     
     <!-- Import Map -->
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-    "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "firebase/": "https://esm.sh/firebase@^12.9.0/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs"
+      }
+    }
+    </script>
 </head>
 <body>
     <div id="root"></div>
@@ -298,6 +295,49 @@
           );
         };
 
+        const Login = () => {
+          const [email, setEmail] = useState('');
+          const [password, setPassword] = useState('');
+          const [error, setError] = useState('');
+          const [loading, setLoading] = useState(false);
+
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            setError('');
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch (err) { setError('بيانات الدخول غير صحيحة'); } 
+            finally { setLoading(false); }
+          };
+
+          return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+                     <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800">تسجيل الدخول</h2>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">البريد الإلكتروني</label>
+                    <input type="email" required className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-left" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">كلمة المرور</label>
+                    <input type="password" required className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-left" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  </div>
+                  {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all">
+                    {loading ? 'جاري التحقق...' : 'دخول'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          );
+        };
+
         // ==========================================
         // MAIN APP
         // ==========================================
@@ -437,9 +477,14 @@
              setLoading(true);
              try {
                const allIds = students.map(s => s.id);
-               const batch = writeBatch(db); // Simple batch for demo, in production chunks of 500 needed
-               allIds.forEach(id => batch.delete(doc(db, "students", id)));
-               await batch.commit();
+               // Process in chunks of 400 for Firestore batch limit
+               const CHUNK_SIZE = 400; 
+               for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
+                  const batch = writeBatch(db);
+                  const chunk = allIds.slice(i, i + CHUNK_SIZE);
+                  chunk.forEach(id => batch.delete(doc(db, "students", id)));
+                  await batch.commit();
+               }
                setStudents([]);
                localStorage.removeItem('students_cache');
                alert("تم الحذف بنجاح");
@@ -500,20 +545,12 @@
             }
           };
 
+          const handleNumericInput = (e) => {
+             e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
+          };
+
           if (loading && students.length === 0) return <div className="h-screen flex items-center justify-center font-bold text-slate-400">جاري تحميل السجلات...</div>;
-          if (!user) return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in text-center">
-                    <Users className="w-16 h-16 bg-blue-600 text-white p-3 rounded-2xl mx-auto mb-6 shadow-lg" />
-                    <h2 className="text-2xl font-bold text-slate-800 mb-6">تسجيل الدخول للنظام</h2>
-                    <form onSubmit={async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, e.target.email.value, e.target.password.value); } catch(err) { alert("بيانات غير صحيحة"); } }} className="space-y-4">
-                        <input name="email" type="email" placeholder="البريد الإلكتروني" required className="w-full px-4 py-3 rounded-xl border focus:border-blue-500 outline-none text-right" />
-                        <input name="password" type="password" placeholder="كلمة المرور" required className="w-full px-4 py-3 rounded-xl border focus:border-blue-500 outline-none text-right" />
-                        <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all">دخول</button>
-                    </form>
-                </div>
-            </div>
-          );
+          if (!user) return <Login />;
 
           return (
             <>
@@ -526,7 +563,7 @@
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={22} /></button>
-                      <button onClick={() => signOut(auth)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={22} /></button>
+                      <button onClick={() => { if(confirm("تسجيل خروج؟")) signOut(auth); }} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={22} /></button>
                     </div>
                   </div>
                 </header>
@@ -678,11 +715,11 @@
                            <div className="grid grid-cols-2 gap-4">
                              <div>
                                 <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">رقم القيد <span className="text-red-500">*</span></label>
-                                <input name="regNumber" required className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
+                                <input name="regNumber" required onInput={handleNumericInput} className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
                              </div>
                              <div>
                                 <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">رقم الصفحة <span className="text-red-500">*</span></label>
-                                <input name="pageNumber" required className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
+                                <input name="pageNumber" required onInput={handleNumericInput} className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
                              </div>
                            </div>
                            <div>
