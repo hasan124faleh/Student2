@@ -202,6 +202,65 @@
         // ==========================================
         // UI COMPONENTS
         // ==========================================
+        // Skeleton Loader Component
+        const SkeletonLoader = () => (
+          <div className="animate-pulse space-y-6">
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 h-24 flex flex-col items-center justify-center gap-2">
+                   <div className="w-10 h-10 bg-slate-200 rounded-2xl"></div>
+                   <div className="w-16 h-4 bg-slate-200 rounded"></div>
+                   <div className="w-8 h-2 bg-slate-200 rounded"></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Search Bar Skeleton */}
+            <div className="bg-white p-2 rounded-2xl border border-slate-100 h-20 md:h-14"></div>
+
+            {/* Desktop Table Skeleton */}
+            <div className="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+               <div className="p-4 border-b border-slate-100 flex gap-4 bg-slate-50/50">
+                  <div className="h-4 w-8 bg-slate-200 rounded"></div>
+                  <div className="h-4 w-32 bg-slate-200 rounded"></div>
+                  <div className="h-4 w-20 bg-slate-200 rounded mr-auto"></div>
+               </div>
+               <div className="divide-y divide-slate-50">
+                   {[...Array(8)].map((_, i) => (
+                      <div key={i} className="flex items-center p-4 gap-4">
+                         <div className="h-4 w-6 bg-slate-200 rounded"></div>
+                         <div className="flex-1 flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-slate-200"></div>
+                            <div className="space-y-2">
+                                <div className="h-4 w-48 bg-slate-200 rounded"></div>
+                            </div>
+                         </div>
+                         <div className="h-8 w-16 bg-slate-200 rounded-lg"></div>
+                         <div className="h-8 w-16 bg-slate-200 rounded-lg"></div>
+                      </div>
+                   ))}
+               </div>
+            </div>
+
+            {/* Mobile Cards Skeleton */}
+            <div className="md:hidden space-y-3">
+               {[...Array(6)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 h-32 relative">
+                      <div className="flex justify-between mb-4">
+                          <div className="h-5 w-3/4 bg-slate-200 rounded"></div>
+                          <div className="h-5 w-8 bg-slate-200 rounded"></div>
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                         <div className="h-8 w-16 bg-slate-200 rounded"></div>
+                         <div className="h-8 w-16 bg-slate-200 rounded"></div>
+                      </div>
+                  </div>
+               ))}
+            </div>
+          </div>
+        );
+
         // Updated Modal to accept zIndex prop
         const Modal = ({ children, onClose, zIndex = "z-50" }) => (
           <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}>
@@ -731,7 +790,6 @@
              e.currentTarget.value = e.currentTarget.value.replace(/[^0-9]/g, '');
           };
 
-          if (loading && students.length === 0) return <div className="h-screen flex items-center justify-center font-bold text-slate-400">جاري تحميل السجلات...</div>;
           if (!user) return <Login />;
 
           return (
@@ -752,178 +810,182 @@
                 </header>
 
                 <main className="max-w-7xl mx-auto px-4 py-6">
-                    {view === 'trash' && (
-                        <div className="mb-6 flex items-center justify-between bg-red-50 p-4 rounded-2xl border border-red-100 animate-fade-in">
-                            <div className="flex items-center gap-3 text-red-700 font-bold">
-                                <Trash2 size={24} />
-                                <h2 className="text-xl">سلة المهملات</h2>
+                    {loading && students.length === 0 ? (
+                        <SkeletonLoader />
+                    ) : (
+                        <div className="animate-fade-in space-y-6">
+                          {view === 'trash' && (
+                              <div className="mb-6 flex items-center justify-between bg-red-50 p-4 rounded-2xl border border-red-100 animate-fade-in">
+                                  <div className="flex items-center gap-3 text-red-700 font-bold">
+                                      <Trash2 size={24} />
+                                      <h2 className="text-xl">سلة المهملات</h2>
+                                  </div>
+                                  <button onClick={() => setView('list')} className="bg-white text-slate-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50">عودة للسجلات</button>
+                              </div>
+                          )}
+
+                          {view !== 'trash' && (
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass="bg-blue-600" />
+                                <StatCard title="المستمرون" value={stats.active} icon={<UserCheck size={20}/>} colorClass="bg-emerald-600" />
+                                <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={20}/>} colorClass="bg-indigo-600" />
+                                <StatCard title="تارك/منقول" value={stats.others} icon={<AlertTriangle size={20}/>} colorClass="bg-amber-500" />
                             </div>
-                            <button onClick={() => setView('list')} className="bg-white text-slate-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50">عودة للسجلات</button>
+                          )}
+
+                          {/* Search Bar Layout */}
+                          <div className="bg-white p-2 rounded-2xl border shadow-sm flex flex-col lg:flex-row gap-4">
+                            <div className="flex-1 flex flex-col gap-2">
+                                {/* Search Input */}
+                                <div className="relative flex items-center bg-slate-50 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all px-3 py-2">
+                                    <Search className="text-slate-400 flex-shrink-0 ml-2" size={20} />
+                                    <input className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-sm" placeholder={view === 'trash' ? "بحث في المحذوفات..." : "ابحث باسم الطالب..."} value={search} onChange={(e) => setSearch(e.target.value)} />
+                                    {search && <button onClick={() => setSearch('')} className="p-1 bg-slate-200 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-100 transition-colors"><X size={14}/></button>}
+                                </div>
+
+                                {/* Filters Row */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
+                                    {/* Reg Filter */}
+                                    <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
+                                        <Filter size={14} className="text-slate-400" />
+                                        <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                            <option value="">جميع القيود</option>
+                                            {uniqueRegNumbers.map(r => <option key={r} value={r}>قيد {r}</option>)}
+                                        </select>
+                                    </div>
+                                    {/* Status Filter */}
+                                    <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
+                                        <ListFilter size={14} className="text-slate-400" />
+                                        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                            <option value="ALL">كل الحالات</option>
+                                            <option value="active">مستمر</option>
+                                            <option value="transferred">منقول</option>
+                                            <option value="left">تارك</option>
+                                        </select>
+                                    </div>
+                                    {/* Sort Filter */}
+                                    <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
+                                        <SortAsc size={14} className="text-slate-400" />
+                                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                            <option value="recent">الأحدث</option>
+                                            <option value="alphabetical">أبجدي</option>
+                                        </select>
+                                    </div>
+                                    {/* Letter Filter */}
+                                    <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
+                                        <Type size={14} className="text-slate-400" />
+                                        <select value={letterFilter} onChange={e => setLetterFilter(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                            <option value="ALL">كل الحروف</option>
+                                            {arabicLetters.map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            {view !== 'trash' && (
+                                <div className="flex gap-2 w-full lg:w-auto border-t lg:border-t-0 pt-2 lg:pt-0">
+                                   <button onClick={() => { setSelectedId(null); setView('add'); setNameWarning(''); }} className="flex-1 lg:flex-none bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all transform hover:-translate-y-0.5"><Plus size={18} /> <span className="hidden xs:inline">إضافة</span></button>
+                                   <button onClick={() => setShowPrintModal(true)} className="flex-1 lg:flex-none bg-white text-slate-700 border border-slate-200 px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={18} /> <span className="hidden xs:inline">طباعة</span></button>
+                                </div>
+                            )}
+                          </div>
+
+                          {/* جدول الطلاب (Desktop View) */}
+                          <div className="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-right border-collapse">
+                                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
+                                  <tr>
+                                    <th className="p-4 w-16 text-center">#</th>
+                                    <th className="p-4">اسم الطالب</th>
+                                    <th className="p-4 w-32 text-center">رقم القيد</th>
+                                    <th className="p-4 w-28 text-center">الصفحة</th>
+                                    {view === 'trash' && <th className="p-4 w-32 text-center">إجراءات</th>}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 text-sm">
+                                  {displayed.map((s, idx) => (
+                                    <tr key={s.id} onClick={() => { if(view!=='trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all group ${view === 'trash' ? 'bg-red-50/10' : ''}`}>
+                                      <td className="p-4 text-center text-slate-400 font-mono font-medium">{idx + 1}</td>
+                                      <td className="p-4">
+                                         <div className="flex items-center gap-3">
+                                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-slate-800 text-base group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}</span>
+                                            </div>
+                                         </div>
+                                      </td>
+                                      <td className="p-4 text-center">
+                                        <span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg text-base font-bold font-mono shadow-md inline-block min-w-[60px] dir-ltr">
+                                          {s.regNumber}
+                                        </span>
+                                      </td>
+                                      <td className="p-4 text-center">
+                                        <span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg text-base font-bold font-mono shadow-md inline-block min-w-[60px]">
+                                          {s.pageNumber}
+                                        </span>
+                                      </td>
+                                      {view === 'trash' && (
+                                          <td className="p-4 text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-2 bg-emerald-100 text-emerald-600 rounded-full hover:bg-emerald-200" title="استعادة"><RotateCcw size={16}/></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handlePermanentDelete(s.id); }} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200" title="حذف نهائي"><Trash2 size={16}/></button>
+                                            </div>
+                                          </td>
+                                      )}
+                                    </tr>
+                                  ))}
+                                  {displayed.length === 0 && <tr><td colSpan={view === 'trash' ? 5 : 4} className="p-16 text-center text-slate-400 font-medium">لا توجد سجلات</td></tr>}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* قائمة الطلاب (Mobile Cards View) */}
+                          <div className="md:hidden space-y-3">
+                             {displayed.map((s, idx) => (
+                                 <div key={s.id} onClick={() => { if(view!=='trash') { setSelectedId(s.id); setView('detail'); }}} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative overflow-hidden active:scale-[0.98] transition-transform">
+                                    <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                    <div className="flex justify-between items-start pl-3">
+                                        <div className="flex flex-col gap-1">
+                                            <h3 className="font-bold text-slate-800 text-lg leading-tight">{cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}</h3>
+                                            <StatusBadge status={s.status} />
+                                        </div>
+                                        <span className="bg-slate-100 text-slate-400 text-[10px] font-mono font-bold px-2 py-1 rounded-md">#{idx + 1}</span>
+                                    </div>
+                                    <div className="mt-4 flex items-center justify-between border-t border-dashed border-slate-100 pt-3">
+                                        <div className="flex gap-2">
+                                            <div className="bg-[#5314cd] text-white px-3 py-1 rounded-lg text-sm font-bold font-mono shadow-sm flex items-center gap-1">
+                                                <span className="text-[10px] opacity-70 font-sans">قيد</span>
+                                                {s.regNumber}
+                                            </div>
+                                            <div className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm font-bold font-mono shadow-sm flex items-center gap-1">
+                                                <span className="text-[10px] opacity-70 font-sans">ص</span>
+                                                {s.pageNumber}
+                                            </div>
+                                        </div>
+                                        {view === 'trash' && (
+                                            <div className="flex gap-2">
+                                                <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><RotateCcw size={18}/></button>
+                                                <button onClick={(e) => { e.stopPropagation(); handlePermanentDelete(s.id); }} className="p-2 bg-red-100 text-red-600 rounded-lg"><Trash2 size={18}/></button>
+                                            </div>
+                                        )}
+                                    </div>
+                                 </div>
+                             ))}
+                             {displayed.length === 0 && <div className="p-10 text-center text-slate-400 font-medium bg-white rounded-2xl border border-dashed">لا توجد سجلات</div>}
+                          </div>
+                          
+                          {/* Loading Indicator */}
+                          {displayed.length > 0 && displayed.length < filtered.length && (
+                            <div ref={loadMoreRef} className="p-8 text-center w-full">
+                               <div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
+                            </div>
+                          )}
+
                         </div>
                     )}
-
-                    <div className="animate-fade-in space-y-6">
-                      {view !== 'trash' && (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass="bg-blue-600" />
-                            <StatCard title="المستمرون" value={stats.active} icon={<UserCheck size={20}/>} colorClass="bg-emerald-600" />
-                            <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={20}/>} colorClass="bg-indigo-600" />
-                            <StatCard title="تارك/منقول" value={stats.others} icon={<AlertTriangle size={20}/>} colorClass="bg-amber-500" />
-                        </div>
-                      )}
-
-                      {/* Search Bar Layout */}
-                      <div className="bg-white p-2 rounded-2xl border shadow-sm flex flex-col lg:flex-row gap-4">
-                        <div className="flex-1 flex flex-col gap-2">
-                            {/* Search Input */}
-                            <div className="relative flex items-center bg-slate-50 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all px-3 py-2">
-                                <Search className="text-slate-400 flex-shrink-0 ml-2" size={20} />
-                                <input className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-sm" placeholder={view === 'trash' ? "بحث في المحذوفات..." : "ابحث باسم الطالب..."} value={search} onChange={(e) => setSearch(e.target.value)} />
-                                {search && <button onClick={() => setSearch('')} className="p-1 bg-slate-200 rounded-full text-slate-500 hover:text-red-500 hover:bg-red-100 transition-colors"><X size={14}/></button>}
-                            </div>
-
-                            {/* Filters Row */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
-                                {/* Reg Filter */}
-                                <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
-                                    <Filter size={14} className="text-slate-400" />
-                                    <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
-                                        <option value="">جميع القيود</option>
-                                        {uniqueRegNumbers.map(r => <option key={r} value={r}>قيد {r}</option>)}
-                                    </select>
-                                </div>
-                                {/* Status Filter */}
-                                <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
-                                    <ListFilter size={14} className="text-slate-400" />
-                                    <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
-                                        <option value="ALL">كل الحالات</option>
-                                        <option value="active">مستمر</option>
-                                        <option value="transferred">منقول</option>
-                                        <option value="left">تارك</option>
-                                    </select>
-                                </div>
-                                {/* Sort Filter */}
-                                <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
-                                    <SortAsc size={14} className="text-slate-400" />
-                                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
-                                        <option value="recent">الأحدث</option>
-                                        <option value="alphabetical">أبجدي</option>
-                                    </select>
-                                </div>
-                                {/* Letter Filter */}
-                                <div className="bg-slate-50 rounded-xl px-2 py-1.5 border border-slate-100 flex items-center gap-2">
-                                    <Type size={14} className="text-slate-400" />
-                                    <select value={letterFilter} onChange={e => setLetterFilter(e.target.value)} className="bg-transparent w-full text-xs font-bold text-slate-700 outline-none cursor-pointer">
-                                        <option value="ALL">كل الحروف</option>
-                                        {arabicLetters.map(l => <option key={l} value={l}>{l}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        {view !== 'trash' && (
-                            <div className="flex gap-2 w-full lg:w-auto border-t lg:border-t-0 pt-2 lg:pt-0">
-                               <button onClick={() => { setSelectedId(null); setView('add'); setNameWarning(''); }} className="flex-1 lg:flex-none bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all transform hover:-translate-y-0.5"><Plus size={18} /> <span className="hidden xs:inline">إضافة</span></button>
-                               <button onClick={() => setShowPrintModal(true)} className="flex-1 lg:flex-none bg-white text-slate-700 border border-slate-200 px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={18} /> <span className="hidden xs:inline">طباعة</span></button>
-                            </div>
-                        )}
-                      </div>
-
-                      {/* جدول الطلاب (Desktop View) */}
-                      <div className="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-right border-collapse">
-                            <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
-                              <tr>
-                                <th className="p-4 w-16 text-center">#</th>
-                                <th className="p-4">اسم الطالب</th>
-                                <th className="p-4 w-32 text-center">رقم القيد</th>
-                                <th className="p-4 w-28 text-center">الصفحة</th>
-                                {view === 'trash' && <th className="p-4 w-32 text-center">إجراءات</th>}
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50 text-sm">
-                              {displayed.map((s, idx) => (
-                                <tr key={s.id} onClick={() => { if(view!=='trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all group ${view === 'trash' ? 'bg-red-50/10' : ''}`}>
-                                  <td className="p-4 text-center text-slate-400 font-mono font-medium">{idx + 1}</td>
-                                  <td className="p-4">
-                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                        <div className="flex flex-col">
-                                            <span className="font-bold text-slate-800 text-base group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}</span>
-                                        </div>
-                                     </div>
-                                  </td>
-                                  <td className="p-4 text-center">
-                                    <span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg text-base font-bold font-mono shadow-md inline-block min-w-[60px] dir-ltr">
-                                      {s.regNumber}
-                                    </span>
-                                  </td>
-                                  <td className="p-4 text-center">
-                                    <span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg text-base font-bold font-mono shadow-md inline-block min-w-[60px]">
-                                      {s.pageNumber}
-                                    </span>
-                                  </td>
-                                  {view === 'trash' && (
-                                      <td className="p-4 text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-2 bg-emerald-100 text-emerald-600 rounded-full hover:bg-emerald-200" title="استعادة"><RotateCcw size={16}/></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handlePermanentDelete(s.id); }} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200" title="حذف نهائي"><Trash2 size={16}/></button>
-                                        </div>
-                                      </td>
-                                  )}
-                                </tr>
-                              ))}
-                              {displayed.length === 0 && <tr><td colSpan={view === 'trash' ? 5 : 4} className="p-16 text-center text-slate-400 font-medium">لا توجد سجلات</td></tr>}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-
-                      {/* قائمة الطلاب (Mobile Cards View) */}
-                      <div className="md:hidden space-y-3">
-                         {displayed.map((s, idx) => (
-                             <div key={s.id} onClick={() => { if(view!=='trash') { setSelectedId(s.id); setView('detail'); }}} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative overflow-hidden active:scale-[0.98] transition-transform">
-                                <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                <div className="flex justify-between items-start pl-3">
-                                    <div className="flex flex-col gap-1">
-                                        <h3 className="font-bold text-slate-800 text-lg leading-tight">{cleanName(s.firstName)} {s.lastName ? ` / ${s.lastName}` : ''}</h3>
-                                        <StatusBadge status={s.status} />
-                                    </div>
-                                    <span className="bg-slate-100 text-slate-400 text-[10px] font-mono font-bold px-2 py-1 rounded-md">#{idx + 1}</span>
-                                </div>
-                                <div className="mt-4 flex items-center justify-between border-t border-dashed border-slate-100 pt-3">
-                                    <div className="flex gap-2">
-                                        <div className="bg-[#5314cd] text-white px-3 py-1 rounded-lg text-sm font-bold font-mono shadow-sm flex items-center gap-1">
-                                            <span className="text-[10px] opacity-70 font-sans">قيد</span>
-                                            {s.regNumber}
-                                        </div>
-                                        <div className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm font-bold font-mono shadow-sm flex items-center gap-1">
-                                            <span className="text-[10px] opacity-70 font-sans">ص</span>
-                                            {s.pageNumber}
-                                        </div>
-                                    </div>
-                                    {view === 'trash' && (
-                                        <div className="flex gap-2">
-                                            <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><RotateCcw size={18}/></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handlePermanentDelete(s.id); }} className="p-2 bg-red-100 text-red-600 rounded-lg"><Trash2 size={18}/></button>
-                                        </div>
-                                    )}
-                                </div>
-                             </div>
-                         ))}
-                         {displayed.length === 0 && <div className="p-10 text-center text-slate-400 font-medium bg-white rounded-2xl border border-dashed">لا توجد سجلات</div>}
-                      </div>
-                      
-                      {/* Loading Indicator */}
-                      {displayed.length > 0 && displayed.length < filtered.length && (
-                        <div ref={loadMoreRef} className="p-8 text-center w-full">
-                           <div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-                        </div>
-                      )}
-
-                    </div>
                 </main>
 
                 {/* Scroll To Top Button */}
