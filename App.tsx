@@ -8,10 +8,9 @@ import {
   getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch 
 } from 'firebase/firestore';
 import { auth, db, studentsCollection } from './firebase.ts';
-import * as XLSX from 'xlsx';
 import { PrintView } from './components/PrintView.tsx';
 import { exportToExcel, generateTemplate, readExcel } from './utils/excelUtils.ts';
-import { Student, SortOption, Stats } from './types.ts';
+import { Student, SortOption } from './types.ts';
 
 // --- Sub Components ---
 
@@ -458,7 +457,7 @@ export default function App() {
     total: students.length,
     active: students.filter(s => (s.status || 'active') === 'active').length,
     regs: uniqueRegNumbers.length,
-    pages: new Set(students.map(s => s.pageNumber).filter(p => !!p)).size
+    others: students.filter(s => (s.status || 'active') !== 'active').length
   };
   
   let studentsToPrint: Student[] = [];
@@ -489,9 +488,9 @@ export default function App() {
             <div className="animate-fade-in space-y-5">
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={16}/>} colorClass="bg-blue-500" />
-                <StatCard title="الطلاب المستمرون" value={stats.active} icon={<UserCheck size={16}/>} colorClass="bg-emerald-500" />
+                <StatCard title="المستمرون" value={stats.active} icon={<UserCheck size={16}/>} colorClass="bg-emerald-500" />
                 <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={16}/>} colorClass="bg-indigo-500" />
-                <StatCard title="الصفحات" value={stats.pages} icon={<FileText size={16}/>} colorClass="bg-purple-500" />
+                <StatCard title="تارك/منقول" value={stats.others} icon={<AlertTriangle size={16}/>} colorClass="bg-amber-500" />
               </div>
 
               <div className="flex flex-col md:flex-row gap-3">
@@ -552,8 +551,8 @@ export default function App() {
                       <tr>
                         <th className="p-3 w-14 text-center">#</th>
                         <th className="p-3">اسم الطالب</th>
-                        <th className="p-3 w-28 text-center">القيد</th>
-                        <th className="p-3 w-20 text-center">الصفحة</th>
+                        <th className="p-3 w-32 text-center">القيد</th>
+                        <th className="p-3 w-24 text-center">الصفحة</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-sm">
@@ -561,13 +560,23 @@ export default function App() {
                         <tr key={s.id} onClick={() => { setSelectedStudentId(s.id); setView('detail'); }} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
                           <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
                           <td className="p-3">
-                             <div className="flex items-start gap-2.5 pt-0.5">
-                                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                <span className="font-semibold text-slate-800 leading-relaxed">{s.firstName} <span className="text-slate-400 font-normal text-xs">{s.lastName}</span></span>
+                             <div className="flex items-start gap-3">
+                                <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 mt-2 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                <span className="font-semibold text-slate-800 leading-relaxed text-base">
+                                  {s.firstName} <span className="text-slate-400 font-normal text-xs">{s.lastName}</span>
+                                </span>
                              </div>
                           </td>
-                          <td className="p-3 text-center"><span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-mono font-bold dir-ltr">{s.regNumber}</span></td>
-                          <td className="p-3 text-center"><span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-mono font-bold border border-amber-200">{s.pageNumber}</span></td>
+                          <td className="p-3 text-center">
+                            <span className="bg-[#5314cd] text-white px-4 py-1.5 rounded-lg text-sm font-bold font-mono shadow-sm inline-block min-w-[50px] dir-ltr">
+                              {s.regNumber}
+                            </span>
+                          </td>
+                          <td className="p-3 text-center">
+                            <span className="bg-[#FFA500] text-white px-4 py-1.5 rounded-lg text-sm font-bold font-mono shadow-sm inline-block min-w-[50px]">
+                              {s.pageNumber}
+                            </span>
+                          </td>
                         </tr>
                       ))}
                       {displayedStudents.length === 0 && <tr><td colSpan={4} className="p-10 text-center text-slate-400">لا توجد بيانات تطابق هذا البحث في هذا القيد</td></tr>}
@@ -683,13 +692,13 @@ export default function App() {
                    </div>
                    <div className="p-6">
                      <div className="grid grid-cols-2 gap-4 mb-6">
-                       <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-center">
-                         <div className="text-[10px] font-bold text-blue-400 uppercase mb-1">رقم القيد</div>
-                         <div className="text-2xl font-mono font-bold text-blue-900">{s.regNumber}</div>
+                       <div className="bg-[#5314cd] p-4 rounded-xl shadow-md text-center">
+                         <div className="text-[10px] font-bold text-white/70 uppercase mb-1 tracking-wider">رقم القيد</div>
+                         <div className="text-3xl font-mono font-bold text-white">{s.regNumber}</div>
                        </div>
-                       <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100 text-center">
-                         <div className="text-[10px] font-bold text-amber-400 uppercase mb-1">رقم الصفحة</div>
-                         <div className="text-2xl font-mono font-bold text-amber-900">{s.pageNumber}</div>
+                       <div className="bg-[#FFA500] p-4 rounded-xl shadow-md text-center">
+                         <div className="text-[10px] font-bold text-white/70 uppercase mb-1 tracking-wider">رقم الصفحة</div>
+                         <div className="text-3xl font-mono font-bold text-white">{s.pageNumber}</div>
                        </div>
                      </div>
                      {s.notes && (

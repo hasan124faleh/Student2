@@ -53,7 +53,7 @@
     <!-- React & Babel Support -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Import Map: Cleaned to use Stable React 18 & Firebase 10 -->
+    <!-- Import Map -->
     <script type="importmap">
 {
   "imports": {
@@ -79,7 +79,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -105,85 +105,8 @@
         const studentsCollection = collection(db, "students");
 
         // ==========================================
-        // UTILS (Excel)
+        // UI COMPONENTS
         // ==========================================
-        const exportToExcel = (students) => {
-          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
-          const data = students.map(s => ({
-            'الاسم الأول': s.firstName,
-            'اللقب': s.lastName,
-            'رقم القيد': s.regNumber,
-            'رقم الصفحة': s.pageNumber,
-            'الحالة': statusMap[s.status || 'active'] || 'مستمر',
-            'الملاحظات': s.notes || '',
-            'تاريخ الإضافة': new Date(s.createdAt).toLocaleDateString('ar-EG')
-          }));
-
-          const worksheet = XLSX.utils.json_to_sheet(data);
-          const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب");
-          XLSX.writeFile(workbook, "سجل_الطلاب.xlsx");
-        };
-
-        const generateTemplate = () => {
-          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'عبدالرحمن', 'إبراهيم', 'يوسف', 'محمود', 'حسن', 'حسين', 'ماجد', 'نايف', 'سلطان'];
-          const midNames = ['محمد', 'علي', 'صالح', 'عبدالله', 'حمد', 'سليمان', 'عبدالعزيز', 'سالم', 'ناصر', 'راشد', 'خلف', 'سعود', 'فواز', 'عادل', 'منصور', 'تركي'];
-          const lastNames = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'الغامدي', 'المطيري', 'الدوسري', 'السبيعي', 'المالكي', 'عسيري', 'الشهري', 'الرويلي', 'الخالدي'];
-
-          const templateData = [];
-
-          for (let i = 0; i < 1000; i++) {
-            const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const n2 = midNames[Math.floor(Math.random() * midNames.length)];
-            const n3 = midNames[Math.floor(Math.random() * midNames.length)];
-            const n4 = midNames[Math.floor(Math.random() * midNames.length)];
-            const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
-            
-            const regNum = (i % 10) + 1;
-            const pageNum = Math.floor(i / 10) + 1;
-            
-            const rand = Math.random();
-            let status = 'مستمر';
-            if (rand > 0.95) status = 'تارك';
-            else if (rand > 0.9) status = 'منقول';
-
-            templateData.push({
-              'الاسم الأول': `${n1} ${n2} ${n3} ${n4}`,
-              'اللقب': ln,
-              'رقم القيد': regNum.toString(),
-              'رقم الصفحة': pageNum.toString(),
-              'الحالة': status,
-              'الملاحظات': ''
-            });
-          }
-          
-          const worksheet = XLSX.utils.json_to_sheet(templateData);
-          const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 1000 طالب");
-          XLSX.writeFile(workbook, "نموذج_سجل_الطلاب_الكبير.xlsx");
-        };
-
-        const readExcel = (file) => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
-                resolve(jsonData);
-              } catch (err) { reject(err); }
-            };
-            reader.onerror = (error) => reject(error);
-            reader.readAsArrayBuffer(file);
-          });
-        };
-
-        // ==========================================
-        // COMPONENTS
-        // ==========================================
-        
         const Modal = ({ children, onClose }) => (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto" onClick={onClose}>
             <div className="w-full max-w-xl relative" onClick={e => e.stopPropagation()}>
@@ -191,107 +114,6 @@
             </div>
           </div>
         );
-
-        const SingleStudentPrint = ({ student }) => {
-          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
-          return (
-            <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-8">
-              <div className="w-full max-w-[21cm] border-[3px] border-double border-slate-800 p-8 rounded-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-slate-100 -translate-y-1/2 translate-x-1/2 rounded-full opacity-50"></div>
-                <div className="text-center border-b-2 border-slate-200 pb-6 mb-8 relative z-10">
-                  <h1 className="text-3xl font-bold text-slate-900 mb-2">بطاقة معلومات الطالب</h1>
-                  <p className="text-slate-500 font-medium">نظام سجلات الطلاب العام</p>
-                </div>
-                <div className="grid grid-cols-12 gap-6 relative z-10">
-                  <div className="col-span-12 md:col-span-8 space-y-6">
-                     <div className="flex flex-col">
-                        <span className="text-sm font-bold text-slate-400 mb-1">الاسم الكامل</span>
-                        <div className="text-2xl font-bold text-slate-900 border-b border-dashed border-slate-300 pb-1">
-                           {student.firstName} {student.lastName}
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-2 gap-6">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-400 mb-1">حالة الطالب</span>
-                          <div className="text-lg font-semibold text-slate-800">{statusLabels[student.status || 'active']}</div>
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-400 mb-1">تاريخ التسجيل</span>
-                          <div className="text-lg font-semibold text-slate-800">{new Date(student.createdAt).toLocaleDateString('ar-EG')}</div>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="col-span-12 md:col-span-4 flex flex-col gap-4">
-                     <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center">
-                        <span className="text-xs font-bold text-slate-500 uppercase">رقم القيد</span>
-                        <div className="text-4xl font-mono font-bold text-slate-900 mt-1">{student.regNumber}</div>
-                     </div>
-                     <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center">
-                        <span className="text-xs font-bold text-slate-500 uppercase">رقم الصفحة</span>
-                        <div className="text-4xl font-mono font-bold text-slate-900 mt-1">{student.pageNumber}</div>
-                     </div>
-                  </div>
-                  <div className="col-span-12 mt-4">
-                     <div className="border border-slate-200 rounded-lg p-6 min-h-[150px] bg-slate-50/50">
-                        <span className="text-sm font-bold text-slate-400 block mb-2">الملاحظات</span>
-                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap">{student.notes || "لا توجد ملاحظات مسجلة."}</p>
-                     </div>
-                  </div>
-                </div>
-                <div className="mt-12 pt-6 border-t border-slate-200 flex justify-between items-end">
-                   <div className="text-xs text-slate-400">تم الاستخراج: {new Date().toLocaleDateString('ar-EG')}</div>
-                   <div className="text-center">
-                      <div className="w-32 border-b border-slate-300 mb-2"></div>
-                      <span className="text-sm font-bold text-slate-500">توقيع المسؤول</span>
-                   </div>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        const Login = () => {
-          const [email, setEmail] = useState('');
-          const [password, setPassword] = useState('');
-          const [error, setError] = useState('');
-          const [loading, setLoading] = useState(false);
-
-          const handleSubmit = async (e) => {
-            e.preventDefault();
-            setLoading(true);
-            setError('');
-            try { await signInWithEmailAndPassword(auth, email, password); } 
-            catch (err) { setError('بيانات الدخول غير صحيحة'); } 
-            finally { setLoading(false); }
-          };
-
-          return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-                     <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-800">تسجيل الدخول</h2>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">البريد الإلكتروني</label>
-                    <input type="email" required className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-left" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1">كلمة المرور</label>
-                    <input type="password" required className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:border-blue-500 outline-none text-left" dir="ltr" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  </div>
-                  {error && <div className="text-red-600 text-sm text-center">{error}</div>}
-                  <button type="submit" disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-all">
-                    {loading ? 'جاري التحقق...' : 'دخول'}
-                  </button>
-                </form>
-              </div>
-            </div>
-          );
-        };
 
         const StatCard = ({ title, value, icon, colorClass }) => (
           <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-2 hover:shadow-md transition-shadow">
@@ -309,87 +131,16 @@
            return <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-xs font-bold border border-emerald-200">مستمر</span>;
         };
 
-        const PrintView = ({ students, title }) => {
-          const sortedStudents = [...students].sort((a, b) => a.firstName.localeCompare(b.firstName));
-          const ROWS_PER_COLUMN = 30;
-          const COLUMNS_PER_PAGE = 2;
-          const ITEMS_PER_PAGE = ROWS_PER_COLUMN * COLUMNS_PER_PAGE;
-          
-          const pages = [];
-          for (let i = 0; i < sortedStudents.length; i += ITEMS_PER_PAGE) {
-            pages.push(sortedStudents.slice(i, i + ITEMS_PER_PAGE));
-          }
-          
-          const extractionDate = new Date().toLocaleDateString('ar-EG');
-
-          return (
-            <div className="print-only text-[9pt] dir-rtl">
-              {pages.map((pageStudents, pageIndex) => (
-                <div key={pageIndex} className="flex flex-col w-full h-[297mm] box-border p-[1cm] break-after-page relative">
-                   <div className="w-full text-center border-b-2 border-black pb-2 mb-4">
-                      <h1 className="text-xl font-bold">{title || "فهرس القيد العام"}</h1>
-                   </div>
-                   <div className="flex flex-row gap-[1cm] h-full">
-                     {[0, 1].map((colIndex) => {
-                       const colStart = colIndex * ROWS_PER_COLUMN;
-                       const colStudents = pageStudents.slice(colStart, colStart + ROWS_PER_COLUMN);
-                       return (
-                         <div key={colIndex} className="flex-1 flex flex-col h-full border border-black/10">
-                           {colStudents.length > 0 && (
-                             <table className="w-full border-collapse border border-black table-fixed h-full">
-                               <thead>
-                                 <tr className="bg-gray-100 h-[30px]">
-                                   <th className="border border-black p-1 text-center w-[30px] text-[8pt]">ت</th>
-                                   <th className="border border-black p-1 text-right">الاسم الكامل</th>
-                                   <th className="border border-black p-1 text-center w-[35px] font-bold text-[8pt]">ق</th>
-                                   <th className="border border-black p-1 text-center w-[35px] font-bold text-[8pt]">ص</th>
-                                 </tr>
-                               </thead>
-                               <tbody>
-                                 {colStudents.map((s, idx) => {
-                                   const globalIndex = (pageIndex * ITEMS_PER_PAGE) + colStart + idx + 1;
-                                   return (
-                                     <tr key={s.id} className="h-[28px]">
-                                       <td className="border border-black px-1 text-center font-medium">{globalIndex}</td>
-                                       <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
-                                         {s.firstName} {s.lastName ? <span className="text-gray-700">/ {s.lastName}</span> : ''}
-                                       </td>
-                                       <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle dir-ltr">{s.regNumber}</td>
-                                       <td className="border border-black px-1 text-center font-bold font-mono text-[10pt] align-middle">{s.pageNumber}</td>
-                                     </tr>
-                                   );
-                                 })}
-                               </tbody>
-                             </table>
-                           )}
-                         </div>
-                       );
-                     })}
-                   </div>
-                   
-                   <div className="absolute bottom-4 left-0 w-full px-[1cm] flex justify-between items-center text-xs text-gray-500">
-                      <span>تم الاستخراج: {extractionDate}</span>
-                      <span>صفحة {pageIndex+1} من {pages.length}</span>
-                   </div>
-                </div>
-              ))}
-            </div>
-          );
-        };
-
         // ==========================================
         // MAIN APP
         // ==========================================
         const App = () => {
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
-          
-          // Data
           const [students, setStudents] = useState([]);
           const [view, setView] = useState('list');
           const [selectedId, setSelectedId] = useState(null);
           
-          // Filters
           const [search, setSearch] = useState('');
           const [debouncedQuery, setDebouncedQuery] = useState(''); 
           const [selectedRegFilter, setSelectedRegFilter] = useState(''); 
@@ -397,19 +148,10 @@
           const [sortBy, setSortBy] = useState('recent');
           const [letterFilter, setLetterFilter] = useState('ALL');
           
-          // Print
-          const [printMode, setPrintMode] = useState('list');
           const [showPrintModal, setShowPrintModal] = useState(false);
-          const [printRegInput, setPrintRegInput] = useState('');
-
-          // Scroll
           const [visibleCount, setVisibleCount] = useState(50);
           const loadMoreRef = useRef(null);
           const [showTopBtn, setShowTopBtn] = useState(false);
-          const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
-          const [studentToDelete, setStudentToDelete] = useState(null);
-
-          // Import/Form
           const [importing, setImporting] = useState(false);
           const [nameWarning, setNameWarning] = useState('');
 
@@ -417,6 +159,13 @@
              const regs = new Set(students.map(s => s.regNumber));
              return Array.from(regs).sort((a, b) => Number(a) - Number(b));
           }, [students]);
+
+          const stats = useMemo(() => ({
+            total: students.length,
+            active: students.filter(s => (s.status || 'active') === 'active').length,
+            regs: uniqueRegNumbers.length,
+            others: students.filter(s => (s.status || 'active') !== 'active').length
+          }), [students, uniqueRegNumbers]);
 
           useEffect(() => {
             const cached = localStorage.getItem('students_cache');
@@ -438,7 +187,6 @@
             return () => unsub();
           }, []);
 
-          // Debounce Search
           useEffect(() => {
             const timer = setTimeout(() => setDebouncedQuery(search), 300);
             return () => clearTimeout(timer);
@@ -449,27 +197,7 @@
             window.scrollTo(0, 0);
           }, [debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter]);
 
-          useEffect(() => {
-            const observer = new IntersectionObserver(
-              (entries) => {
-                if (entries[0].isIntersecting) setVisibleCount(p => p + 50);
-              },
-              { threshold: 0.5, rootMargin: '100px' }
-            );
-            if (loadMoreRef.current) observer.observe(loadMoreRef.current);
-            return () => observer.disconnect();
-          }, [students.length, debouncedQuery]);
-
-          useEffect(() => {
-            const handleScroll = () => {
-              setShowTopBtn(window.scrollY > 400);
-            };
-            window.addEventListener('scroll', handleScroll);
-            return () => window.removeEventListener('scroll', handleScroll);
-          }, []);
-
           const fetchStudents = async () => {
-            if (students.length === 0) setLoading(true);
             try {
               const snap = await getDocs(studentsCollection);
               const data = [];
@@ -481,24 +209,13 @@
             finally { setLoading(false); }
           };
 
-          const checkDuplicate = (val) => {
-             if (!val || val.length < 2) { setNameWarning(''); return; }
-             const matches = students.filter(s => 
-                s.firstName.trim().includes(val.trim()) && s.id !== selectedId
-             );
-             if (matches.length > 0) {
-               const info = matches.slice(0, 5).map(m => `• ${m.firstName} (${m.regNumber})`).join('\n');
-               setNameWarning(`تنبيه: يوجد ${matches.length} طلاب بأسماء مشابهة:\n${info}${matches.length > 5 ? '\n...والمزيد' : ''}`);
-             } else {
-               setNameWarning('');
-             }
-          };
-
           const filtered = useMemo(() => {
             let res = students;
+            // Filter by Reg first
             if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
             if (letterFilter !== 'ALL') res = res.filter(s => s.firstName.startsWith(letterFilter));
             if (statusFilter !== 'ALL') res = res.filter(s => (s.status || 'active') === statusFilter);
+            // Search WITHIN the current filter context
             if (debouncedQuery) {
                const q = debouncedQuery.toLowerCase();
                res = res.filter(s => s.firstName.toLowerCase().includes(q) || (s.lastName && s.lastName.toLowerCase().includes(q)));
@@ -511,495 +228,196 @@
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
           const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
 
-          const handleSave = async (e, isEdit) => {
-            e.preventDefault();
-            const form = new FormData(e.target);
-            const data = {
-              firstName: form.get('firstName'),
-              lastName: form.get('lastName'),
-              regNumber: form.get('regNumber'),
-              pageNumber: form.get('pageNumber'),
-              notes: form.get('notes'),
-              status: form.get('status') || 'active'
-            };
-
-            if (students.some(s => s.id !== selectedId && s.regNumber === data.regNumber && s.pageNumber === data.pageNumber)) {
-              alert("هذا القيد مسجل في هذه الصفحة مسبقاً");
-              return;
-            }
-
-            try {
-              let updated = [...students];
-              if (isEdit && selectedId) {
-                await updateDoc(doc(db, "students", selectedId), data);
-                updated = students.map(s => s.id === selectedId ? {...s, ...data} : s);
-              } else {
-                const newItem = { ...data, createdAt: Date.now() };
-                const ref = await addDoc(studentsCollection, newItem);
-                updated = [{id: ref.id, ...newItem}, ...students];
-              }
-              setStudents(updated);
-              localStorage.setItem('students_cache', JSON.stringify(updated));
-              setView('list');
-              setSelectedId(null);
-            } catch (err) { alert("فشل الحفظ"); }
-          };
-
-          const executeDeleteAll = async () => {
-             setShowDeleteAllConfirm(false);
-             setLoading(true);
-             try {
-               const allIds = students.map(s => s.id);
-               const CHUNK_SIZE = 400; 
-               for (let i = 0; i < allIds.length; i += CHUNK_SIZE) {
-                  const batch = writeBatch(db);
-                  const chunk = allIds.slice(i, i + CHUNK_SIZE);
-                  chunk.forEach(id => batch.delete(doc(db, "students", id)));
-                  await batch.commit();
-               }
-               setStudents([]);
-               localStorage.removeItem('students_cache');
-               alert("تم الحذف بنجاح");
-               setView('list');
-             } catch(e) { console.error(e); alert("خطأ"); } 
-             finally { setLoading(false); }
-          };
-
-          const confirmDeleteStudent = async () => {
-             if (!studentToDelete) return;
-             try {
-               await deleteDoc(doc(db, "students", studentToDelete));
-               const updated = students.filter(s => s.id !== studentToDelete);
-               setStudents(updated);
-               localStorage.setItem('students_cache', JSON.stringify(updated));
-               if (view === 'detail') setView('list');
-               setStudentToDelete(null);
-             } catch (e) { alert("فشل الحذف"); }
-          };
-
-          const handleImport = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            setImporting(true);
-            try {
-              const rows = await readExcel(file);
-              let count = 0;
-              const signatures = new Set(students.map(s => `${s.regNumber}-${s.pageNumber}`));
-              const newItems = [];
-              const BATCH_SIZE = 400;
-              let currentBatch = writeBatch(db);
-              let batchCount = 0;
-
-              for (const row of rows) {
-                 const fName = row['firstName'] || row['الاسم الأول'];
-                 const reg = row['regNumber'] || row['رقم القيد'];
-                 const page = row['pageNumber'] || row['رقم الصفحة'];
-                 const st = row['status'] || row['الحالة'] || 'active';
-                 let statusKey = 'active';
-                 if (st === 'منقول' || st === 'transferred') statusKey = 'transferred';
-                 if (st === 'تارك' || st === 'left') statusKey = 'left';
-
-                 if (fName && reg) {
-                   const sig = `${reg}-${page}`;
-                   if (!signatures.has(sig)) {
-                     const item = {
-                       firstName: String(fName).trim(),
-                       lastName: String(row['lastName'] || row['اللقب'] || '').trim(),
-                       regNumber: String(reg).trim(),
-                       pageNumber: String(page || '').trim(),
-                       notes: String(row['notes'] || row['الملاحظات'] || ''),
-                       status: statusKey,
-                       createdAt: Date.now() + count
-                     };
-                     const ref = doc(studentsCollection);
-                     currentBatch.set(ref, item);
-                     newItems.push({id: ref.id, ...item});
-                     signatures.add(sig);
-                     count++;
-                     batchCount++;
-                     if (batchCount >= BATCH_SIZE) {
-                       await currentBatch.commit();
-                       currentBatch = writeBatch(db);
-                       batchCount = 0;
-                     }
-                   }
-                 }
-              }
-              if (batchCount > 0) await currentBatch.commit();
-              if (count > 0) {
-                const updatedList = [...newItems, ...students];
-                setStudents(updatedList);
-                localStorage.setItem('students_cache', JSON.stringify(updatedList));
-                alert(`تم استيراد ${count} سجل`);
-              } else { alert("لم يتم العثور على سجلات جديدة"); }
-            } catch (e) { console.error(e); alert("فشل الاستيراد"); }
-            setImporting(false);
-            e.target.value = '';
-          };
-          
-          const handleNumericInput = (e) => {
-             e.target.value = e.target.value.replace(/[^0-9]/g, '');
-          };
-
-          const handlePrint = (reg) => {
-             if(reg) setSelectedRegFilter(reg);
-             setPrintMode('list');
-             setShowPrintModal(false);
-             setTimeout(() => window.print(), 500);
-          };
-
-          const stats = {
-            totalStudents: students.length,
-            uniqueRegNumbers: uniqueRegNumbers.length,
-            totalPages: new Set(students.map(s => s.pageNumber).filter(p => !!p)).size
-          };
-
-          // Print Logic
-          let studentsToPrint = [];
-          let printTitle = "فهرس القيد العام";
-          if (printMode === 'list') {
-             if(selectedRegFilter) {
-                studentsToPrint = filtered;
-                printTitle = `فهرس القيد ${selectedRegFilter}`;
-             } else {
-                studentsToPrint = filtered;
-                printTitle = "فهرس القيد العام";
-             }
-          }
-          const singleStudentData = students.find(s => s.id === selectedId);
-
-          if (loading) return <div className="h-screen flex items-center justify-center text-slate-500">جاري التحميل...</div>;
-          if (!user) return <Login />;
+          if (loading && students.length === 0) return <div className="h-screen flex items-center justify-center font-bold text-slate-400">جاري تحميل السجلات...</div>;
+          if (!user) return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in text-center">
+                    <Users className="w-16 h-16 bg-blue-600 text-white p-3 rounded-2xl mx-auto mb-6 shadow-lg" />
+                    <h2 className="text-2xl font-bold text-slate-800 mb-6">تسجيل الدخول للنظام</h2>
+                    <form onSubmit={async (e) => { e.preventDefault(); try { await signInWithEmailAndPassword(auth, e.target.email.value, e.target.password.value); } catch(err) { alert("بيانات غير صحيحة"); } }} className="space-y-4">
+                        <input name="email" type="email" placeholder="البريد الإلكتروني" required className="w-full px-4 py-3 rounded-xl border focus:border-blue-500 outline-none text-right" />
+                        <input name="password" type="password" placeholder="كلمة المرور" required className="w-full px-4 py-3 rounded-xl border focus:border-blue-500 outline-none text-right" />
+                        <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-slate-800 transition-all">دخول</button>
+                    </form>
+                </div>
+            </div>
+          );
 
           return (
-            <>
-              <div className="min-h-screen no-print pb-20">
-                <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm backdrop-blur-sm bg-white/90">
+            <div className="min-h-screen no-print pb-20">
+                <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80">
                   <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2 font-bold text-lg text-slate-800 cursor-pointer" onClick={() => setView('list')}>
+                    <div className="flex items-center gap-2 font-bold text-lg text-slate-800" onClick={() => setView('list')}>
                       <div className="bg-slate-900 text-white p-1.5 rounded-lg"><Users size={18} /></div>
-                      <span className="hidden sm:inline">سجل القيود</span>
+                      <span>سجل القيود</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setView('settings')} className={`p-2 rounded-full transition-colors ${view === 'settings' ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-100'}`}><Settings size={20} /></button>
-                      <button onClick={() => { if(confirm("تسجيل خروج؟")) signOut(auth); }} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
+                      <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={22} /></button>
+                      <button onClick={() => signOut(auth)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={22} /></button>
                     </div>
                   </div>
                 </header>
 
                 <main className="max-w-7xl mx-auto px-4 py-6">
-                    <div className="animate-fade-in space-y-5">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <StatCard title="الطلاب" value={stats.totalStudents} icon={<Users size={16}/>} colorClass="bg-blue-500" />
-                        <StatCard title="القيود" value={stats.uniqueRegNumbers} icon={<FileSpreadsheet size={16}/>} colorClass="bg-emerald-500" />
-                        <StatCard title="الصفحات" value={stats.totalPages} icon={<FileText size={16}/>} colorClass="bg-purple-500" />
-                        <StatCard title="تارك/منقول" value={students.filter(s=>s.status!=='active').length} icon={<AlertTriangle size={16}/>} colorClass="bg-amber-500" />
+                    <div className="animate-fade-in space-y-6">
+                      {/* لوحة الإحصائيات المطورة */}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={18}/>} colorClass="bg-blue-600" />
+                        <StatCard title="المستمرون" value={stats.active} icon={<UserCheck size={18}/>} colorClass="bg-emerald-600" />
+                        <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" />
+                        <StatCard title="تارك/منقول" value={stats.others} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" />
                       </div>
 
-                      <div className="flex flex-col md:flex-row gap-3">
-                        <div className="flex-1 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center gap-2">
-                           <div className="flex items-center w-full sm:w-auto flex-1 gap-2">
-                               <Search className="text-slate-400 mr-1" size={18} />
-                               <input className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 bg-transparent min-w-[120px]" placeholder="بحث بالاسم..." value={search} onChange={(e) => { setSearch(e.target.value); if(e.target.value) setSelectedRegFilter(''); }} />
-                               {search && <button onClick={() => setSearch('')} className="p-1 text-slate-400 hover:text-red-500"><X size={16}/></button>}
+                      <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1 bg-white p-2 rounded-2xl border shadow-sm flex flex-col sm:flex-row items-center gap-2">
+                           <div className="flex items-center w-full sm:w-auto flex-1 gap-2 px-2">
+                               <Search className="text-slate-400" size={20} />
+                               <input className="flex-1 outline-none text-sm text-slate-700 bg-transparent h-10" placeholder="بحث بالاسم داخل القيد المختار..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                               {search && <button onClick={() => setSearch('')} className="p-1 text-slate-400 hover:text-red-500"><X size={18}/></button>}
                            </div>
-                           
-                           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 sm:border-r border-slate-100 pt-2 sm:pt-0 sm:pr-2 mt-2 sm:mt-0">
-                               <div className="relative">
-                                   <select 
-                                       value={selectedRegFilter} 
-                                       onChange={(e) => { setSelectedRegFilter(e.target.value); if(e.target.value) setSearch(''); }}
-                                       className="bg-transparent text-sm text-slate-600 outline-none cursor-pointer p-1 pr-6 appearance-none hover:text-sky-600 font-medium min-w-[100px]"
-                                   >
+                           <div className="flex items-center gap-2 w-full sm:w-auto border-t sm:border-t-0 sm:border-r border-slate-100 pt-2 sm:pt-0 sm:pr-3 mt-2 sm:mt-0">
+                               <div className="flex items-center gap-1">
+                                   <Filter size={16} className="text-slate-400" />
+                                   <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-transparent text-sm text-slate-700 font-bold outline-none p-1 cursor-pointer hover:text-blue-600">
                                        <option value="">جميع القيود</option>
                                        {uniqueRegNumbers.map(r => <option key={r} value={r}>قيد {r}</option>)}
                                    </select>
-                                   <Filter size={14} className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                </div>
-                               <div className="h-4 w-px bg-slate-200"></div>
-                               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-transparent text-xs text-slate-600 outline-none p-1 font-medium cursor-pointer">
+                               <div className="h-5 w-px bg-slate-200"></div>
+                               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-transparent text-xs text-slate-600 outline-none p-1 font-bold cursor-pointer">
                                  <option value="ALL">كل الحالات</option>
                                  <option value="active">مستمر</option>
                                  <option value="transferred">منقول</option>
                                  <option value="left">تارك</option>
                                </select>
-                               <div className="h-4 w-px bg-slate-200"></div>
-                               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-transparent text-xs text-slate-600 outline-none p-1 font-medium cursor-pointer">
-                                 <option value="recent">الأحدث</option>
-                                 <option value="alphabetical">أبجدي</option>
-                               </select>
                            </div>
                         </div>
                         <div className="flex gap-2">
-                          <button onClick={() => { setSelectedId(null); setView('add'); setNameWarning(''); }} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 flex items-center gap-2 shadow-sm transition-all whitespace-nowrap"><Plus size={16} /> إضافة</button>
-                          <button onClick={() => setShowPrintModal(true)} className="bg-white text-slate-700 border border-slate-200 px-3 py-2 rounded-xl text-sm font-bold hover:bg-slate-50 flex items-center gap-2 transition-colors whitespace-nowrap"><Printer size={16} /> طباعة</button>
+                          <button onClick={() => { setSelectedId(null); setView('add'); }} className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all"><Plus size={18} /> إضافة جديد</button>
+                          <button onClick={() => setShowPrintModal(true)} className="bg-white text-slate-700 border px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={18} /> طباعة</button>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1 justify-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-                        <button onClick={() => setLetterFilter('ALL')} className={`px-3 py-1 text-xs rounded-md transition-colors ${letterFilter === 'ALL' ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>الكل</button>
-                        {arabicLetters.map(l => (
-                          <button key={l} onClick={() => setLetterFilter(l)} className={`w-7 h-7 flex items-center justify-center text-xs rounded-md transition-colors ${letterFilter === l ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-slate-100'}`}>{l}</button>
-                        ))}
-                      </div>
-
-                      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                      {/* جدول الطلاب - التنسيق الجديد */}
+                      <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                         <div className="overflow-x-auto">
-                          <table className="w-full text-right">
-                            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                          <table className="w-full text-right border-collapse">
+                            <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
                               <tr>
-                                <th className="p-3 w-14 text-center">#</th>
-                                <th className="p-3">اسم الطالب</th>
-                                <th className="p-3 w-28 text-center">القيد</th>
-                                <th className="p-3 w-20 text-center">الصفحة</th>
+                                <th className="p-4 w-16 text-center">#</th>
+                                <th className="p-4">اسم الطالب</th>
+                                <th className="p-4 w-32 text-center">رقم القيد</th>
+                                <th className="p-4 w-28 text-center">الصفحة</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 text-sm">
+                            <tbody className="divide-y divide-slate-50 text-sm">
                               {displayed.map((s, idx) => (
-                                <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/50 cursor-pointer transition-colors group">
-                                  <td className="p-3 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                  <td className="p-3 font-semibold text-slate-800 flex items-center gap-2">
-                                    <div className={`w-2.5 h-2.5 rounded-full ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                    {s.firstName} <span className="text-slate-400 font-normal text-xs">{s.lastName}</span>
+                                <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all group">
+                                  <td className="p-4 text-center text-slate-400 font-mono font-medium">{idx + 1}</td>
+                                  <td className="p-4">
+                                     <div className="flex items-start gap-3">
+                                        {/* دائرة الحالة - محاذاة ذكية للجوال */}
+                                        <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1.5 shadow-sm ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                        <div className="flex flex-col">
+                                           <span className="font-bold text-slate-800 text-base leading-tight group-hover:text-blue-700 transition-colors">{s.firstName}</span>
+                                           <span className="text-slate-400 text-xs mt-0.5">{s.lastName}</span>
+                                        </div>
+                                     </div>
                                   </td>
-                                  <td className="p-3 text-center"><span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-mono font-bold dir-ltr">{s.regNumber}</span></td>
-                                  <td className="p-3 text-center"><span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-mono font-bold border border-amber-200">{s.pageNumber}</span></td>
+                                  <td className="p-4 text-center">
+                                    <span className="bg-[#5314cd] text-white px-4 py-2 rounded-xl text-lg font-bold font-mono shadow-md inline-block min-w-[70px] dir-ltr">
+                                      {s.regNumber}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-center">
+                                    <span className="bg-[#FFA500] text-white px-4 py-2 rounded-xl text-lg font-bold font-mono shadow-md inline-block min-w-[70px]">
+                                      {s.pageNumber}
+                                    </span>
+                                  </td>
                                 </tr>
                               ))}
-                              {displayed.length === 0 && <tr><td colSpan={4} className="p-10 text-center text-slate-400">لا توجد بيانات</td></tr>}
+                              {displayed.length === 0 && <tr><td colSpan={4} className="p-16 text-center text-slate-400 font-medium">لا توجد نتائج مطابقة لعملية البحث في هذا القيد</td></tr>}
                             </tbody>
                           </table>
                           {displayed.length > 0 && displayed.length < filtered.length && (
-                            <div ref={loadMoreRef} className="p-6 text-center w-full">
-                               <div className="inline-block w-6 h-6 border-2 border-slate-200 border-t-slate-600 rounded-full animate-spin"></div>
-                               <p className="mt-2 text-xs text-slate-400">جاري تحميل المزيد...</p>
+                            <div ref={loadMoreRef} className="p-10 text-center w-full">
+                               <div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
                             </div>
-                          )}
-                          {displayed.length > 0 && displayed.length === filtered.length && (
-                            <div className="p-6 text-center w-full text-slate-400 text-xs border-t border-slate-50">تم عرض جميع النتائج ({filtered.length})</div>
                           )}
                         </div>
                       </div>
                     </div>
+                </main>
 
-                  {/* Modals */}
-                  {(view === 'add' || view === 'edit') && (
+                {/* Modals with enhanced UI */}
+                {(view === 'add' || view === 'edit') && (
                     <Modal onClose={() => setView('list')}>
-                      <div className="bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-up">
-                        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                          <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                            {view === 'add' ? <Plus className="text-blue-600" size={20}/> : <Settings className="text-blue-600" size={20}/>}
-                            {view === 'add' ? 'إضافة سجل جديد' : 'تعديل السجل'}
-                          </h2>
-                          <button onClick={() => setView('list')} className="p-1 rounded-full hover:bg-slate-200 text-slate-500"><X size={20}/></button>
+                      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up border border-slate-100">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50/50">
+                          <h2 className="text-xl font-extrabold text-slate-800">{view === 'add' ? 'إضافة سجل طالب' : 'تعديل بيانات الطالب'}</h2>
+                          <button onClick={() => setView('list')} className="p-2 bg-white rounded-full hover:bg-slate-100 text-slate-400 transition-all"><X size={20}/></button>
                         </div>
-                        <form onSubmit={(e) => handleSave(e, view === 'edit')} className="p-6 space-y-5">
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const form = new FormData(e.target);
+                            const data = {
+                                firstName: form.get('firstName'),
+                                lastName: form.get('lastName'),
+                                regNumber: form.get('regNumber'),
+                                pageNumber: form.get('pageNumber'),
+                                notes: form.get('notes'),
+                                status: form.get('status') || 'active'
+                            };
+                            try {
+                                if (view === 'edit') await updateDoc(doc(db, "students", selectedId), data);
+                                else await addDoc(studentsCollection, { ...data, createdAt: Date.now() });
+                                fetchStudents();
+                                setView('list');
+                            } catch(err) { alert("حدث خطأ أثناء الحفظ"); }
+                        }} className="p-8 space-y-6">
                            <div className="grid grid-cols-2 gap-4">
-                             <div className="col-span-2 sm:col-span-1">
-                               <label className="block text-xs font-bold text-slate-500 mb-1">الاسم الرباعي <span className="text-red-500">*</span></label>
-                               <input name="firstName" required 
-                                 defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.firstName : ''} 
-                                 onChange={(e) => checkDuplicate(e.target.value)}
-                                 className="w-full p-2.5 rounded-xl border focus:border-blue-500 outline-none text-sm transition-colors"
-                                 placeholder="أدخل اسم الطالب كاملاً"
-                               />
+                             <div className="col-span-2">
+                               <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">الاسم الكامل</label>
+                               <input name="firstName" required defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.firstName : ''} className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base font-bold shadow-inner" placeholder="اسم الطالب الرباعي" />
                              </div>
-                             <div className="col-span-2 sm:col-span-1">
-                               <label className="block text-xs font-bold text-slate-500 mb-1">اللقب</label>
-                               <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className="w-full p-2.5 rounded-xl border focus:border-blue-500 outline-none text-sm transition-colors"/>
+                             <div className="col-span-2">
+                               <label className="block text-xs font-bold text-slate-400 mb-2 uppercase tracking-widest">اللقب / العشيرة</label>
+                               <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none text-base font-bold shadow-inner" placeholder="اللقب إن وجد" />
                              </div>
                            </div>
-                           {nameWarning && (
-                             <div className="bg-orange-50 text-orange-800 p-3 rounded-lg text-xs font-semibold border border-orange-200 animate-fade-in shadow-sm whitespace-pre-wrap leading-relaxed">
-                               {nameWarning}
-                             </div>
-                           )}
                            <div className="grid grid-cols-2 gap-4">
                              <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">رقم القيد <span className="text-red-500">*</span></label>
-                                <input name="regNumber" required onInput={handleNumericInput} defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} className="w-full p-2.5 rounded-xl border focus:border-blue-500 outline-none font-mono dir-ltr text-right text-sm" placeholder="أرقام فقط"/>
+                                <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">رقم القيد</label>
+                                <input name="regNumber" required className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
                              </div>
                              <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">رقم الصفحة <span className="text-red-500">*</span></label>
-                                <input name="pageNumber" required onInput={handleNumericInput} defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} className="w-full p-2.5 rounded-xl border focus:border-blue-500 outline-none font-mono text-center text-sm" placeholder="أرقام فقط"/>
+                                <label className="text-xs font-bold text-slate-400 mb-2 block uppercase tracking-widest">رقم الصفحة</label>
+                                <input name="pageNumber" required className="w-full p-4 rounded-2xl bg-slate-50 border-none focus:ring-2 focus:ring-blue-500 outline-none font-mono text-center text-xl font-bold shadow-inner" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
                              </div>
                            </div>
                            <div>
-                              <label className="block text-xs font-bold text-slate-500 mb-1">حالة الطالب</label>
-                              <div className="grid grid-cols-3 gap-2">
-                                <label className="cursor-pointer">
-                                  <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
-                                  <div className="text-center py-2 rounded-lg border border-slate-200 peer-checked:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:text-emerald-700 text-sm font-medium transition-all hover:bg-slate-50">مستمر</div>
+                              <label className="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">حالة الطالب الحالية</label>
+                              <div className="grid grid-cols-3 gap-3">
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all shadow-sm">مستمر</div>
                                 </label>
-                                <label className="cursor-pointer">
-                                  <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} />
-                                  <div className="text-center py-2 rounded-lg border border-slate-200 peer-checked:bg-amber-50 peer-checked:border-amber-500 peer-checked:text-amber-700 text-sm font-medium transition-all hover:bg-slate-50">منقول</div>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all shadow-sm">منقول</div>
                                 </label>
-                                <label className="cursor-pointer">
-                                  <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
-                                  <div className="text-center py-2 rounded-lg border border-slate-200 peer-checked:bg-rose-50 peer-checked:border-rose-500 peer-checked:text-rose-700 text-sm font-medium transition-all hover:bg-slate-50">تارك</div>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all shadow-sm">تارك</div>
                                 </label>
                               </div>
                            </div>
-                           <div><label className="block text-xs font-bold text-slate-500 mb-1">ملاحظات</label><textarea name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className="w-full p-3 rounded-xl border focus:border-blue-500 outline-none h-20 text-sm"></textarea></div>
-                           <button className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10">حفظ البيانات</button>
+                           <button className="w-full bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/30 mt-4 uppercase tracking-wider">حفظ البيانات</button>
                         </form>
                       </div>
                     </Modal>
-                  )}
-
-                  {view === 'detail' && selectedId && (() => {
-                    const s = students.find(x => x.id === selectedId);
-                    return s ? (
-                      <Modal onClose={() => setView('list')}>
-                         <div className="bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-up">
-                           <div className="p-6 border-b border-slate-50 flex justify-between items-start bg-slate-50/30">
-                             <div>
-                               <div className="flex items-center gap-2 mb-2">
-                                  <h1 className="text-2xl font-bold text-slate-800">{s.firstName} {s.lastName}</h1>
-                                  <StatusBadge status={s.status} />
-                               </div>
-                               <div className="text-slate-400 text-xs font-medium">تاريخ الإضافة: {new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
-                             </div>
-                             <div className="flex gap-2">
-                                <div className="bg-slate-100 p-2 rounded-full"><Users className="text-slate-400" size={24} /></div>
-                                <button onClick={() => setView('list')} className="p-2 rounded-full hover:bg-slate-200 text-slate-500"><X size={20}/></button>
-                             </div>
-                           </div>
-                           <div className="p-6">
-                             <div className="grid grid-cols-2 gap-4 mb-6">
-                               <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-center">
-                                 <div className="text-[10px] font-bold text-blue-400 uppercase mb-1">رقم القيد</div>
-                                 <div className="text-2xl font-mono font-bold text-blue-900">{s.regNumber}</div>
-                               </div>
-                               <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100 text-center">
-                                 <div className="text-[10px] font-bold text-amber-400 uppercase mb-1">رقم الصفحة</div>
-                                 <div className="text-2xl font-mono font-bold text-amber-900">{s.pageNumber}</div>
-                               </div>
-                             </div>
-                             {s.notes && (
-                               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
-                                 <h3 className="font-bold text-slate-700 mb-2 flex items-center gap-2 text-xs"><FileText size={14}/> ملاحظات</h3>
-                                 <p className="text-slate-600 text-sm leading-relaxed">{s.notes}</p>
-                               </div>
-                             )}
-                             <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100">
-                               <button onClick={() => { setPrintMode('single'); setTimeout(()=>window.print(), 300); }} className="col-span-3 bg-slate-800 text-white py-2.5 rounded-lg font-bold hover:bg-slate-900 flex items-center justify-center gap-2 text-sm mb-2"><Printer size={16}/> طباعة معلومات الطالب</button>
-                               <button onClick={() => setView('edit')} className="bg-slate-100 text-slate-700 py-2.5 rounded-lg font-bold hover:bg-slate-200 flex items-center justify-center gap-2 text-sm"><Settings size={16}/> تعديل</button>
-                               <button onClick={() => setStudentToDelete(s.id)} className="bg-red-50 text-red-600 py-2.5 rounded-lg font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><Trash2 size={16}/> حذف</button>
-                             </div>
-                           </div>
-                         </div>
-                      </Modal>
-                    ) : null;
-                  })()}
-
-                  {view === 'settings' && (
-                    <Modal onClose={() => setView('list')}>
-                      <div className="bg-white rounded-2xl shadow-xl overflow-hidden animate-slide-up">
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Settings size={20}/> الإعدادات</h2>
-                            <button onClick={() => setView('list')} className="p-1 rounded-full hover:bg-slate-200 text-slate-500"><X size={20}/></button>
-                        </div>
-                        <div className="p-6 space-y-6">
-                          <div className="space-y-3">
-                            <button onClick={() => exportToExcel(students)} className="w-full flex items-center justify-between p-3.5 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 transition-colors">
-                              <span className="flex items-center gap-2 font-bold text-sm"><Download size={18}/> تصدير البيانات (Excel)</span>
-                            </button>
-                            <button onClick={generateTemplate} className="w-full flex items-center justify-between p-3.5 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors">
-                              <span className="flex items-center gap-2 font-bold text-sm"><FileSpreadsheet size={18}/> تحميل نموذج فارغ (1000 طالب)</span>
-                            </button>
-                            <label className={`w-full flex items-center justify-between p-3.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors cursor-pointer ${importing ? 'opacity-50' : ''}`}>
-                               <span className="flex items-center gap-2 font-bold text-sm"><Upload size={18}/> {importing ? 'جاري الرفع...' : 'استيراد من Excel'}</span>
-                               <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
-                            </label>
-                          </div>
-                          <div className="pt-4 border-t border-red-100">
-                            <button onClick={() => setShowDeleteAllConfirm(true)} className="w-full p-3.5 bg-red-50 text-red-600 rounded-xl font-bold hover:bg-red-100 flex items-center justify-center gap-2 text-sm border border-red-100">
-                               <Trash2 size={18}/> حذف جميع البيانات
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Modal>
-                  )}
-
-                  {showPrintModal && (
-                    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowPrintModal(false)}>
-                       <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()}>
-                          <h3 className="text-lg font-bold text-center mb-6">خيارات الطباعة</h3>
-                          <div className="space-y-3">
-                             <button onClick={() => { setSelectedRegFilter(''); handlePrint(); setShowPrintModal(false); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 text-sm">طباعة السجل بالكامل</button>
-                             <div className="text-center text-slate-400 text-xs">- أو -</div>
-                             <div className="relative">
-                               <select 
-                                   value={printRegInput}
-                                   onChange={(e) => setPrintRegInput(e.target.value)}
-                                   className="w-full p-3 border rounded-xl outline-none focus:border-blue-500 text-center text-sm appearance-none bg-white font-mono dir-ltr"
-                               >
-                                   <option value="">اختر رقم القيد...</option>
-                                   {uniqueRegNumbers.map(r => <option key={r} value={r}>قيد {r}</option>)}
-                               </select>
-                               <ArrowUp size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-180" />
-                             </div>
-                             <button onClick={() => { handlePrint(printRegInput); setShowPrintModal(false); }} className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 text-sm" disabled={!printRegInput}>طباعة القيد المحدد</button>
-                             <button onClick={() => setShowPrintModal(false)} className="w-full py-2 text-slate-400 hover:text-slate-600 text-sm">إلغاء</button>
-                          </div>
-                       </div>
-                    </div>
-                  )}
-
-                   <button
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                    className={`fixed bottom-6 left-6 p-3 rounded-full shadow-lg text-white transition-all transform z-30 ${showTopBtn ? 'bg-slate-900 translate-y-0 opacity-100' : 'translate-y-10 opacity-0 pointer-events-none'}`}
-                   >
-                    <ArrowUp size={24} />
-                   </button>
-                
-                  {showDeleteAllConfirm && (
-                    <Modal onClose={() => setShowDeleteAllConfirm(false)}>
-                        <div className="bg-white rounded-2xl p-8 w-full max-w-md text-center shadow-2xl transform transition-all scale-100">
-                            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <Trash2 size={40} className="text-red-600" />
-                            </div>
-                            <h3 className="text-2xl font-bold text-slate-800 mb-2">حذف جميع البيانات؟</h3>
-                            <p className="text-slate-500 mb-8 leading-relaxed">
-                                هل أنت متأكد من رغبتك في حذف كافة سجلات الطلاب؟ <br/>
-                                <span className="text-red-500 font-bold text-sm">هذا الإجراء نهائي ولا يمكن التراجع عنه.</span>
-                            </p>
-                            <div className="grid grid-cols-2 gap-4">
-                                <button onClick={() => setShowDeleteAllConfirm(false)} className="py-3 px-6 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">إلغاء</button>
-                                <button onClick={executeDeleteAll} className="py-3 px-6 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30">نعم، حذف الكل</button>
-                            </div>
-                        </div>
-                    </Modal>
-                  )}
-
-                  {studentToDelete && (
-                    <Modal onClose={() => setStudentToDelete(null)}>
-                        <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-auto text-center shadow-2xl animate-fade-in">
-                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Trash2 className="text-red-600 w-8 h-8" />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">حذف الطالب؟</h3>
-                        <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-                            هل أنت متأكد من رغبتك في حذف هذا السجل نهائياً؟ <br/>
-                            <span className="text-red-500 font-semibold">لا يمكن استرجاع البيانات بعد الحذف.</span>
-                        </p>
-                        <div className="flex gap-3">
-                            <button onClick={() => setStudentToDelete(null)} className="flex-1 py-2.5 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">إلغاء</button>
-                            <button onClick={confirmDeleteStudent} className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20">نعم، حذف</button>
-                        </div>
-                        </div>
-                    </Modal>
-                   )}
-                </main>
-              </div>
-              
-              {/* Conditional Print Views */}
-              {printMode === 'list' && <PrintView students={studentsToPrint} title={printTitle} />}
-              {printMode === 'single' && singleStudentData && <SingleStudentPrint student={singleStudentData} />}
-            </>
+                )}
+            </div>
           );
         };
 
