@@ -5,6 +5,7 @@ export interface Student {
   regNumber: string;
   pageNumber: string;
   notes: string;
+  status?: string;
   createdAt: number;
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "سجل قيود الطلاب",
+  "name": "student-records",
   "description": "نظام إدارة سجلات الطلاب مع دعم Firebase و Excel والطباعة المخصصة",
   "requestFramePermissions": []
 }

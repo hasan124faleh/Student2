@@ -1,12 +1,14 @@
 import * as XLSX from 'xlsx';
-import { Student } from '../types';
+import { Student } from '../types.ts';
 
 export const exportToExcel = (students: Student[]) => {
+  const statusMap: Record<string, string> = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
   const data = students.map(s => ({
     'الاسم الأول': s.firstName,
     'اللقب': s.lastName,
     'رقم القيد': s.regNumber,
     'رقم الصفحة': s.pageNumber,
+    'الحالة': statusMap[s.status || 'active'] || 'مستمر',
     'الملاحظات': s.notes || '',
     'تاريخ الإضافة': new Date(s.createdAt).toLocaleDateString('ar-EG')
   }));
