@@ -76,7 +76,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -408,13 +408,26 @@
             window.scrollTo(0, 0);
           }, [debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter]);
 
+          // Infinite Scroll Observer
+          useEffect(() => {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    setVisibleCount((prev) => prev + 50);
+                }
+            }, { threshold: 0.1 });
+            
+            if (loadMoreRef.current) {
+                observer.observe(loadMoreRef.current);
+            }
+            return () => observer.disconnect();
+          }, [students.length, filtered?.length]);
+
           const fetchStudents = async () => {
             try {
               const snap = await getDocs(studentsCollection);
               const data = [];
               snap.forEach(d => {
                  const raw = d.data();
-                 // Sanitize data to avoid circular JSON error and rendering errors
                  data.push({
                     id: d.id, 
                     status: raw.status || 'active', 
@@ -514,6 +527,7 @@
           }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter]);
 
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+          // Arabic letters array including Alif without Hamza
           const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
 
           const handlePrint = (reg) => {
@@ -600,12 +614,23 @@
                                  <option value="left">تارك</option>
                                </select>
                                <div className="h-5 w-px bg-slate-200"></div>
-                               {/* فلتر الترتيب الجديد */}
+                               
                                <div className="flex items-center gap-1">
                                   <SortAsc size={16} className="text-slate-400" />
                                   <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-transparent text-xs text-slate-600 outline-none p-1 font-bold cursor-pointer">
                                     <option value="recent">الأحدث</option>
                                     <option value="alphabetical">أبجدي</option>
+                                  </select>
+                               </div>
+
+                               <div className="h-5 w-px bg-slate-200"></div>
+
+                               {/* Letter Filter */}
+                               <div className="flex items-center gap-1">
+                                  <Type size={16} className="text-slate-400" />
+                                  <select value={letterFilter} onChange={e => setLetterFilter(e.target.value)} className="bg-transparent text-xs text-slate-600 outline-none p-1 font-bold cursor-pointer">
+                                    <option value="ALL">كل الحروف</option>
+                                    {arabicLetters.map(l => <option key={l} value={l}>{l}</option>)}
                                   </select>
                                </div>
                            </div>
