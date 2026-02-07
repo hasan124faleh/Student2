@@ -36,13 +36,19 @@
       }
       /* Print Styles */
       @media print {
-        @page { size: A4; margin: 10mm; } 
+        @page { 
+            size: A4; 
+            margin: 0 !important; /* إلغاء هوامش المتصفح الافتراضية للتحكم الكامل */
+        } 
+        
         html, body { 
+            margin: 0 !important; 
+            padding: 0 !important;
             background-color: white; 
-            margin: 0; 
-            padding: 0;
-            height: auto;
+            overflow: visible !important;
+            width: 210mm; /* عرض A4 القياسي */
         }
+        
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         -webkit-print-color-adjust: exact;
@@ -50,18 +56,43 @@
         
         /* Container for each page */
         .print-page-container {
-            width: 100%;
-            height: 276mm; /* Fixed height for A4 printable area (approx 297mm - 20mm margins) */
+            width: 210mm;
+            height: 297mm; /* ارتفاع A4 القياسي */
+            padding: 15mm; /* الهوامش الداخلية للصفحة */
+            box-sizing: border-box;
+            
+            /* قواعد فواصل الصفحات الصارمة */
             page-break-after: always;
             break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* Start content from top */
+            justify-content: flex-start;
+            position: relative;
+            background-color: white;
+            overflow: hidden; /* منع تجاوز المحتوى للصفحة */
         }
+        
+        /* الصفحة الأخيرة لا تحتاج لفاصل بعدها */
         .print-page-container:last-child {
             page-break-after: auto;
             break-after: auto;
-            height: auto;
+            height: auto; /* السماح بتقليص الارتفاع إذا لزم الأمر */
+            min-height: 297mm;
+        }
+
+        /* تحسينات الجدول للطباعة */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        
+        /* ضمان ظهور الخلفيات والألوان */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
       }
       .print-only { display: none; }
