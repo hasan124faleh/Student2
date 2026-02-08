@@ -85,7 +85,8 @@
         
         th, td {
             word-wrap: break-word;
-            border: 1px solid black;
+            border: 1px solid black !important;
+            padding: 2px 4px;
         }
 
         tr {
@@ -100,6 +101,7 @@
       }
       .print-only { display: none; }
       
+      /* Scrollbars */
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background-color: #f1f5f9; }
       ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
@@ -144,6 +146,9 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
+        // ==========================================
+        // FIREBASE CONFIG
+        // ==========================================
         const firebaseConfig = {
           apiKey: "AIzaSyC3Hyi-tVMui0ZyPsezvoxxSFjCJQBme9Q",
           authDomain: "ss-app-87ac7.firebaseapp.com",
@@ -159,6 +164,9 @@
         const auth = getAuth(app);
         const studentsCollection = collection(db, "students");
 
+        // ==========================================
+        // UTILS
+        // ==========================================
         const cleanName = (name) => {
             if (!name) return "";
             return name.replace(/\s+\d+$/, '').trim();
@@ -172,8 +180,7 @@
         const exportToExcel = (students) => {
           const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
           const data = students.map(s => ({
-            'الاسم الأول': cleanName(s.firstName),
-            'اللقب': s.lastName,
+            'الاسم الكامل': cleanName(s.firstName) + " " + (s.lastName || ""),
             'رقم القيد': s.regNumber,
             'رقم الصفحة': s.pageNumber,
             'الحالة': statusMap[s.status || 'active'] || 'مستمر',
@@ -184,32 +191,6 @@
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب");
           XLSX.writeFile(workbook, "سجل_الطلاب.xlsx");
-        };
-
-        const generateTemplate = () => {
-          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم'];
-          const secondNames = ['حسين', 'حسن', 'عبدالرحمن', 'محمود', 'مصطفى', 'جعفر', 'عباس', 'كاظم', 'رضا', 'مهدي'];
-          const titles = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'المالكي', 'الدوسري', 'التميمي'];
-          const templateData = [];
-          for (let i = 0; i < 1000; i++) {
-            const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const n2 = secondNames[Math.floor(Math.random() * secondNames.length)];
-            const title = titles[Math.floor(Math.random() * titles.length)];
-            const regNum = (i % 10) + 1;
-            const pageNum = Math.floor(i / 10) + 1;
-            templateData.push({
-              'الاسم الأول': n1 + " " + n2, 
-              'اللقب': title,
-              'رقم القيد': regNum.toString(),
-              'رقم الصفحة': pageNum.toString(),
-              'الحالة': 'مستمر',
-              'الملاحظات': ''
-            });
-          }
-          const worksheet = XLSX.utils.json_to_sheet(templateData);
-          const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 1000 طالب");
-          XLSX.writeFile(workbook, "نموذج_سجل_الطلاب.xlsx");
         };
 
         const readExcel = (file) => {
@@ -229,17 +210,17 @@
           });
         };
 
+        // ==========================================
+        // UI COMPONENTS
+        // ==========================================
         const SkeletonLoader = () => (
           <div className="animate-pulse space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 h-24 flex flex-col items-center justify-center gap-2">
-                   <div className="w-10 h-10 bg-slate-200 rounded-2xl"></div>
-                   <div className="w-16 h-4 bg-slate-200 rounded"></div>
-                </div>
+                <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 h-24"></div>
               ))}
             </div>
-            <div className="bg-white p-2 rounded-2xl border border-slate-100 h-20 md:h-14"></div>
+            <div className="bg-white p-2 rounded-2xl border border-slate-100 h-14"></div>
           </div>
         );
 
@@ -290,6 +271,43 @@
            return <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-emerald-100">مستمر</span>;
         };
 
+        const SingleStudentPrint = ({ student }) => {
+          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
+          const printDate = new Date().toLocaleDateString('ar-EG');
+          return (
+            <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-8">
+              <div className="w-full max-w-[21cm] border-[3px] border-double border-slate-800 p-8 rounded-xl">
+                <div className="text-center border-b-2 border-slate-200 pb-6 mb-8">
+                  <h1 className="text-3xl font-bold text-slate-900">بطاقة معلومات الطالب</h1>
+                  <p className="text-slate-500 font-medium">نظام سجلات الطلاب</p>
+                </div>
+                <div className="space-y-6">
+                   <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-400">الاسم الكامل</span>
+                      <div className="text-2xl font-bold text-slate-900 border-b border-dashed border-slate-300 pb-1">
+                         {cleanName(student.firstName)} {student.lastName || ''}
+                      </div>
+                   </div>
+                   <div className="grid grid-cols-2 gap-6">
+                      <div className="bg-slate-50 p-4 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500 uppercase">رقم القيد</span>
+                        <div className="text-3xl font-mono font-bold text-slate-900">{student.regNumber}</div>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-lg">
+                        <span className="text-xs font-bold text-slate-500 uppercase">رقم الصفحة</span>
+                        <div className="text-3xl font-mono font-bold text-slate-900">{student.pageNumber}</div>
+                      </div>
+                   </div>
+                   <div className="flex justify-between text-sm font-bold text-slate-600">
+                      <span>الحالة: {statusLabels[student.status || 'active']}</span>
+                      <span>تاريخ الطباعة: {printDate}</span>
+                   </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
         const PrintView = ({ students, title }) => {
           const sortedStudents = useMemo(() => {
              return [...students]
@@ -314,12 +332,14 @@
             <div className="print-only text-[9.5pt] dir-rtl">
               {pages.map((pageStudents, pageIndex) => (
                 <div key={pageIndex} className="print-page-container">
+                   {/* Header */}
                    <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]">
                       <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
                       <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
                       <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
                    </div>
 
+                   {/* Columns */}
                    <div className="flex flex-row gap-[8mm] flex-1">
                      {[0, 1].map((colIndex) => {
                        const colStudents = pageStudents.slice(colIndex * ROWS_PER_COLUMN_MAX, (colIndex + 1) * ROWS_PER_COLUMN_MAX);
@@ -411,6 +431,17 @@
           const [alertConfig, setAlertConfig] = useState(null);
           const [confirmConfig, setConfirmConfig] = useState(null);
 
+          const stats = useMemo(() => {
+            const active = students.filter(s => !s.isDeleted);
+            return {
+                total: active.length,
+                activeOnly: active.filter(s => (s.status || 'active') === 'active').length,
+                regs: new Set(active.map(s => s.regNumber)).size,
+                others: active.filter(s => (s.status || 'active') !== 'active').length,
+                deleted: students.filter(s => s.isDeleted).length
+            };
+          }, [students]);
+
           useEffect(() => {
             const unsub = onAuthStateChanged(auth, (u) => {
               setUser(u);
@@ -447,6 +478,37 @@
             } catch (e) { console.error(e); }
           };
 
+          const handleImport = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            setImporting(true);
+            try {
+              const rows = await readExcel(file);
+              const batch = writeBatch(db);
+              let count = 0;
+              rows.forEach(row => {
+                 const fName = row['الاسم الكامل'] || row['firstName'];
+                 const reg = row['رقم القيد'] || row['regNumber'];
+                 const page = row['رقم الصفحة'] || row['pageNumber'];
+                 if (fName && reg) {
+                    const ref = doc(studentsCollection);
+                    batch.set(ref, {
+                       firstName: String(fName).trim(),
+                       regNumber: String(reg).trim(),
+                       pageNumber: String(page || '').trim(),
+                       isDeleted: false,
+                       createdAt: Date.now() + count
+                    });
+                    count++;
+                 }
+              });
+              await batch.commit();
+              fetchStudents();
+              setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
+            } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
+            setImporting(false);
+          };
+
           const filtered = useMemo(() => {
             let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted);
             if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
@@ -472,12 +534,12 @@
                 <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80">
                   <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-lg text-slate-800 cursor-pointer" onClick={() => setView('list')}>
-                      <div className="bg-slate-900 text-white p-2 rounded-xl"><Users size={20} /></div>
+                      <div className="bg-slate-900 text-white p-2 rounded-xl shadow-lg shadow-slate-900/10"><Users size={20} /></div>
                       <span>سجل القيود</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setView('settings')} className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full"><Settings size={22} /></button>
-                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد؟", onConfirm: () => signOut(auth) })} className="p-2.5 text-red-500 hover:bg-red-50 rounded-full"><LogOut size={22} /></button>
+                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد؟", onConfirm: () => signOut(auth) })} className="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={22} /></button>
                     </div>
                   </div>
                 </header>
@@ -485,6 +547,15 @@
                 <main className="max-w-7xl mx-auto px-4 py-6">
                     {loading ? <SkeletonLoader /> : (
                         <div className="animate-fade-in space-y-6">
+                          {view !== 'trash' && (
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass="bg-blue-600" />
+                                <StatCard title="المستمرون" value={stats.activeOnly} icon={<UserCheck size={20}/>} colorClass="bg-emerald-600" />
+                                <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={20}/>} colorClass="bg-indigo-600" />
+                                <StatCard title="أخرى" value={stats.others} icon={<AlertTriangle size={20}/>} colorClass="bg-amber-500" />
+                            </div>
+                          )}
+
                           <div className="bg-white p-2 rounded-2xl border shadow-sm flex flex-col lg:flex-row gap-4">
                             <div className="flex-1 flex flex-col gap-2">
                                 <div className="relative flex items-center bg-slate-50 rounded-xl border px-3 py-2">
@@ -494,7 +565,7 @@
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center">
                                     <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-slate-50 rounded-xl px-2 py-1.5 border text-xs font-bold outline-none">
                                         <option value="">جميع القيود</option>
-                                        {Array.from(new Set(students.map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد {r}</option>)}
+                                        {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد {r}</option>)}
                                     </select>
                                     <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-slate-50 rounded-xl px-2 py-1.5 border text-xs font-bold outline-none">
                                         <option value="ALL">كل الحالات</option>
@@ -533,8 +604,8 @@
                                   <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all">
                                     <td className="p-4 text-center text-slate-400 font-mono">{idx + 1}</td>
                                     <td className="p-4 font-bold text-slate-800">{cleanName(s.firstName)} {s.lastName || ""}</td>
-                                    <td className="p-4 text-center"><span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg font-mono">{s.regNumber}</span></td>
-                                    <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono">{s.pageNumber}</span></td>
+                                    <td className="p-4 text-center"><span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px]">{s.regNumber}</span></td>
+                                    <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px]">{s.pageNumber}</span></td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -545,7 +616,7 @@
                              {displayed.map((s, idx) => (
                                  <div key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="bg-white rounded-2xl p-4 shadow-sm border relative">
                                     <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                    <h3 className="font-bold text-slate-800">{cleanName(s.firstName)}</h3>
+                                    <h3 className="font-bold text-slate-800">{cleanName(s.firstName)} {s.lastName || ""}</h3>
                                     <div className="mt-4 flex gap-2">
                                         <span className="bg-[#5314cd] text-white px-3 py-1 rounded-lg text-sm">ق {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm">ص {s.pageNumber}</span>
@@ -553,7 +624,7 @@
                                  </div>
                              ))}
                           </div>
-                          <div ref={loadMoreRef} className="h-4"></div>
+                          <div ref={loadMoreRef} className="h-10"></div>
                         </div>
                     )}
                 </main>
@@ -588,7 +659,24 @@
                              <input name="regNumber" required className="w-full p-4 rounded-xl bg-slate-50 border outline-none text-center font-bold" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
                              <input name="pageNumber" required className="w-full p-4 rounded-xl bg-slate-50 border outline-none text-center font-bold" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
                            </div>
-                           <input type="date" name="createdAt" className="w-full p-4 rounded-xl bg-slate-50 border outline-none" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} />
+                           <input type="date" name="createdAt" className="w-full p-4 rounded-xl bg-slate-50 border outline-none font-bold" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} />
+                           <div>
+                              <label className="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">حالة الطالب</label>
+                              <div className="grid grid-cols-3 gap-3">
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">مستمر</div>
+                                </label>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">منقول</div>
+                                </label>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">تارك</div>
+                                </label>
+                              </div>
+                           </div>
                            <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl">حفظ</button>
                         </form>
                       </div>
@@ -598,9 +686,13 @@
                 {view === 'settings' && (
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
-                        <h2 className="text-xl font-bold">الإعدادات</h2>
-                        <button onClick={() => setView('trash')} className="w-full py-4 bg-slate-50 rounded-xl font-bold flex justify-between px-4">سلة المهملات <ArrowRight size={16}/></button>
-                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-4">تصدير Excel</button>
+                        <h2 className="text-xl font-bold flex items-center gap-2"><Settings size={20}/> الإعدادات</h2>
+                        <button onClick={() => setView('trash')} className="w-full py-4 bg-slate-50 rounded-xl font-bold flex justify-between px-4"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
+                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-4 flex items-center gap-2"><Download size={20}/> تصدير Excel</button>
+                        <label className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-between px-4 cursor-pointer">
+                            <span className="flex items-center gap-2"><Upload size={20}/> استيراد من Excel</span>
+                            <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
+                        </label>
                       </div>
                     </Modal>
                 )}
@@ -610,16 +702,20 @@
                     if (!s) return null;
                     return (
                       <Modal onClose={() => setView('list')}>
-                         <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6">
+                         <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6 animate-slide-up">
                             <h1 className="text-2xl font-bold">{cleanName(s.firstName)} {s.lastName || ""}</h1>
                             <div className="grid grid-cols-2 gap-4 text-center">
-                               <div className="bg-violet-50 p-4 rounded-xl">قيد: <span className="font-bold text-violet-700">{s.regNumber}</span></div>
-                               <div className="bg-orange-50 p-4 rounded-xl">صفحة: <span className="font-bold text-orange-600">{s.pageNumber}</span></div>
+                               <div className="bg-violet-50 p-4 rounded-xl">قيد: <span className="font-bold text-violet-700 font-mono">{s.regNumber}</span></div>
+                               <div className="bg-orange-50 p-4 rounded-xl">صفحة: <span className="font-bold text-orange-600 font-mono">{s.pageNumber}</span></div>
                             </div>
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">طباعة البطاقة</button>
+                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Printer size={18}/> طباعة البطاقة</button>
                             <div className="flex gap-2">
                                 <button onClick={() => setView('edit')} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold">تعديل</button>
-                                <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى السلة؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold">حذف</button>
+                                {view === 'trash' ? (
+                                    <button onClick={async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: false }); fetchStudents(); setView('list'); }} className="flex-1 bg-emerald-50 text-emerald-600 py-3 rounded-xl font-bold">استعادة</button>
+                                ) : (
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى السلة؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold">حذف</button>
+                                )}
                             </div>
                          </div>
                       </Modal>
@@ -628,9 +724,15 @@
 
                 {showPrintModal && (
                     <Modal onClose={() => setShowPrintModal(false)}>
-                       <div className="bg-white rounded-2xl p-6 text-center space-y-4">
+                       <div className="bg-white rounded-2xl p-6 text-center space-y-4 shadow-xl">
                           <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button onClick={() => { setPrintMode('list'); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold">طباعة السجل بالكامل</button>
+                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold">طباعة السجل الحالي بالكامل</button>
+                          <div className="text-slate-400 text-xs">أو اطبع قيداً محدداً</div>
+                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className="w-full p-3 border rounded-xl text-center font-bold">
+                               <option value="">اختر رقم القيد...</option>
+                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد {r}</option>)}
+                          </select>
+                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50" disabled={!printRegInput}>طباعة القيد المختار</button>
                        </div>
                     </Modal>
                 )}
@@ -639,7 +741,7 @@
                 {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
               </div>
               
-              {printMode === 'list' && <PrintView students={filtered} />}
+              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `سجل قيد رقم ${selectedRegFilter}` : "فهرس القيد العام"} />}
               {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
             </>
           );
