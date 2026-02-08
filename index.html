@@ -59,7 +59,7 @@
         .print-page-container {
             width: 210mm;
             height: 297mm;
-            padding: 8mm 12mm;
+            padding: 10mm 15mm;
             box-sizing: border-box;
             page-break-after: always;
             break-after: page;
@@ -86,7 +86,7 @@
         th, td {
             word-wrap: break-word;
             border: 1px solid black !important;
-            padding: 1px 4px;
+            padding: 2px 4px;
         }
 
         tr {
@@ -139,7 +139,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -180,7 +180,8 @@
         const exportToExcel = (students) => {
           const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
           const data = students.map(s => ({
-            'الاسم الكامل': cleanName(s.firstName) + " " + (s.lastName || ""),
+            'الاسم الأول': cleanName(s.firstName),
+            'اللقب': s.lastName,
             'رقم القيد': s.regNumber,
             'رقم الصفحة': s.pageNumber,
             'الحالة': statusMap[s.status || 'active'] || 'مستمر',
@@ -191,6 +192,25 @@
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب");
           XLSX.writeFile(workbook, "سجل_الطلاب.xlsx");
+        };
+
+        const generate1000Template = () => {
+          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم'];
+          const templateData = [];
+          for (let i = 0; i < 1000; i++) {
+            templateData.push({
+              'الاسم الأول': firstNames[Math.floor(Math.random() * firstNames.length)] + " " + (i + 1), 
+              'اللقب': 'طالب',
+              'رقم القيد': (i + 1).toString(),
+              'رقم الصفحة': (Math.floor(i / 10) + 1).toString(),
+              'الحالة': 'مستمر',
+              'الملاحظات': 'توليد تلقائي'
+            });
+          }
+          const worksheet = XLSX.utils.json_to_sheet(templateData);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 1000 طالب");
+          XLSX.writeFile(workbook, "نموذج_سجل_1000_طالب.xlsx");
         };
 
         const readExcel = (file) => {
@@ -271,43 +291,6 @@
            return <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg text-xs font-bold border border-emerald-100">مستمر</span>;
         };
 
-        const SingleStudentPrint = ({ student }) => {
-          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
-          const printDate = new Date().toLocaleDateString('ar-EG');
-          return (
-            <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-8">
-              <div className="w-full max-w-[21cm] border-[3px] border-double border-slate-800 p-8 rounded-xl">
-                <div className="text-center border-b-2 border-slate-200 pb-6 mb-8">
-                  <h1 className="text-3xl font-bold text-slate-900">بطاقة معلومات الطالب</h1>
-                  <p className="text-slate-500 font-medium">نظام سجلات الطلاب</p>
-                </div>
-                <div className="space-y-6">
-                   <div className="flex flex-col">
-                      <span className="text-sm font-bold text-slate-400">الاسم الكامل</span>
-                      <div className="text-2xl font-bold text-slate-900 border-b border-dashed border-slate-300 pb-1">
-                         {cleanName(student.firstName)} {student.lastName || ''}
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="bg-slate-50 p-4 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500 uppercase">رقم القيد</span>
-                        <div className="text-3xl font-mono font-bold text-slate-900">{student.regNumber}</div>
-                      </div>
-                      <div className="bg-slate-50 p-4 rounded-lg">
-                        <span className="text-xs font-bold text-slate-500 uppercase">رقم الصفحة</span>
-                        <div className="text-3xl font-mono font-bold text-slate-900">{student.pageNumber}</div>
-                      </div>
-                   </div>
-                   <div className="flex justify-between text-sm font-bold text-slate-600">
-                      <span>الحالة: {statusLabels[student.status || 'active']}</span>
-                      <span>تاريخ الطباعة: {printDate}</span>
-                   </div>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
         const PrintView = ({ students, title }) => {
           const sortedStudents = useMemo(() => {
              return [...students]
@@ -315,9 +298,9 @@
                .map((s, i) => ({ ...s, printIndex: i + 1 }));
           }, [students]);
 
-          const ROWS_PER_COLUMN_MAX = 30; // 30 اسماً في كل جهة
+          const ROWS_PER_COLUMN_MAX = 31; // زيادة عدد الصفوف قليلاً لملء الفراغ
           const COLUMNS_PER_PAGE = 2;
-          const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE; // 60 اسماً في الصفحة
+          const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
           
           const totalItems = sortedStudents.length;
           const totalPages = Math.ceil(totalItems / MAX_ITEMS_PER_PAGE);
@@ -329,42 +312,42 @@
           }
           
           return (
-            <div className="print-only text-[9pt] dir-rtl">
+            <div className="print-only text-[9.5pt] dir-rtl">
               {pages.map((pageStudents, pageIndex) => (
                 <div key={pageIndex} className="print-page-container">
                    {/* Header */}
-                   <div className="flex justify-between items-end border-b-2 border-black pb-1 mb-3 w-full h-[40px]">
+                   <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]">
                       <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
-                      <h1 className="text-lg font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
+                      <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
                       <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
                    </div>
 
                    {/* Columns */}
-                   <div className="flex flex-row gap-[6mm] flex-1">
+                   <div className="flex flex-row gap-[8mm] flex-1">
                      {[0, 1].map((colIndex) => {
                        const colStudents = pageStudents.slice(colIndex * ROWS_PER_COLUMN_MAX, (colIndex + 1) * ROWS_PER_COLUMN_MAX);
                        return (
                          <div key={colIndex} className="flex-1 flex flex-col">
                            <table className="w-full border-collapse table-fixed">
                              <thead>
-                               <tr className="bg-gray-100 h-[32px]">
-                                 <th className="p-0.5 text-center w-[30px] text-[8pt]">ت</th>
-                                 <th className="p-0.5 text-right text-[9pt]">الاسم الكامل</th>
-                                 <th className="p-0.5 text-center w-[35px] font-bold text-[8pt]">ق</th>
-                                 <th className="p-0.5 text-center w-[35px] font-bold text-[8pt]">ص</th>
+                               <tr className="bg-gray-100 h-[36px]">
+                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">ت</th>
+                                 <th className="p-1 text-right">الاسم الكامل</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ق</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>
                                </tr>
                              </thead>
                              <tbody>
                                {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
                                  const s = colStudents[rowIndex];
                                  return (
-                                   <tr key={rowIndex} className="h-[28px]">
-                                     <td className="p-0.5 text-center font-medium">{s ? s.printIndex : ''}</td>
-                                     <td className="p-0.5 px-1.5 align-middle whitespace-nowrap overflow-hidden leading-tight font-bold text-[9.5pt]">
-                                       {s ? (cleanName(s.firstName) + " " + (s.lastName || "")) : ''}
+                                   <tr key={rowIndex} className="h-[31px]"> {/* ضبط ارتفاع الصف لملء الصفحة */}
+                                     <td className="px-1 text-center font-medium">{s ? s.printIndex : ''}</td>
+                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
+                                       {s ? cleanName(s.firstName) : ''} {/* حذف اللقب من الطباعة */}
                                      </td>
-                                     <td className="p-0.5 text-center font-bold font-mono text-[10pt] align-middle">{s ? s.regNumber : ''}</td>
-                                     <td className="p-0.5 text-center font-bold font-mono text-[10pt] align-middle">{s ? s.pageNumber : ''}</td>
+                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
+                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
                                    </tr>
                                  );
                                })}
@@ -394,7 +377,7 @@
           };
           return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-md p-8 animate-fade-in">
                 <div className="text-center mb-8">
                   <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"><Users className="w-8 h-8 text-white" /></div>
                   <h2 className="text-2xl font-bold text-slate-800">تسجيل الدخول</h2>
@@ -509,6 +492,26 @@
             setImporting(false);
           };
 
+          const executeDeleteAll = async () => {
+             setConfirmConfig(null);
+             setLoading(true);
+             try {
+               const snap = await getDocs(studentsCollection);
+               const CHUNK_SIZE = 400;
+               const allDocs = snap.docs;
+               for (let i = 0; i < allDocs.length; i += CHUNK_SIZE) {
+                  const batch = writeBatch(db);
+                  const chunk = allDocs.slice(i, i + CHUNK_SIZE);
+                  chunk.forEach((d) => batch.delete(d.ref));
+                  await batch.commit();
+               }
+               setStudents([]);
+               setAlertConfig({ message: 'تم حذف كافة البيانات بنجاح', type: 'success' });
+               setView('list');
+             } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); }
+             finally { setLoading(false); }
+          };
+
           const filtered = useMemo(() => {
             let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted);
             if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
@@ -547,6 +550,16 @@
                 <main className="max-w-7xl mx-auto px-4 py-6">
                     {loading ? <SkeletonLoader /> : (
                         <div className="animate-fade-in space-y-6">
+                          {view === 'trash' && (
+                            <div className="flex items-center justify-between bg-red-50 p-4 rounded-2xl border border-red-100 animate-slide-up">
+                                <div className="flex items-center gap-2 text-red-700 font-bold">
+                                    <Trash2 size={24} />
+                                    <span>سلة المهملات</span>
+                                </div>
+                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 transition-colors"><ArrowLeft size={18}/> العودة</button>
+                            </div>
+                          )}
+
                           {view !== 'trash' && (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass="bg-blue-600" />
@@ -584,8 +597,8 @@
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => { setSelectedId(null); setView('add'); }} className="flex-1 lg:flex-none bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg"><Plus size={18} /> إضافة</button>
-                                <button onClick={() => setShowPrintModal(true)} className="flex-1 lg:flex-none bg-white text-slate-700 border px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2"><Printer size={18} /> طباعة</button>
+                                <button onClick={() => { setSelectedId(null); setView('add'); }} className="flex-1 lg:flex-none bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-slate-800 transition-colors"><Plus size={18} /> إضافة</button>
+                                <button onClick={() => setShowPrintModal(true)} className="flex-1 lg:flex-none bg-white text-slate-700 border px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={18} /> طباعة</button>
                             </div>
                           </div>
 
@@ -601,11 +614,11 @@
                               </thead>
                               <tbody className="divide-y-2 divide-slate-100 text-sm">
                                 {displayed.map((s, idx) => (
-                                  <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50">
+                                  <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group">
                                     <td className="p-4 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                    <td className="p-4 font-bold text-slate-800">{cleanName(s.firstName)} {s.lastName || ""}</td>
-                                    <td className="p-4 text-center"><span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px]">{s.regNumber}</span></td>
-                                    <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px]">{s.pageNumber}</span></td>
+                                    <td className="p-4 font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</td>
+                                    <td className="p-4 text-center"><span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm">{s.regNumber}</span></td>
+                                    <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm">{s.pageNumber}</span></td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -614,12 +627,12 @@
 
                           <div className="md:hidden space-y-3">
                              {displayed.map((s, idx) => (
-                                 <div key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative mb-2">
+                                 <div key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
                                     <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                    <h3 className="font-bold text-slate-800">{cleanName(s.firstName)} {s.lastName || ""}</h3>
+                                    <h3 className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</h3>
                                     <div className="mt-4 flex gap-2 border-t border-slate-100 pt-2">
-                                        <span className="bg-[#5314cd] text-white px-3 py-1 rounded-lg text-sm">ق {s.regNumber}</span>
-                                        <span className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm">ص {s.pageNumber}</span>
+                                        <span className="bg-[#5314cd] text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">ق {s.regNumber}</span>
+                                        <span className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">ص {s.pageNumber}</span>
                                     </div>
                                  </div>
                              ))}
@@ -677,7 +690,7 @@
                                 </label>
                               </div>
                            </div>
-                           <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl">حفظ</button>
+                           <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl hover:bg-slate-800 transition-colors">حفظ</button>
                         </form>
                       </div>
                     </Modal>
@@ -687,12 +700,16 @@
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
                         <h2 className="text-xl font-bold flex items-center gap-2"><Settings size={20}/> الإعدادات</h2>
-                        <button onClick={() => setView('trash')} className="w-full py-4 bg-slate-50 rounded-xl font-bold flex justify-between px-4"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
-                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-4 flex items-center gap-2"><Download size={20}/> تصدير Excel</button>
-                        <label className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-between px-4 cursor-pointer">
+                        <button onClick={() => setView('trash')} className="w-full py-4 bg-slate-50 rounded-xl font-bold flex justify-between px-4 hover:bg-slate-100 transition-colors"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
+                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-4 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95"><Download size={20}/> تصدير Excel</button>
+                        <button onClick={generate1000Template} className="w-full py-4 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-4 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95"><FileSpreadsheet size={20}/> نموذج 1000 طالب</button>
+                        <label className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-between px-4 cursor-pointer hover:bg-slate-800 transition-colors">
                             <span className="flex items-center gap-2"><Upload size={20}/> استيراد من Excel</span>
                             <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
                         </label>
+                        <div className="pt-4 border-t border-slate-100 mt-2">
+                           <button onClick={() => setConfirmConfig({ title: "حذف شامل", message: "هل أنت متأكد من حذف كافة البيانات نهائياً؟", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-4 bg-red-50 text-red-600 rounded-xl font-bold px-4 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95"><Trash2 size={20}/> حذف كافة البيانات</button>
+                        </div>
                       </div>
                     </Modal>
                 )}
@@ -705,16 +722,16 @@
                          <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6 animate-slide-up">
                             <h1 className="text-2xl font-bold">{cleanName(s.firstName)} {s.lastName || ""}</h1>
                             <div className="grid grid-cols-2 gap-4 text-center">
-                               <div className="bg-violet-50 p-4 rounded-xl">قيد: <span className="font-bold text-violet-700 font-mono">{s.regNumber}</span></div>
-                               <div className="bg-orange-50 p-4 rounded-xl">صفحة: <span className="font-bold text-orange-600 font-mono">{s.pageNumber}</span></div>
+                               <div className="bg-violet-50 p-4 rounded-xl shadow-inner font-bold text-violet-700">قيد: <span className="font-mono">{s.regNumber}</span></div>
+                               <div className="bg-orange-50 p-4 rounded-xl shadow-inner font-bold text-orange-600">صفحة: <span className="font-mono">{s.pageNumber}</span></div>
                             </div>
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2"><Printer size={18}/> طباعة البطاقة</button>
+                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors shadow-lg shadow-slate-200"><Printer size={18}/> طباعة البطاقة</button>
                             <div className="flex gap-2">
-                                <button onClick={() => setView('edit')} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold">تعديل</button>
+                                <button onClick={() => setView('edit')} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold hover:bg-slate-200 transition-colors">تعديل</button>
                                 {view === 'trash' ? (
-                                    <button onClick={async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: false }); fetchStudents(); setView('list'); }} className="flex-1 bg-emerald-50 text-emerald-600 py-3 rounded-xl font-bold">استعادة</button>
+                                    <button onClick={async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: false }); fetchStudents(); setView('list'); }} className="flex-1 bg-emerald-50 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-100 transition-colors">استعادة</button>
                                 ) : (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى السلة؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold">حذف</button>
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى السلة؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
                                 )}
                             </div>
                          </div>
@@ -726,18 +743,18 @@
                     <Modal onClose={() => setShowPrintModal(false)}>
                        <div className="bg-white rounded-2xl p-6 text-center space-y-4 shadow-xl">
                           <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold">طباعة السجل الحالي بالكامل</button>
+                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">طباعة السجل الحالي بالكامل</button>
                           <div className="text-slate-400 text-xs">أو اطبع قيداً محدداً</div>
-                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className="w-full p-3 border rounded-xl text-center font-bold">
+                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className="w-full p-3 border rounded-xl text-center font-bold outline-none focus:ring-2 focus:ring-blue-500">
                                <option value="">اختر رقم القيد...</option>
                                {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد {r}</option>)}
                           </select>
-                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50" disabled={!printRegInput}>طباعة القيد المختار</button>
+                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50 hover:bg-blue-700 transition-colors" disabled={!printRegInput}>طباعة القيد المختار</button>
                        </div>
                     </Modal>
                 )}
 
-                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={true} />}
+                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
                 {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
               </div>
               
