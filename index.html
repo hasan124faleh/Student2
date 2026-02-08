@@ -41,7 +41,7 @@
       @media print {
         @page { 
             size: A4; 
-            margin: 0 !important; /* إلغاء هوامش المتصفح للتحكم الكامل */
+            margin: 0 !important; 
         } 
         
         html, body { 
@@ -56,17 +56,16 @@
         .no-print { display: none !important; }
         .print-only { display: block !important; }
         
-        /* الحاوية الرئيسية لكل صفحة ورق */
         .print-page-container {
             width: 210mm;
-            height: 297mm; /* الارتفاع الكامل لصفحة A4 */
-            padding: 10mm 15mm; /* هوامش داخلية للورقة */
+            height: 297mm;
+            padding: 10mm 15mm;
             box-sizing: border-box;
             page-break-after: always;
             break-after: page;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* ضمان بدء المحتوى من الأعلى */
+            justify-content: flex-start;
             align-items: stretch;
             position: relative;
             background-color: white;
@@ -78,7 +77,6 @@
             break-after: auto;
         }
 
-        /* تنسيق الجداول للطباعة */
         table { 
             width: 100%; 
             border-collapse: collapse;
@@ -94,7 +92,6 @@
             break-inside: avoid;
         }
 
-        /* منع أي تأثيرات CSS خارجية من تشريد الترويسة */
         h1, .flex {
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
@@ -102,13 +99,11 @@
       }
       .print-only { display: none; }
       
-      /* Scrollbars */
       ::-webkit-scrollbar { width: 8px; }
       ::-webkit-scrollbar-track { background-color: #f1f5f9; }
       ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
       ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
 
-      /* Animations */
       @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
       .animate-fade-in { animation: fade-in 0.2s ease-out; }
       @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -153,9 +148,6 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
-        // ==========================================
-        // FIREBASE CONFIG
-        // ==========================================
         const firebaseConfig = {
           apiKey: "AIzaSyC3Hyi-tVMui0ZyPsezvoxxSFjCJQBme9Q",
           authDomain: "ss-app-87ac7.firebaseapp.com",
@@ -171,9 +163,6 @@
         const auth = getAuth(app);
         const studentsCollection = collection(db, "students");
 
-        // ==========================================
-        // UTILS
-        // ==========================================
         const cleanName = (name) => {
             if (!name) return "";
             return name.replace(/\s+\d+$/, '');
@@ -215,12 +204,9 @@
             const n3 = thirdNames[Math.floor(Math.random() * thirdNames.length)];
             const n4 = fourthNames[Math.floor(Math.random() * fourthNames.length)];
             const title = titles[Math.floor(Math.random() * titles.length)];
-            
             const fullName = `${n1} ${n2} ${n3} ${n4}`;
-            
             const regNum = (i % 10) + 1;
             const pageNum = Math.floor(i / 10) + 1;
-            
             templateData.push({
               'الاسم الأول': fullName, 
               'اللقب': title,
@@ -253,9 +239,6 @@
           });
         };
 
-        // ==========================================
-        // UI COMPONENTS
-        // ==========================================
         const SkeletonLoader = () => (
           <div className="animate-pulse space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -289,20 +272,6 @@
                       </div>
                    ))}
                </div>
-            </div>
-            <div className="md:hidden space-y-3">
-               {[...Array(6)].map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl p-4 border border-slate-100 h-32 relative">
-                      <div className="flex justify-between mb-4">
-                          <div className="h-5 w-3/4 bg-slate-200 rounded"></div>
-                          <div className="h-5 w-8 bg-slate-200 rounded"></div>
-                      </div>
-                      <div className="flex gap-2 mt-4">
-                         <div className="h-8 w-16 bg-slate-200 rounded"></div>
-                         <div className="h-8 w-16 bg-slate-200 rounded"></div>
-                      </div>
-                  </div>
-               ))}
             </div>
           </div>
         );
@@ -427,7 +396,7 @@
                .map((s, i) => ({ ...s, printIndex: i + 1 }));
           }, [students]);
 
-          const ROWS_PER_COLUMN_MAX = 31; // زيادة عدد الصفوف لملء الفراغ
+          const ROWS_PER_COLUMN_MAX = 30; // الضبط ليكون 30 اسماً في كل عمود
           const COLUMNS_PER_PAGE = 2;
           const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
           
@@ -437,11 +406,10 @@
           
           const pages = [];
           let startIndex = 0;
-          
           for (let i = 0; i < totalPages; i++) {
             const remainingItems = totalItems - startIndex;
             const remainingPages = totalPages - i;
-            const itemsForThisPage = Math.ceil(remainingItems / remainingPages);
+            const itemsForThisPage = Math.min(MAX_ITEMS_PER_PAGE, Math.ceil(remainingItems / remainingPages));
             pages.push(sortedStudents.slice(startIndex, startIndex + itemsForThisPage));
             startIndex += itemsForThisPage;
           }
@@ -454,7 +422,7 @@
 
                 return (
                     <div key={pageIndex} className="print-page-container">
-                       {/* الترويسة العلوية المثبتة */}
+                       {/* الترويسة العلوية */}
                        <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]">
                             <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
                             <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
@@ -471,7 +439,7 @@
                                {colStudents.length > 0 && (
                                  <table className="w-full border-collapse border border-black table-fixed">
                                    <thead>
-                                     <tr className="bg-gray-100 h-[34px]">
+                                     <tr className="bg-gray-100 h-[36px]">
                                        <th className="border border-black p-1 text-center w-[35px] text-[8.5pt]">ت</th>
                                        <th className="border border-black p-1 text-right">الاسم الكامل</th>
                                        <th className="border border-black p-1 text-center w-[40px] font-bold text-[8.5pt]">ق</th>
@@ -481,7 +449,7 @@
                                    <tbody>
                                      {colStudents.map((s) => {
                                        return (
-                                         <tr key={s.id} className="h-[31px]">
+                                         <tr key={s.id} className="h-[32px]">
                                            <td className="border border-black px-1 text-center font-medium">{s.printIndex}</td>
                                            <td className="border border-black px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
                                              {cleanName(s.firstName)}
@@ -491,6 +459,15 @@
                                          </tr>
                                        );
                                      })}
+                                     {/* إضافة صفوف فارغة إذا كان العمود أقل من 30 لملء الفراغ */}
+                                     {colStudents.length < rowsInThisPage && Array.from({ length: rowsInThisPage - colStudents.length }).map((_, idx) => (
+                                         <tr key={`empty-${idx}`} className="h-[32px]">
+                                             <td className="border border-black"></td>
+                                             <td className="border border-black"></td>
+                                             <td className="border border-black"></td>
+                                             <td className="border border-black"></td>
+                                         </tr>
+                                     ))}
                                    </tbody>
                                  </table>
                                )}
@@ -510,7 +487,6 @@
           const [password, setPassword] = useState('');
           const [error, setError] = useState('');
           const [loading, setLoading] = useState(false);
-
           const handleSubmit = async (e) => {
             e.preventDefault();
             setLoading(true);
@@ -519,7 +495,6 @@
             catch (err) { setError('بيانات الدخول غير صحيحة'); } 
             finally { setLoading(false); }
           };
-
           return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl">
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in">
@@ -565,7 +540,6 @@
           const [visibleCount, setVisibleCount] = useState(150);
           const loadMoreRef = useRef(null);
           const [importing, setImporting] = useState(false);
-          const [nameWarning, setNameWarning] = useState('');
           const [printMode, setPrintMode] = useState('list');
           const [showScrollTop, setShowScrollTop] = useState(false);
           const [alertConfig, setAlertConfig] = useState(null);
@@ -772,7 +746,6 @@
              setShowPrintModal(false);
              setTimeout(() => window.print(), 500);
           };
-
           const handleSinglePrint = (s) => {
              setSelectedId(s.id); 
              setPrintMode('single');
@@ -809,7 +782,6 @@
                                   <button onClick={() => setView('list')} className="bg-white text-slate-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50">عودة للسجلات</button>
                               </div>
                           )}
-
                           {view !== 'trash' && (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass="bg-blue-600" />
@@ -818,7 +790,6 @@
                                 <StatCard title="تارك/منقول" value={stats.others} icon={<AlertTriangle size={20}/>} colorClass="bg-amber-500" />
                             </div>
                           )}
-
                           <div className="bg-white p-2 rounded-2xl border shadow-sm flex flex-col lg:flex-row gap-4">
                             <div className="flex-1 flex flex-col gap-2">
                                 <div className="relative flex items-center bg-slate-50 rounded-xl border border-slate-100 focus-within:ring-2 focus-within:ring-blue-500 transition-all px-3 py-2">
@@ -866,7 +837,6 @@
                                 </div>
                             )}
                           </div>
-
                           <div className="hidden md:block bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                             <table className="w-full text-right border-collapse">
                               <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider">
@@ -907,7 +877,6 @@
                               </tbody>
                             </table>
                           </div>
-
                           <div className="md:hidden space-y-3">
                              {displayed.map((s, idx) => (
                                  <div key={s.id} onClick={() => { if(view!=='trash') { setSelectedId(s.id); setView('detail'); }}} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 relative active:scale-[0.98] transition-transform">
@@ -934,7 +903,6 @@
                                  </div>
                              ))}
                           </div>
-                          
                           {displayed.length > 0 && displayed.length < filtered.length && (
                             <div ref={loadMoreRef} className="p-8 text-center w-full">
                                <div className="inline-block w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
@@ -1108,11 +1076,9 @@
                        </div>
                     </Modal>
                 )}
-
                 {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
                 {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
               </div>
-              
               {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `قيد رقم ${selectedRegFilter}` : "فهرس القيد العام"} />}
               {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
             </>
