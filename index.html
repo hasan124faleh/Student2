@@ -298,7 +298,7 @@
                .map((s, i) => ({ ...s, printIndex: i + 1 }));
           }, [students]);
 
-          const ROWS_PER_COLUMN_MAX = 31; // زيادة عدد الصفوف قليلاً لملء الفراغ
+          const ROWS_PER_COLUMN_MAX = 31; 
           const COLUMNS_PER_PAGE = 2;
           const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
           
@@ -341,10 +341,10 @@
                                {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
                                  const s = colStudents[rowIndex];
                                  return (
-                                   <tr key={rowIndex} className="h-[31px]"> {/* ضبط ارتفاع الصف لملء الصفحة */}
+                                   <tr key={rowIndex} className="h-[31px]">
                                      <td className="px-1 text-center font-medium">{s ? s.printIndex : ''}</td>
                                      <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
-                                       {s ? cleanName(s.firstName) : ''} {/* حذف اللقب من الطباعة */}
+                                       {s ? cleanName(s.firstName) : ''}
                                      </td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
@@ -649,11 +649,28 @@
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const form = new FormData(e.target);
+                            const regNum = String(form.get('regNumber')).trim();
+                            const pageNum = String(form.get('pageNumber')).trim();
+                            
+                            // Check duplication: Same Reg AND Same Page
+                            const isDuplicate = students.some(s => 
+                                !s.isDeleted && 
+                                s.regNumber === regNum && 
+                                s.pageNumber === pageNum && 
+                                s.id !== selectedId
+                            );
+
+                            if (isDuplicate) {
+                                setAlertConfig({ message: "خطأ: هذا القيد مسجل بالفعل في نفس الصفحة لطالب آخر.", type: 'error' });
+                                return;
+                            }
+
                             const data = {
                                 firstName: form.get('firstName'),
-                                lastName: form.get('lastName'),
-                                regNumber: String(form.get('regNumber')).trim(),
-                                pageNumber: String(form.get('pageNumber')).trim(),
+                                lastName: form.get('lastName'), // Optional
+                                regNumber: regNum,
+                                pageNumber: pageNum,
+                                notes: form.get('notes'),
                                 status: form.get('status') || 'active',
                                 isDeleted: false,
                                 createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now()
@@ -667,7 +684,7 @@
                             } catch(err) { setAlertConfig({ message: "حدث خطأ", type: 'error' }); }
                         }} className="space-y-4">
                            <input name="firstName" required defaultValue={view === 'edit' ? cleanName(students.find(s=>s.id===selectedId)?.firstName) : ''} className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" placeholder="اسم الطالب" />
-                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" placeholder="اللقب" />
+                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" placeholder="اللقب (اختياري)" />
                            <div className="grid grid-cols-2 gap-4">
                              <input name="regNumber" required className="w-full p-4 rounded-xl bg-slate-50 border outline-none text-center font-bold" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
                              <input name="pageNumber" required className="w-full p-4 rounded-xl bg-slate-50 border outline-none text-center font-bold" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
@@ -690,6 +707,7 @@
                                 </label>
                               </div>
                            </div>
+                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" placeholder="ملاحظات (اختياري)" />
                            <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl hover:bg-slate-800 transition-colors">حفظ</button>
                         </form>
                       </div>
@@ -717,21 +735,64 @@
                 {view === 'detail' && selectedId && (() => {
                     const s = students.find(x => x.id === selectedId);
                     if (!s) return null;
+                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
+                    const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700' };
+
                     return (
                       <Modal onClose={() => setView('list')}>
-                         <div className="bg-white rounded-2xl shadow-xl p-6 space-y-6 animate-slide-up">
-                            <h1 className="text-2xl font-bold">{cleanName(s.firstName)} {s.lastName || ""}</h1>
-                            <div className="grid grid-cols-2 gap-4 text-center">
-                               <div className="bg-violet-50 p-4 rounded-xl shadow-inner font-bold text-violet-700">قيد: <span className="font-mono">{s.regNumber}</span></div>
-                               <div className="bg-orange-50 p-4 rounded-xl shadow-inner font-bold text-orange-600">صفحة: <span className="font-mono">{s.pageNumber}</span></div>
+                         <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 space-y-8 animate-slide-up relative overflow-hidden">
+                             <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-10 -mt-10"></div>
+            
+                            <div className="relative">
+                                <h1 className="text-3xl font-extrabold text-slate-900 mb-1">{cleanName(s.firstName)}</h1>
+                                <h2 className="text-xl font-bold text-slate-400">{s.lastName || ""}</h2>
                             </div>
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-slate-800 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors shadow-lg shadow-slate-200"><Printer size={18}/> طباعة البطاقة</button>
-                            <div className="flex gap-2">
-                                <button onClick={() => setView('edit')} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold hover:bg-slate-200 transition-colors">تعديل</button>
-                                {view === 'trash' ? (
-                                    <button onClick={async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: false }); fetchStudents(); setView('list'); }} className="flex-1 bg-emerald-50 text-emerald-600 py-3 rounded-xl font-bold hover:bg-emerald-100 transition-colors">استعادة</button>
-                                ) : (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى السلة؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
+
+                            <div className="grid grid-cols-2 gap-4">
+                               <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]">
+                                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">رقم القيد</span>
+                                   <span className="text-5xl font-mono font-black">{s.regNumber}</span>
+                               </div>
+                               <div className="bg-white border-2 border-slate-100 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]">
+                                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">رقم الصفحة</span>
+                                   <span className="text-5xl font-mono font-black text-slate-800">{s.pageNumber}</span>
+                               </div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
+                                <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-lg shadow-sm"><Calendar size={20} className="text-slate-500"/></div>
+                                        <div>
+                                            <div className="text-xs font-bold text-slate-400">تاريخ التسجيل</div>
+                                            <div className="font-bold text-slate-800">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-white rounded-lg shadow-sm"><Info size={20} className="text-slate-500"/></div>
+                                        <div>
+                                            <div className="text-xs font-bold text-slate-400">حالة القيد</div>
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold mt-1 ${statusColors[s.status] || statusColors['active']}`}>
+                                                {statusLabels[s.status] || 'مستمر'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {s.notes && (
+                                    <div className="pt-4 border-t border-slate-200">
+                                        <div className="text-xs font-bold text-slate-400 mb-1">ملاحظات</div>
+                                        <p className="text-slate-700 font-medium leading-relaxed">{s.notes}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"><Printer size={20}/> طباعة البطاقة</button>
+                            <div className="flex gap-3">
+                                <button onClick={() => setView('edit')} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors">تعديل البيانات</button>
+                                {view !== 'trash' && (
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
                                 )}
                             </div>
                          </div>
