@@ -139,7 +139,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
@@ -203,9 +203,7 @@
 
           const templateData = [];
           
-          // 10 Restrictions (Reg Numbers)
           for (let reg = 1; reg <= 10; reg++) {
-            // 200 Students per Reg
             for (let i = 0; i < 200; i++) {
                const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
                const n2 = secondNames[Math.floor(Math.random() * secondNames.length)];
@@ -213,7 +211,6 @@
                const n4 = fourthNames[Math.floor(Math.random() * fourthNames.length)];
                const title = titles[Math.floor(Math.random() * titles.length)];
                
-               // Assume roughly 30 names per page
                const pageNum = Math.floor(i / 30) + 1;
 
                templateData.push({
@@ -311,33 +308,25 @@
           return (
             <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-0">
               <div className="w-[190mm] h-[277mm] border-8 border-double border-slate-800 p-8 rounded-none relative overflow-hidden flex flex-col justify-between mx-auto my-auto">
-                
-                {/* Decorative Corners */}
                 <div className="absolute top-2 right-2 w-16 h-16 border-t-4 border-r-4 border-slate-900"></div>
                 <div className="absolute top-2 left-2 w-16 h-16 border-t-4 border-l-4 border-slate-900"></div>
                 <div className="absolute bottom-2 right-2 w-16 h-16 border-b-4 border-r-4 border-slate-900"></div>
                 <div className="absolute bottom-2 left-2 w-16 h-16 border-b-4 border-l-4 border-slate-900"></div>
 
-                {/* Header */}
                 <div className="text-center border-b-2 border-slate-900 pb-6 mb-4 relative z-10">
                   <div className="flex justify-between items-start mb-2 px-4">
                     <div className="text-sm font-bold leading-relaxed">جمهورية العراق<br/>وزارة التربية<br/>المديرية العامة للتربية</div>
-                    <div className="w-24 h-24 border-2 border-slate-800 rounded-full flex items-center justify-center bg-slate-50 shadow-sm">
-                        <span className="text-4xl">🎓</span>
-                    </div>
+                    <div className="w-24 h-24 border-2 border-slate-800 rounded-full flex items-center justify-center bg-slate-50 shadow-sm"><span className="text-4xl">🎓</span></div>
                     <div className="text-sm font-bold leading-relaxed text-left">التاريخ: {printDate}<br/>العدد: ............</div>
                   </div>
                   <h1 className="text-5xl font-black text-slate-900 mt-6 font-cairo tracking-wide">بطاقة الطالب الشخصية</h1>
                   <p className="text-xl font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-6 py-1 rounded-full border border-slate-300">نسخة طبق الأصل من سجل القيود</p>
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 flex flex-col gap-10 justify-start pt-8 px-6 relative z-10">
                    <div className="text-center space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
                       <span className="text-xl font-bold text-slate-500 block">الاسم الرباعي واللقب</span>
-                      <div className="text-4xl font-black text-slate-900 pb-2">
-                         {cleanName(student.firstName)} {student.lastName || ''}
-                      </div>
+                      <div className="text-4xl font-black text-slate-900 pb-2">{cleanName(student.firstName)} {student.lastName || ''}</div>
                    </div>
 
                    <div className="grid grid-cols-2 gap-8 my-2">
@@ -369,23 +358,14 @@
                    </div>
                 </div>
 
-                {/* Footer */}
                 <div className="mt-8 pt-8 border-t-2 border-slate-900 flex justify-between items-end px-12 pb-8 relative z-10">
-                   <div className="text-center">
-                      <div className="h-24"></div>
-                      <div className="font-bold text-xl text-slate-900 border-t-2 border-slate-900 pt-2 w-48 mx-auto">توقيع الموظف المختص</div>
-                   </div>
-                   <div className="text-center">
-                      <div className="h-24"></div>
-                      <div className="font-bold text-xl text-slate-900 border-t-2 border-slate-900 pt-2 w-48 mx-auto">ختم وتوقيع المدير</div>
-                   </div>
+                   <div className="text-center"><div className="h-24"></div><div className="font-bold text-xl text-slate-900 border-t-2 border-slate-900 pt-2 w-48 mx-auto">توقيع الموظف المختص</div></div>
+                   <div className="text-center"><div className="h-24"></div><div className="font-bold text-xl text-slate-900 border-t-2 border-slate-900 pt-2 w-48 mx-auto">ختم وتوقيع المدير</div></div>
                 </div>
                 
-                {/* Watermark */}
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none z-0 select-none">
                      <div className="transform -rotate-45 text-[150px] font-black text-slate-900 whitespace-nowrap border-4 border-slate-900 p-12 rounded-3xl">سجل رسمي</div>
                 </div>
-
               </div>
             </div>
           );
@@ -393,15 +373,12 @@
 
         const PrintView = ({ students, title }) => {
           const sortedStudents = useMemo(() => {
-             return [...students]
-               .sort((a, b) => a.firstName.localeCompare(b.firstName))
-               .map((s, i) => ({ ...s, printIndex: i + 1 }));
+             return [...students].sort((a, b) => a.firstName.localeCompare(b.firstName)).map((s, i) => ({ ...s, printIndex: i + 1 }));
           }, [students]);
 
           const ROWS_PER_COLUMN_MAX = 31; 
           const COLUMNS_PER_PAGE = 2;
           const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
-          
           const totalItems = sortedStudents.length;
           const totalPages = Math.ceil(totalItems / MAX_ITEMS_PER_PAGE);
           const printDate = new Date().toLocaleDateString('ar-EG');
@@ -415,14 +392,11 @@
             <div className="print-only text-[9.5pt] dir-rtl">
               {pages.map((pageStudents, pageIndex) => (
                 <div key={pageIndex} className="print-page-container">
-                   {/* Header */}
                    <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]">
                       <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
                       <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
                       <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
                    </div>
-
-                   {/* Columns */}
                    <div className="flex flex-row gap-[8mm] flex-1">
                      {[0, 1].map((colIndex) => {
                        const colStudents = pageStudents.slice(colIndex * ROWS_PER_COLUMN_MAX, (colIndex + 1) * ROWS_PER_COLUMN_MAX);
@@ -443,9 +417,7 @@
                                  return (
                                    <tr key={rowIndex} className="h-[31px]">
                                      <td className="px-1 text-center font-medium">{s ? s.printIndex : ''}</td>
-                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">
-                                       {s ? cleanName(s.firstName) : ''}
-                                     </td>
+                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
                                    </tr>
@@ -493,6 +465,14 @@
           );
         };
 
+        const themeColors = {
+          slate: { primary: 'bg-slate-900', hover: 'hover:bg-slate-800', secondary: 'bg-blue-600', secondaryHover: 'hover:bg-blue-700', ring: 'focus:ring-blue-500', name: 'الافتراضي (أزرق)' },
+          purple: { primary: 'bg-violet-900', hover: 'hover:bg-violet-800', secondary: 'bg-purple-600', secondaryHover: 'hover:bg-purple-700', ring: 'focus:ring-purple-500', name: 'بنفسجي' },
+          emerald: { primary: 'bg-teal-900', hover: 'hover:bg-teal-800', secondary: 'bg-emerald-600', secondaryHover: 'hover:bg-emerald-700', ring: 'focus:ring-emerald-500', name: 'أخضر' },
+          rose: { primary: 'bg-rose-900', hover: 'hover:bg-rose-800', secondary: 'bg-red-600', secondaryHover: 'hover:bg-red-700', ring: 'focus:ring-red-500', name: 'أحمر' },
+          amber: { primary: 'bg-amber-900', hover: 'hover:bg-amber-800', secondary: 'bg-orange-600', secondaryHover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', name: 'برتقالي' },
+        };
+
         const App = () => {
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
@@ -515,6 +495,10 @@
           const [confirmConfig, setConfirmConfig] = useState(null);
           const [showScrollTop, setShowScrollTop] = useState(false);
           const [similarStudents, setSimilarStudents] = useState([]);
+          const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
+          const [showThemeModal, setShowThemeModal] = useState(false);
+
+          const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
           const stats = useMemo(() => {
             const active = students.filter(s => !s.isDeleted);
@@ -548,6 +532,10 @@
              window.addEventListener('scroll', handleScroll);
              return () => window.removeEventListener('scroll', handleScroll);
           }, []);
+
+          useEffect(() => {
+            localStorage.setItem('appTheme', colorTheme);
+          }, [colorTheme]);
 
           useEffect(() => {
             const observer = new IntersectionObserver((entries) => {
@@ -661,10 +649,11 @@
                 <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80">
                   <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-lg text-slate-800 cursor-pointer" onClick={() => setView('list')}>
-                      <div className="bg-slate-900 text-white p-2 rounded-xl shadow-lg shadow-slate-900/10"><Users size={20} /></div>
+                      <div className={`${currentTheme.primary} text-white p-2 rounded-xl shadow-lg transition-colors`}><Users size={20} /></div>
                       <span>سجل القيود</span>
                     </div>
                     <div className="flex items-center gap-2">
+                      <button onClick={() => setShowThemeModal(true)} className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Palette size={22} /></button>
                       <button onClick={() => setView('settings')} className="p-2.5 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={22} /></button>
                       <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد؟", onConfirm: () => signOut(auth) })} className="p-2.5 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={22} /></button>
                     </div>
@@ -686,18 +675,18 @@
 
                           {view !== 'trash' && (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass="bg-blue-600" />
+                                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={20}/>} colorClass={currentTheme.secondary} />
                                 <StatCard title="المستمرون" value={stats.activeOnly} icon={<UserCheck size={20}/>} colorClass="bg-emerald-600" />
                                 <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={20}/>} colorClass="bg-indigo-600" />
                                 <StatCard title="أخرى" value={stats.others} icon={<AlertTriangle size={20}/>} colorClass="bg-amber-500" />
                             </div>
                           )}
 
-                          {/* Sticky Search & Filters */}
+                          {/* Sticky Search Only - Buttons removed */}
                           <div className="sticky top-16 z-30 bg-slate-50/95 backdrop-blur shadow-sm p-3 rounded-2xl border border-slate-200 transition-all">
-                            <div className="flex flex-col lg:flex-row gap-4">
+                            <div className="flex flex-col gap-4">
                                 <div className="flex-1 flex flex-col gap-2">
-                                    <div className="relative flex items-center bg-white rounded-xl border border-slate-200 px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                                    <div className={`relative flex items-center bg-white rounded-xl border border-slate-200 px-3 py-2 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
                                         <Search className="text-slate-400 ml-2" size={20} />
                                         <input className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-sm" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
                                     </div>
@@ -722,11 +711,13 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 lg:flex-col lg:w-32">
-                                    <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className="flex-1 bg-slate-900 text-white px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg hover:bg-slate-800 transition-colors"><Plus size={18} /> إضافة</button>
-                                    <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-5 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={18} /> طباعة</button>
-                                </div>
                             </div>
+                          </div>
+
+                          {/* Action Buttons (Not Sticky) */}
+                          <div className="flex gap-4">
+                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-5 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={18} /> إضافة سجل جديد</button>
+                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-5 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={18} /> خيارات الطباعة</button>
                           </div>
 
                           <div className="hidden md:block bg-white rounded-3xl border shadow-xl overflow-hidden mt-4">
@@ -744,7 +735,7 @@
                                   <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group">
                                     <td className="p-4 text-center text-slate-400 font-mono">{idx + 1}</td>
                                     <td className="p-4 font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</td>
-                                    <td className="p-4 text-center"><span className="bg-[#5314cd] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm">{s.regNumber}</span></td>
+                                    <td className="p-4 text-center"><span className={`${currentTheme.primary} text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm transition-colors`}>{s.regNumber}</span></td>
                                     <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm">{s.pageNumber}</span></td>
                                   </tr>
                                 ))}
@@ -758,7 +749,7 @@
                                     <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</h3>
                                     <div className="mt-4 flex gap-2 border-t border-slate-100 pt-2">
-                                        <span className="bg-[#5314cd] text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">ق {s.regNumber}</span>
+                                        <span className={`${currentTheme.primary} text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm transition-colors`}>ق {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">ص {s.pageNumber}</span>
                                     </div>
                                  </div>
@@ -770,7 +761,7 @@
                 </main>
 
                 {showScrollTop && (
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="fixed bottom-6 left-6 bg-slate-900 text-white p-3 rounded-full shadow-2xl z-50 animate-fade-in hover:bg-slate-700 transition-all">
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`fixed bottom-6 left-6 ${currentTheme.primary} ${currentTheme.hover} text-white p-3 rounded-full shadow-2xl z-50 animate-fade-in transition-all`}>
                         <ArrowUp size={24} />
                     </button>
                 )}
@@ -785,7 +776,6 @@
                             const regNum = String(form.get('regNumber')).trim();
                             const pageNum = String(form.get('pageNumber')).trim();
                             
-                            // Check duplication: Same Reg AND Same Page
                             const isDuplicate = students.some(s => 
                                 !s.isDeleted && 
                                 s.regNumber === regNum && 
@@ -800,7 +790,7 @@
 
                             const data = {
                                 firstName: form.get('firstName'),
-                                lastName: form.get('lastName'), // Optional
+                                lastName: form.get('lastName'),
                                 regNumber: regNum,
                                 pageNumber: pageNum,
                                 notes: form.get('notes'),
@@ -822,7 +812,7 @@
                                    name="firstName" 
                                    required 
                                    defaultValue={view === 'edit' ? cleanName(students.find(s=>s.id===selectedId)?.firstName) : ''} 
-                                   className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" 
+                                   className={`w-full p-4 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold`} 
                                    placeholder="اسم الطالب" 
                                    onChange={(e) => checkSimilarStudents(e.target.value)} 
                                    autoComplete="off"
@@ -847,7 +837,7 @@
                                    </div>
                                )}
                            </div>
-                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" placeholder="اللقب (اختياري)" />
+                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className={`w-full p-4 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold`} placeholder="اللقب (اختياري)" />
                            <div className="grid grid-cols-2 gap-4">
                              <input name="regNumber" required className="w-full p-4 rounded-xl bg-slate-50 border outline-none text-center font-bold" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
                              <input name="pageNumber" required className="w-full p-4 rounded-xl bg-slate-50 border outline-none text-center font-bold" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
@@ -870,11 +860,32 @@
                                 </label>
                               </div>
                            </div>
-                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className="w-full p-4 rounded-xl bg-slate-50 outline-none border focus:border-blue-500 font-bold" placeholder="ملاحظات (اختياري)" />
-                           <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl hover:bg-slate-800 transition-colors">حفظ</button>
+                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-4 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold`} placeholder="ملاحظات (اختياري)" />
+                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-4 rounded-xl font-bold shadow-xl transition-colors`}>حفظ</button>
                         </form>
                       </div>
                     </Modal>
+                )}
+
+                {showThemeModal && (
+                  <Modal onClose={() => setShowThemeModal(false)}>
+                    <div className="bg-white rounded-2xl p-6 text-center space-y-6 shadow-xl">
+                       <h3 className="text-xl font-bold">اختر لون التطبيق</h3>
+                       <div className="grid grid-cols-2 gap-4">
+                          {Object.entries(themeColors).map(([key, value]) => (
+                            <button 
+                              key={key} 
+                              onClick={() => { setColorTheme(key); setShowThemeModal(false); }}
+                              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${colorTheme === key ? `border-black bg-slate-50` : 'border-transparent hover:bg-slate-50'}`}
+                            >
+                               <div className={`w-8 h-8 rounded-full ${value.primary}`}></div>
+                               <span className="font-bold text-slate-700">{value.name}</span>
+                            </button>
+                          ))}
+                       </div>
+                       <button onClick={() => setShowThemeModal(false)} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600">إغلاق</button>
+                    </div>
+                  </Modal>
                 )}
 
                 {view === 'settings' && (
@@ -884,7 +895,7 @@
                         <button onClick={() => setView('trash')} className="w-full py-4 bg-slate-50 rounded-xl font-bold flex justify-between px-4 hover:bg-slate-100 transition-colors"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
                         <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-4 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95"><Download size={20}/> تصدير Excel</button>
                         <button onClick={generateTemplate} className="w-full py-4 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-4 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95"><FileSpreadsheet size={20}/> نموذج 2000 طالب</button>
-                        <label className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-between px-4 cursor-pointer hover:bg-slate-800 transition-colors">
+                        <label className={`w-full py-4 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-4 cursor-pointer transition-colors`}>
                             <span className="flex items-center gap-2"><Upload size={20}/> استيراد من Excel</span>
                             <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
                         </label>
@@ -912,7 +923,7 @@
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                               <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]">
+                               <div className={`${currentTheme.primary} text-white p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]`}>
                                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">رقم القيد</span>
                                    <span className="text-5xl font-mono font-black">{s.regNumber}</span>
                                </div>
@@ -951,7 +962,7 @@
                                 )}
                             </div>
 
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"><Printer size={20}/> طباعة البطاقة</button>
+                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg`}><Printer size={20}/> طباعة البطاقة</button>
                             <div className="flex gap-3">
                                 <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors">تعديل البيانات</button>
                                 {view !== 'trash' && (
@@ -967,13 +978,13 @@
                     <Modal onClose={() => setShowPrintModal(false)}>
                        <div className="bg-white rounded-2xl p-6 text-center space-y-4 shadow-xl">
                           <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">طباعة السجل الحالي بالكامل</button>
+                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors`}>طباعة السجل الحالي بالكامل</button>
                           <div className="text-slate-400 text-xs">أو اطبع قيداً محدداً</div>
-                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className="w-full p-3 border rounded-xl text-center font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-3 border rounded-xl text-center font-bold outline-none ${currentTheme.ring}`}>
                                <option value="">اختر رقم القيد...</option>
                                {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد {r}</option>)}
                           </select>
-                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50 hover:bg-blue-700 transition-colors" disabled={!printRegInput}>طباعة القيد المختار</button>
+                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-3 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors`} disabled={!printRegInput}>طباعة القيد المختار</button>
                        </div>
                     </Modal>
                 )}
