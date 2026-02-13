@@ -142,7 +142,7 @@
           Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, enableIndexedDbPersistence, getDocsFromServer } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, enableIndexedDbPersistence, onSnapshot } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
@@ -524,11 +524,30 @@
           useEffect(() => {
             const unsub = onAuthStateChanged(auth, (u) => {
               setUser(u);
-              if (u) fetchStudents();
-              else setLoading(false);
+              if (!u) setLoading(false);
             });
             return () => unsub();
           }, []);
+
+          useEffect(() => {
+            if (!user) return;
+            setLoading(true);
+            const unsubscribe = onSnapshot(studentsCollection, (snapshot) => {
+               const data = [];
+               snapshot.forEach(d => {
+                  const raw = d.data();
+                  const createdAt = raw.createdAt?.toMillis ? raw.createdAt.toMillis() : (raw.createdAt || Date.now());
+                  data.push({ id: d.id, ...raw, createdAt });
+               });
+               data.sort((a,b) => b.createdAt - a.createdAt);
+               setStudents(data);
+               setLoading(false);
+            }, (error) => {
+               console.error("Error fetching students:", error);
+               setLoading(false);
+            });
+            return () => unsubscribe();
+          }, [user]);
 
           useEffect(() => {
             const timer = setTimeout(() => setDebouncedQuery(search), 300);
@@ -555,28 +574,6 @@
             return () => observer.disconnect();
           }, [students.length]);
 
-          const fetchStudents = async () => {
-            try {
-              let snap;
-              try {
-                  // Try to fetch from Server (to force refresh)
-                  snap = await getDocsFromServer(studentsCollection);
-              } catch (e) {
-                  // Fallback to local cache (Persistence) if offline
-                  console.log("Offline: Fetching from cache");
-                  snap = await getDocs(studentsCollection);
-              }
-              const data = [];
-              snap.forEach(d => {
-                 const raw = d.data();
-                 data.push({ id: d.id, ...raw, createdAt: raw.createdAt?.toMillis ? raw.createdAt.toMillis() : (raw.createdAt || Date.now()) });
-              });
-              data.sort((a,b) => b.createdAt - a.createdAt);
-              setStudents(data);
-              setLoading(false);
-            } catch (e) { console.error(e); }
-          };
-
           const handleImport = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -602,7 +599,6 @@
                  }
               });
               await batch.commit();
-              fetchStudents();
               setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
             } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
             setImporting(false);
@@ -621,7 +617,6 @@
                   chunk.forEach((d) => batch.delete(d.ref));
                   await batch.commit();
                }
-               setStudents([]);
                setAlertConfig({ message: 'تم حذف كافة البيانات بنجاح', type: 'success' });
                setView('list');
              } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); }
@@ -819,7 +814,6 @@
                             try {
                                 if (view === 'edit') await updateDoc(doc(db, "students", selectedId), data);
                                 else await addDoc(studentsCollection, data);
-                                fetchStudents();
                                 setView('list');
                                 setSimilarStudents([]);
                                 setAlertConfig({ message: 'تم الحفظ بنجاح', type: 'success' });
