@@ -273,7 +273,16 @@
 
         const Modal = ({ children, onClose, zIndex = "z-50" }) => (
           <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}>
-            <div className="w-full max-w-lg relative" onClick={e => e.stopPropagation()}>{children}</div>
+            <div className="w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all z-[60]"
+                    title="إغلاق"
+                >
+                    <X size={24} />
+                </button>
+                {children}
+            </div>
           </div>
         );
 
