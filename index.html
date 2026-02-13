@@ -142,7 +142,7 @@
           Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
+        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, enableIndexedDbPersistence, getDocsFromServer } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
@@ -161,6 +161,16 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        
+        // Enable Offline Persistence
+        enableIndexedDbPersistence(db).catch((err) => {
+            if (err.code == 'failed-precondition') {
+                console.warn('Persistence failed: Multiple tabs open.');
+            } else if (err.code == 'unimplemented') {
+                console.warn('Persistence failed: Browser not supported.');
+            }
+        });
+
         const auth = getAuth(app);
         const studentsCollection = collection(db, "students");
 
@@ -547,7 +557,15 @@
 
           const fetchStudents = async () => {
             try {
-              const snap = await getDocs(studentsCollection);
+              let snap;
+              try {
+                  // Try to fetch from Server (to force refresh)
+                  snap = await getDocsFromServer(studentsCollection);
+              } catch (e) {
+                  // Fallback to local cache (Persistence) if offline
+                  console.log("Offline: Fetching from cache");
+                  snap = await getDocs(studentsCollection);
+              }
               const data = [];
               snap.forEach(d => {
                  const raw = d.data();
