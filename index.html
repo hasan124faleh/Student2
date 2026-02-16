@@ -188,7 +188,7 @@
         };
 
         const exportToExcel = (students) => {
-          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
+          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
           const data = students.map(s => ({
             'الاسم الأول': cleanName(s.firstName),
             'اللقب': s.lastName,
@@ -322,7 +322,7 @@
         );
 
         const SingleStudentPrint = ({ student }) => {
-          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
+          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
           const printDate = new Date().toLocaleDateString('ar-EG');
           return (
             <div className="hidden print:flex flex-col items-center justify-center w-full h-screen bg-white p-0">
@@ -723,6 +723,7 @@
                                   <option value="active">مستمر</option>
                                   <option value="transferred">منقول</option>
                                   <option value="left">تارك</option>
+                                  <option value="graduated">تخرج</option>
                               </select>
                               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white rounded-xl px-2 py-2 border border-slate-200 text-xs font-bold outline-none">
                                   <option value="recent">الأحدث</option>
@@ -754,7 +755,12 @@
                                 {displayed.map((s, idx) => (
                                   <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group">
                                     <td className="p-4 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                    <td className="p-4 font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'تخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
+                                            <span className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</span>
+                                        </div>
+                                    </td>
                                     <td className="p-4 text-center"><span className={`${currentTheme.primary} text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm transition-colors`}>{s.regNumber}</span></td>
                                     <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm">{s.pageNumber}</span></td>
                                   </tr>
@@ -766,7 +772,7 @@
                           <div className="md:hidden space-y-3 mt-4">
                              {displayed.map((s, idx) => (
                                  <div key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
-                                    <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                    <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</h3>
                                     <div className="mt-4 flex gap-2 border-t border-slate-100 pt-2">
                                         <span className={`${currentTheme.primary} text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm transition-colors`}>ق {s.regNumber}</span>
@@ -864,7 +870,7 @@
                            <input type="date" name="createdAt" className="w-full p-4 rounded-xl bg-slate-50 border outline-none font-bold" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} />
                            <div>
                               <label className="block text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">حالة الطالب</label>
-                              <div className="grid grid-cols-3 gap-3">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <label className="cursor-pointer group">
                                     <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
                                     <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">مستمر</div>
@@ -876,6 +882,10 @@
                                 <label className="cursor-pointer group">
                                     <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
                                     <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">تارك</div>
+                                </label>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="graduated" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'graduated'} />
+                                    <div className="py-3 px-2 rounded-2xl border-2 border-slate-100 text-center font-bold text-sm text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">تخرج</div>
                                 </label>
                               </div>
                            </div>
@@ -928,8 +938,8 @@
                 {view === 'detail' && selectedId && (() => {
                     const s = students.find(x => x.id === selectedId);
                     if (!s) return null;
-                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك' };
-                    const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700' };
+                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
+                    const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700', 'graduated': 'bg-blue-100 text-blue-700' };
 
                     return (
                       <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
