@@ -503,7 +503,7 @@
           const [selectedRegFilter, setSelectedRegFilter] = useState(''); 
           const [statusFilter, setStatusFilter] = useState('ALL');
           const [sortBy, setSortBy] = useState('recent');
-          const [letterFilter, setLetterFilter] = useState('ALL');
+          const [yearFilter, setYearFilter] = useState('ALL');
           const [showPrintModal, setShowPrintModal] = useState(false);
           const [printRegInput, setPrintRegInput] = useState('');
           const [visibleCount, setVisibleCount] = useState(150);
@@ -528,6 +528,14 @@
                 others: active.filter(s => (s.status || 'active') !== 'active').length,
                 deleted: students.filter(s => s.isDeleted).length
             };
+          }, [students]);
+
+          const years = useMemo(() => {
+             const y = new Set(students.map(s => {
+                const d = new Date(s.createdAt);
+                return isNaN(d.getFullYear()) ? null : d.getFullYear();
+             }).filter(y => y !== null));
+             return Array.from(y).sort((a,b) => b - a);
           }, [students]);
 
           useEffect(() => {
@@ -632,6 +640,26 @@
              finally { setLoading(false); }
           };
 
+          const handleRestore = async (id) => {
+            try {
+                await updateDoc(doc(db, "students", id), { isDeleted: false });
+                setAlertConfig({ message: 'تم استعادة السجل بنجاح', type: 'success' });
+            } catch(e) { console.error(e); }
+          };
+
+          const handleDeleteForever = (id) => {
+            setConfirmConfig({
+                title: "حذف نهائي",
+                message: "هل أنت متأكد من الحذف النهائي؟ لا يمكن التراجع عن هذا الإجراء.",
+                isDestructive: true,
+                onConfirm: async () => {
+                    await deleteDoc(doc(db, "students", id));
+                    setConfirmConfig(null);
+                    setAlertConfig({ message: 'تم الحذف نهائياً', type: 'success' });
+                }
+            });
+          };
+
           const checkSimilarStudents = (val) => {
             const name = val.trim();
             if (name.length < 2) {
@@ -649,7 +677,7 @@
           const filtered = useMemo(() => {
             let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted);
             if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
-            if (letterFilter !== 'ALL') res = res.filter(s => s.firstName.startsWith(letterFilter));
+            if (yearFilter !== 'ALL') res = res.filter(s => new Date(s.createdAt).getFullYear().toString() === yearFilter);
             if (statusFilter !== 'ALL') res = res.filter(s => (s.status || 'active') === statusFilter);
             if (debouncedQuery) {
                const q = debouncedQuery.toLowerCase();
@@ -658,7 +686,7 @@
             if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
             else res.sort((a,b) => b.createdAt - a.createdAt);
             return res;
-          }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, letterFilter, view]);
+          }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]);
 
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
           const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
@@ -729,9 +757,9 @@
                                   <option value="recent">الأحدث</option>
                                   <option value="alphabetical">أبجدي</option>
                               </select>
-                              <select value={letterFilter} onChange={e => setLetterFilter(e.target.value)} className="bg-white rounded-xl px-2 py-2 border border-slate-200 text-xs font-bold outline-none">
-                                  <option value="ALL">كل الحروف</option>
-                                  {arabicLetters.map(l => <option key={l} value={l}>{l}</option>)}
+                              <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-white rounded-xl px-2 py-2 border border-slate-200 text-xs font-bold outline-none">
+                                  <option value="ALL">كل السنوات</option>
+                                  {years.map(y => <option key={y} value={y}>{y}</option>)}
                               </select>
                           </div>
 
@@ -749,11 +777,12 @@
                                   <th className="p-4">اسم الطالب</th>
                                   <th className="p-4 w-32 text-center">رقم القيد</th>
                                   <th className="p-4 w-28 text-center">الصفحة</th>
+                                  {view === 'trash' && <th className="p-4 w-32 text-center">إجراءات</th>}
                                 </tr>
                               </thead>
                               <tbody className="divide-y-2 divide-slate-100 text-sm">
                                 {displayed.map((s, idx) => (
-                                  <tr key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group">
+                                  <tr key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group ${view === 'trash' ? 'cursor-default' : ''}`}>
                                     <td className="p-4 text-center text-slate-400 font-mono">{idx + 1}</td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
@@ -763,6 +792,12 @@
                                     </td>
                                     <td className="p-4 text-center"><span className={`${currentTheme.primary} text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm transition-colors`}>{s.regNumber}</span></td>
                                     <td className="p-4 text-center"><span className="bg-[#FFA500] text-white px-3 py-1.5 rounded-lg font-mono inline-block min-w-[50px] shadow-sm">{s.pageNumber}</span></td>
+                                    {view === 'trash' && (
+                                        <td className="p-4 text-center flex gap-2 justify-center">
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-2 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={18}/></button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={18}/></button>
+                                        </td>
+                                    )}
                                   </tr>
                                 ))}
                               </tbody>
@@ -771,13 +806,19 @@
 
                           <div className="md:hidden space-y-3 mt-4">
                              {displayed.map((s, idx) => (
-                                 <div key={s.id} onClick={() => { setSelectedId(s.id); setView('detail'); }} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
+                                 <div key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors ${view === 'trash' ? 'cursor-default' : ''}`}>
                                     <div className={`absolute top-0 bottom-0 left-0 w-1.5 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</h3>
                                     <div className="mt-4 flex gap-2 border-t border-slate-100 pt-2">
                                         <span className={`${currentTheme.primary} text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm transition-colors`}>ق {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">ص {s.pageNumber}</span>
                                     </div>
+                                    {view === 'trash' && (
+                                        <div className="mt-3 pt-3 border-t border-slate-100 flex gap-2">
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-2 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-sm flex items-center justify-center gap-2"><RotateCcw size={16}/> استعادة</button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-2 bg-red-50 text-red-600 rounded-lg font-bold text-sm flex items-center justify-center gap-2"><Trash2 size={16}/> حذف نهائي</button>
+                                        </div>
+                                    )}
                                  </div>
                              ))}
                           </div>
@@ -995,7 +1036,7 @@
                             <div className="flex gap-3">
                                 <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors">تعديل البيانات</button>
                                 {view !== 'trash' && (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); fetchStudents(); setView('list'); setConfirmConfig(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
                                 )}
                             </div>
                          </div>
