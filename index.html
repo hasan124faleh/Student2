@@ -139,7 +139,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "firebase/firestore";
@@ -534,6 +534,21 @@
              return Object.entries(counts).map(([reg, count]) => ({ reg, count })).sort((a, b) => Number(a.reg) - Number(b.reg));
           }, [students]);
 
+          const statusStats = useMemo(() => {
+            const active = students.filter(s => !s.isDeleted);
+            const counts = { active: 0, transferred: 0, left: 0, graduated: 0 };
+            active.forEach(s => {
+                const st = s.status || 'active';
+                if (counts[st] !== undefined) counts[st]++;
+            });
+            return [
+                { label: 'مستمر', count: counts.active, color: 'bg-emerald-100 text-emerald-800' },
+                { label: 'منقول', count: counts.transferred, color: 'bg-amber-100 text-amber-800' },
+                { label: 'تارك', count: counts.left, color: 'bg-rose-100 text-rose-800' },
+                { label: 'تخرج', count: counts.graduated, color: 'bg-blue-100 text-blue-800' }
+            ];
+          }, [students]);
+
           const years = useMemo(() => {
              const y = new Set(students.map(s => {
                 const d = new Date(s.createdAt);
@@ -732,7 +747,7 @@
                                 <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
                                 <StatCard title="المستمرون" value={stats.activeOnly} icon={<UserCheck size={18}/>} colorClass="bg-emerald-600" />
                                 <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
-                                <StatCard title="أخرى" value={stats.others} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" />
+                                <StatCard title="أخرى" value={stats.others} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
@@ -812,7 +827,10 @@
                              {displayed.map((s, idx) => (
                                  <div key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors ${view === 'trash' ? 'cursor-default' : ''}`}>
                                     <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</h3>
+                                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
+                                       <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
+                                       {cleanName(s.firstName)} {s.lastName || ""}
+                                    </h3>
                                     <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
                                         <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>ق {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">ص {s.pageNumber}</span>
@@ -1010,6 +1028,39 @@
                                                 <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
                                             </tr>
                                         )}
+                                    </tbody>
+                                </table>
+                            </div>
+                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
+                        </div>
+                    </Modal>
+                )}
+
+                {view === 'statusStats' && (
+                    <Modal onClose={() => setView('list')}>
+                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <PieChart size={20} className="text-amber-500" /> إحصائيات الحالة الدراسية
+                            </h2>
+                            <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                <table className="w-full text-right border-collapse">
+                                    <thead className="bg-slate-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">الحالة</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {statusStats.map((item) => (
+                                            <tr key={item.label} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-3 font-bold text-slate-700 text-sm">{item.label}</td>
+                                                <td className="p-3 font-bold text-sm">
+                                                    <span className={`px-2 py-1 rounded-lg ${item.color}`}>
+                                                        {item.count} طالب
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
