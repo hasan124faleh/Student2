@@ -435,7 +435,7 @@
                                  const s = colStudents[rowIndex];
                                  return (
                                    <tr key={rowIndex} className="h-[31px]">
-                                     <td className="px-1 text-center font-medium">{s ? s.printIndex : ''}</td>
+                                     <td className="px-1 text-center font-medium whitespace-nowrap">{s ? s.printIndex : ''}</td>
                                      <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
@@ -1036,7 +1036,7 @@
                             <div className="flex gap-3">
                                 <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-3 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors">تعديل البيانات</button>
                                 {view !== 'trash' && (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم الحذف بنجاح', type: 'success' }); } })} className="flex-1 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">حذف</button>
                                 )}
                             </div>
                          </div>
