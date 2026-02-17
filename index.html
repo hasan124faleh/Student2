@@ -139,10 +139,10 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, enableIndexedDbPersistence, onSnapshot } from "firebase/firestore";
+        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
@@ -160,15 +160,10 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
         
-        // Enable Offline Persistence
-        enableIndexedDbPersistence(db).catch((err) => {
-            if (err.code == 'failed-precondition') {
-                console.warn('Persistence failed: Multiple tabs open.');
-            } else if (err.code == 'unimplemented') {
-                console.warn('Persistence failed: Browser not supported.');
-            }
+        // Initialize Firestore with Persistent Local Cache (Modern Way)
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache()
         });
 
         const auth = getAuth(app);
@@ -325,8 +320,8 @@
           const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
           const printDate = new Date().toLocaleDateString('ar-EG');
           return (
-            <div className="hidden print:flex flex-col items-center justify-center w-full h-[100vh] bg-white p-0 overflow-hidden">
-              <div className="w-[195mm] h-[280mm] border-[6px] border-double border-slate-800 p-6 rounded-none relative overflow-hidden flex flex-col justify-between mx-auto my-0 shadow-none">
+            <div className="hidden print:flex flex-col items-center justify-start w-full h-screen bg-white p-0 overflow-hidden">
+              <div className="w-[190mm] h-[250mm] border-[6px] border-double border-slate-800 p-6 rounded-none relative overflow-hidden flex flex-col justify-between mx-auto mt-0 shadow-none">
                 <div className="absolute top-2 right-2 w-16 h-16 border-t-4 border-r-4 border-slate-900"></div>
                 <div className="absolute top-2 left-2 w-16 h-16 border-t-4 border-l-4 border-slate-900"></div>
                 <div className="absolute bottom-2 right-2 w-16 h-16 border-b-4 border-r-4 border-slate-900"></div>
@@ -342,7 +337,7 @@
                   <p className="text-lg font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-6 py-1 rounded-full border border-slate-300">نسخة طبق الأصل من سجل القيود</p>
                 </div>
 
-                <div className="flex-1 flex flex-col gap-6 justify-start pt-4 px-4 relative z-10">
+                <div className="flex-1 flex flex-col gap-4 justify-start pt-2 px-4 relative z-10">
                    <div className="text-center space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                       <span className="text-lg font-bold text-slate-500 block">الاسم الرباعي واللقب</span>
                       <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)} {student.lastName || ''}</div>
@@ -528,6 +523,15 @@
                 others: active.filter(s => (s.status || 'active') !== 'active').length,
                 deleted: students.filter(s => s.isDeleted).length
             };
+          }, [students]);
+
+          const regStats = useMemo(() => {
+             const active = students.filter(s => !s.isDeleted);
+             const counts = {};
+             active.forEach(s => {
+                 counts[s.regNumber] = (counts[s.regNumber] || 0) + 1;
+             });
+             return Object.entries(counts).map(([reg, count]) => ({ reg, count })).sort((a, b) => Number(a.reg) - Number(b.reg));
           }, [students]);
 
           const years = useMemo(() => {
@@ -963,6 +967,7 @@
                       <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3">
                         <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> الإعدادات</h2>
                         <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
+                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button>
                         <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير Excel</button>
                         <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> نموذج 2000 طالب</button>
                         <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}>
@@ -973,6 +978,43 @@
                            <button onClick={() => setConfirmConfig({ title: "حذف شامل", message: "هل أنت متأكد من حذف كافة البيانات نهائياً؟", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> حذف كافة البيانات</button>
                         </div>
                       </div>
+                    </Modal>
+                )}
+
+                {view === 'stats' && (
+                    <Modal onClose={() => setView('list')}>
+                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <BarChart3 size={20} className="text-blue-600" /> إحصائيات القيود
+                            </h2>
+                            <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                <table className="w-full text-right border-collapse">
+                                    <thead className="bg-slate-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {regStats.length > 0 ? regStats.map((item) => (
+                                            <tr key={item.reg} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-3 font-bold text-slate-700 text-sm">قيد {item.reg}</td>
+                                                <td className="p-3 font-bold text-slate-900 text-sm">
+                                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-lg">
+                                                        {item.count} طالب
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
+                        </div>
                     </Modal>
                 )}
 
