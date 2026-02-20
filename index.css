@@ -1,0 +1,88 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap');
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  overflow-x: hidden;
+}
+
+/* Print Styles */
+@media print {
+  @page { 
+      size: A4; 
+      margin: 0 !important; 
+  } 
+  
+  html, body { 
+      margin: 0 !important; 
+      padding: 0 !important;
+      background-color: white; 
+      overflow: visible !important;
+      height: auto !important;
+      width: 210mm;
+  }
+  
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  
+  .print-page-container {
+      width: 210mm;
+      height: 297mm;
+      padding: 10mm 15mm;
+      box-sizing: border-box;
+      page-break-after: always;
+      break-after: page;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: stretch;
+      position: relative;
+      background-color: white;
+      overflow: hidden;
+  }
+
+  .print-page-container:last-child {
+      page-break-after: auto;
+      break-after: auto;
+  }
+
+  table { 
+      width: 100%; 
+      border-collapse: collapse;
+      table-layout: fixed;
+  }
+  
+  th, td {
+      word-wrap: break-word;
+      border: 1px solid black !important;
+      padding: 2px 4px;
+  }
+
+  tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+  }
+
+  h1, .flex {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+  }
+}
+.print-only { display: none; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background-color: #f1f5f9; }
+::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+@keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
+@keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }

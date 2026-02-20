@@ -135,14 +135,14 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo, useRef } from 'react';
+        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
           Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "firebase/firestore";
+        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
@@ -251,7 +251,7 @@
             reader.readAsArrayBuffer(file);
           });
         };
-
+        
         // ==========================================
         // UI COMPONENTS
         // ==========================================
@@ -340,7 +340,7 @@
                 <div className="flex-1 flex flex-col gap-4 justify-start pt-2 px-4 relative z-10">
                    <div className="text-center space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                       <span className="text-lg font-bold text-slate-500 block">الاسم الرباعي واللقب</span>
-                      <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)} {student.lastName || ''}</div>
+                      <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)} / {student.lastName || ''}</div>
                    </div>
 
                    <div className="grid grid-cols-2 gap-6 my-2">
@@ -431,7 +431,7 @@
                                  return (
                                    <tr key={rowIndex} className="h-[31px]">
                                      <td className="px-1 text-center font-medium whitespace-nowrap">{s ? s.printIndex : ''}</td>
-                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) : ''}</td>
+                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? `${cleanName(s.firstName)} / ${s.lastName || ''}` : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
                                      <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
                                    </tr>
@@ -486,7 +486,7 @@
           rose: { primary: 'bg-rose-900', hover: 'hover:bg-rose-800', secondary: 'bg-red-600', secondaryHover: 'hover:bg-red-700', ring: 'focus:ring-red-500', name: 'أحمر' },
           amber: { primary: 'bg-amber-900', hover: 'hover:bg-amber-800', secondary: 'bg-orange-600', secondaryHover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', name: 'برتقالي' },
         };
-
+        
         const App = () => {
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
@@ -514,15 +514,10 @@
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
-          const stats = useMemo(() => {
-            const active = students.filter(s => !s.isDeleted);
-            return {
-                total: active.length,
-                activeOnly: active.filter(s => (s.status || 'active') === 'active').length,
-                regs: new Set(active.map(s => s.regNumber)).size,
-                others: active.filter(s => (s.status || 'active') !== 'active').length,
-                deleted: students.filter(s => s.isDeleted).length
-            };
+          const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
+
+          const regsCount = useMemo(() => {
+             return new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber)).size;
           }, [students]);
 
           const regStats = useMemo(() => {
@@ -556,6 +551,35 @@
              }).filter(y => y !== null));
              return Array.from(y).sort((a,b) => b - a);
           }, [students]);
+
+          const refreshStats = async () => {
+             try {
+                 const baseConstraints = [where("isDeleted", "==", false)];
+                 if (selectedRegFilter) baseConstraints.push(where("regNumber", "==", selectedRegFilter));
+                 
+                 const totalQ = query(studentsCollection, ...baseConstraints);
+                 const totalSnap = await getCountFromServer(totalQ);
+                 const total = totalSnap.data().count;
+
+                 const activeQ = query(studentsCollection, ...baseConstraints, where("status", "==", "active"));
+                 const activeSnap = await getCountFromServer(activeQ);
+                 const active = activeSnap.data().count;
+
+                 const graduatedQ = query(studentsCollection, ...baseConstraints, where("status", "==", "graduated"));
+                 const graduatedSnap = await getCountFromServer(graduatedQ);
+                 const graduated = graduatedSnap.data().count;
+
+                 setStats({ total, active, graduated });
+             } catch (error) {
+                 console.error("Error fetching stats:", error);
+             }
+          };
+
+          useEffect(() => {
+             if (user) {
+                 refreshStats();
+             }
+          }, [user, selectedRegFilter]);
 
           useEffect(() => {
             const unsub = onAuthStateChanged(auth, (u) => {
@@ -635,6 +659,7 @@
                  }
               });
               await batch.commit();
+              await refreshStats();
               setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
             } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
             setImporting(false);
@@ -653,6 +678,7 @@
                   chunk.forEach((d) => batch.delete(d.ref));
                   await batch.commit();
                }
+               await refreshStats();
                setAlertConfig({ message: 'تم حذف كافة البيانات بنجاح', type: 'success' });
                setView('list');
              } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); }
@@ -662,6 +688,7 @@
           const handleRestore = async (id) => {
             try {
                 await updateDoc(doc(db, "students", id), { isDeleted: false });
+                await refreshStats();
                 setAlertConfig({ message: 'تم استعادة السجل بنجاح', type: 'success' });
             } catch(e) { console.error(e); }
           };
@@ -673,6 +700,7 @@
                 isDestructive: true,
                 onConfirm: async () => {
                     await deleteDoc(doc(db, "students", id));
+                    await refreshStats();
                     setConfirmConfig(null);
                     setAlertConfig({ message: 'تم الحذف نهائياً', type: 'success' });
                 }
@@ -711,7 +739,7 @@
           const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
 
           if (!user) return <Login />;
-
+        
           return (
             <>
               <div className="min-h-screen no-print pb-20">
@@ -730,7 +758,7 @@
                 </header>
 
                 <main className="max-w-7xl mx-auto px-4 py-4">
-                    {loading ? <SkeletonLoader /> : (
+                    {loading && students.length === 0 ? <SkeletonLoader /> : (
                         <div className="animate-fade-in space-y-4">
                           {view === 'trash' && (
                             <div className="flex items-center justify-between bg-red-50 p-3 rounded-xl border border-red-100 animate-slide-up">
@@ -745,9 +773,9 @@
                           {view !== 'trash' && (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                 <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
-                                <StatCard title="المستمرون" value={stats.activeOnly} icon={<UserCheck size={18}/>} colorClass="bg-emerald-600" />
-                                <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
-                                <StatCard title="أخرى" value={stats.others} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
+                                <StatCard title="المستمرون" value={stats.active} icon={<UserCheck size={18}/>} colorClass="bg-emerald-600" />
+                                <StatCard title="القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
+                                <StatCard title="أخرى" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
@@ -806,7 +834,7 @@
                                     <td className="px-4 py-2">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'تخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
-                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</span>
+                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} / {s.lastName || ""}</span>
                                         </div>
                                     </td>
                                     <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
@@ -829,7 +857,7 @@
                                     <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
                                        <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
-                                       {cleanName(s.firstName)} {s.lastName || ""}
+                                       {cleanName(s.firstName)} / {s.lastName || ""}
                                     </h3>
                                     <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
                                         <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>ق {s.regNumber}</span>
@@ -890,6 +918,7 @@
                             try {
                                 if (view === 'edit') await updateDoc(doc(db, "students", selectedId), data);
                                 else await addDoc(studentsCollection, data);
+                                await refreshStats();
                                 setView('list');
                                 setSimilarStudents([]);
                                 setAlertConfig({ message: 'تم الحفظ بنجاح', type: 'success' });
@@ -908,7 +937,7 @@
                                {similarStudents.length > 0 && (
                                    <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 animate-fade-in">
                                        <div className="flex items-center gap-1 text-amber-800 font-bold text-[10px] mb-1">
-                                           <AlertTriangle size={12}/>
+                                            <AlertTriangle size={12}/>
                                            <span>تنبيه: أسماء مشابهة مسجلة مسبقاً</span>
                                        </div>
                                        <div className="max-h-24 overflow-y-auto space-y-1">
@@ -1082,7 +1111,7 @@
             
                             <div className="relative">
                                 <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{cleanName(s.firstName)}</h1>
-                                <h2 className="text-lg font-bold text-slate-400">{s.lastName || ""}</h2>
+                                <h2 className="text-lg font-bold text-slate-400">/ {s.lastName || ""}</h2>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -1129,7 +1158,7 @@
                             <div className="flex gap-2">
                                 <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">تعديل البيانات</button>
                                 {view !== 'trash' && (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم الحذف بنجاح', type: 'success' }); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button>
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم الحذف بنجاح', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button>
                                 )}
                             </div>
                          </div>
