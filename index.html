@@ -762,10 +762,28 @@
             if (statusFilter !== 'ALL') res = res.filter(s => (s.status || 'active') === statusFilter);
             if (debouncedQuery) {
                const q = debouncedQuery.toLowerCase();
-               res = res.filter(s => s.firstName.toLowerCase().startsWith(q));
+               res = res.filter(s => {
+                   const fullName = `${s.firstName} ${s.lastName || ''}`.toLowerCase();
+                   return fullName.includes(q);
+               });
+               res.sort((a, b) => {
+                   const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
+                   const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
+                   
+                   const aIndex = aName.indexOf(q);
+                   const bIndex = bName.indexOf(q);
+                   
+                   if (aIndex !== bIndex) {
+                       return aIndex - bIndex;
+                   }
+                   
+                   if (sortBy === 'alphabetical') return a.firstName.localeCompare(b.firstName);
+                   return b.createdAt - a.createdAt;
+               });
+            } else {
+               if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
+               else res.sort((a,b) => b.createdAt - a.createdAt);
             }
-            if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
-            else res.sort((a,b) => b.createdAt - a.createdAt);
             return res;
           }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]);
 
@@ -806,17 +824,17 @@
 
                           {view !== 'trash' && (
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
+                                <StatCard title="إجمالي الطلاب" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
                                 <StatCard title="القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
                                 <StatCard title="الحالات" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
-                          {/* Sticky Search Only - Separated and thinner */}
-                          <div className="sticky top-14 z-30 bg-slate-50/95 backdrop-blur shadow-sm p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
+                          {/* Search Bar - Not Sticky */}
+                          <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
                              <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
                                  <Search className="text-slate-400 ml-1" size={16} />
-                                 <input className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                                 <input id="searchInput" className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
                              </div>
                           </div>
 
@@ -911,9 +929,14 @@
                 </main>
 
                 {showScrollTop && (
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`fixed bottom-6 left-6 ${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl z-50 animate-fade-in transition-all`}>
-                        <ArrowUp size={20} />
-                    </button>
+                    <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50 animate-fade-in">
+                        <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="بحث">
+                            <Search size={20} />
+                        </button>
+                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}>
+                            <ArrowUp size={20} />
+                        </button>
+                    </div>
                 )}
 
                 {(view === 'add' || view === 'edit') && (
