@@ -520,6 +520,7 @@
           const [visibleCount, setVisibleCount] = useState(150);
           const loadMoreRef = useRef(null);
           const [importing, setImporting] = useState(false);
+          const [importProgress, setImportProgress] = useState(0);
           const [printMode, setPrintMode] = useState('list');
           const [alertConfig, setAlertConfig] = useState(null);
           const [confirmConfig, setConfirmConfig] = useState(null);
@@ -672,13 +673,16 @@
             const file = e.target.files[0];
             if (!file) return;
             setImporting(true);
+            setImportProgress(0);
             try {
               const rows = await readExcel(file);
+              const totalRows = rows.length;
               let count = 0;
               let batch = writeBatch(db);
               let batchCount = 0;
               
-              for (const row of rows) {
+              for (let i = 0; i < totalRows; i++) {
+                 const row = rows[i];
                  const fName = row['الاسم الكامل'] || row['firstName'] || row['الاسم الأول'];
                  const reg = row['رقم القيد'] || row['regNumber'];
                  const page = row['رقم الصفحة'] || row['pageNumber'];
@@ -698,6 +702,7 @@
                         await batch.commit();
                         batch = writeBatch(db);
                         batchCount = 0;
+                        setImportProgress(Math.round((i / totalRows) * 100));
                     }
                  }
               }
@@ -706,10 +711,12 @@
                   await batch.commit();
               }
               
+              setImportProgress(100);
               await refreshStats();
               setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
             } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
             setImporting(false);
+            setTimeout(() => setImportProgress(0), 500);
           };
 
           const executeDeleteAll = async () => {
@@ -1271,9 +1278,15 @@
                 {importing && (
                   <Modal onClose={() => {}} zIndex="z-[80]">
                     <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
-                      <div className="animate-spin text-blue-600"><Loader2 size={48} /></div>
+                      <div className="relative flex items-center justify-center">
+                          <div className="animate-spin text-blue-600"><Loader2 size={64} /></div>
+                          <div className="absolute text-sm font-bold text-blue-800" dir="ltr">{importProgress}%</div>
+                      </div>
                       <h3 className="text-xl font-bold text-slate-800">جاري استيراد البيانات...</h3>
                       <p className="text-slate-500">يرجى الانتظار قليلاً</p>
+                      <div className="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
+                          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}></div>
+                      </div>
                     </div>
                   </Modal>
                 )}
