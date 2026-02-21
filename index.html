@@ -107,6 +107,22 @@
       ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
       ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
 
+      /* Dark Mode Base Styles */
+      html.dark body { background-color: #0f172a; color: #f8fafc; }
+      html.dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+      html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+      html.dark .bg-slate-100 { background-color: #334155 !important; border-color: #475569 !important; color: #f8fafc !important; }
+      html.dark .text-slate-800, html.dark .text-slate-900 { color: #f8fafc !important; }
+      html.dark .text-slate-700 { color: #e2e8f0 !important; }
+      html.dark .text-slate-600, html.dark .text-slate-500 { color: #cbd5e1 !important; }
+      html.dark .text-slate-400 { color: #94a3b8 !important; }
+      html.dark .border-slate-200, html.dark .border-slate-100, html.dark .border-slate-50 { border-color: #334155 !important; }
+      html.dark input, html.dark select { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
+      html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+      html.dark .hover\:bg-slate-100:hover { background-color: #475569 !important; }
+      html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+      html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; }
+
       @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
       .animate-fade-in { animation: fade-in 0.2s ease-out; }
       @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -139,7 +155,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
@@ -510,6 +526,7 @@
           const [showScrollTop, setShowScrollTop] = useState(false);
           const [similarStudents, setSimilarStudents] = useState([]);
           const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
+          const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
           const [showThemeModal, setShowThemeModal] = useState(false);
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
@@ -633,6 +650,15 @@
           useEffect(() => {
             localStorage.setItem('appTheme', colorTheme);
           }, [colorTheme]);
+
+          useEffect(() => {
+            localStorage.setItem('darkMode', isDarkMode);
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+          }, [isDarkMode]);
 
           useEffect(() => {
             const observer = new IntersectionObserver((entries) => {
@@ -779,11 +805,10 @@
                           )}
 
                           {view !== 'trash' && (
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                 <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
-                                <StatCard title="المستمرون" value={stats.active} icon={<UserCheck size={18}/>} colorClass="bg-emerald-600" />
                                 <StatCard title="القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
-                                <StatCard title="أخرى" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
+                                <StatCard title="الحالات" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
@@ -924,12 +949,16 @@
                                 createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now()
                             };
                             try {
-                                if (view === 'edit') await updateDoc(doc(db, "students", selectedId), data);
-                                else await addDoc(studentsCollection, data);
+                                if (view === 'edit') {
+                                    await updateDoc(doc(db, "students", selectedId), data);
+                                    setAlertConfig({ message: 'تم تعديل البيانات بنجاح', type: 'success' });
+                                } else {
+                                    await addDoc(studentsCollection, data);
+                                    setAlertConfig({ message: 'تم الحفظ بنجاح', type: 'success' });
+                                }
                                 await refreshStats();
                                 setView('list');
                                 setSimilarStudents([]);
-                                setAlertConfig({ message: 'تم الحفظ بنجاح', type: 'success' });
                             } catch(err) { setAlertConfig({ message: "حدث خطأ", type: 'error' }); }
                         }} className="space-y-3">
                            <div>
@@ -1021,7 +1050,10 @@
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3">
                         <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> الإعدادات</h2>
-                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
+                        <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center">
+                            <span className="flex items-center gap-2">{isDarkMode ? <Sun size={18} className="text-amber-500"/> : <Moon size={18} className="text-slate-600"/>} {isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي'}</span>
+                        </button>
+                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
                         <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button>
                         <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير Excel</button>
                         <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> نموذج 2000 طالب</button>
