@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>سجل قيود الطلاب</title>
+    <title>Ø³Ø¬Ù„ Ù‚ÙŠÙˆØ¯ Ø§Ù„Ø·Ù„Ø§Ø¨</title>
     
     <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>ðŸ“‹</text></svg>">
     
     <!-- Styling -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -107,6 +107,22 @@
       ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
       ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
 
+      /* Dark Mode Base Styles */
+      html.dark body { background-color: #0f172a; color: #f8fafc; }
+      html.dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+      html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+      html.dark .bg-slate-100 { background-color: #334155 !important; border-color: #475569 !important; color: #f8fafc !important; }
+      html.dark .text-slate-800, html.dark .text-slate-900 { color: #f8fafc !important; }
+      html.dark .text-slate-700 { color: #e2e8f0 !important; }
+      html.dark .text-slate-600, html.dark .text-slate-500 { color: #cbd5e1 !important; }
+      html.dark .text-slate-400 { color: #94a3b8 !important; }
+      html.dark .border-slate-200, html.dark .border-slate-100, html.dark .border-slate-50 { border-color: #334155 !important; }
+      html.dark input, html.dark select { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
+      html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+      html.dark .hover\:bg-slate-100:hover { background-color: #475569 !important; }
+      html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+      html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; }
+
       @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
       .animate-fade-in { animation: fade-in 0.2s ease-out; }
       @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -135,14 +151,14 @@
     <div id="root"></div>
 
     <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo, useRef } from 'react';
+        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot } from "firebase/firestore";
+        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
@@ -183,28 +199,28 @@
         };
 
         const exportToExcel = (students) => {
-          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
+          const statusMap = { 'active': 'Ù…Ø³ØªÙ…Ø±', 'transferred': 'Ù…Ù†Ù‚ÙˆÙ„', 'left': 'ØªØ§Ø±Ùƒ', 'graduated': 'ØªØ®Ø±Ø¬' };
           const data = students.map(s => ({
-            'الاسم الأول': cleanName(s.firstName),
-            'اللقب': s.lastName,
-            'رقم القيد': s.regNumber,
-            'رقم الصفحة': s.pageNumber,
-            'الحالة': statusMap[s.status || 'active'] || 'مستمر',
-            'الملاحظات': s.notes || '',
-            'تاريخ الإضافة': new Date(s.createdAt).toLocaleDateString('ar-EG')
+            'Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø£ÙˆÙ„': cleanName(s.firstName),
+            'Ø§Ù„Ù„Ù‚Ø¨': s.lastName,
+            'Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯': s.regNumber,
+            'Ø±Ù‚Ù… Ø§Ù„ØµÙØ­Ø©': s.pageNumber,
+            'Ø§Ù„Ø­Ø§Ù„Ø©': statusMap[s.status || 'active'] || 'Ù…Ø³ØªÙ…Ø±',
+            'Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': s.notes || '',
+            'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥Ø¶Ø§ÙØ©': new Date(s.createdAt).toLocaleDateString('ar-EG')
           }));
           const worksheet = XLSX.utils.json_to_sheet(data);
           const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب");
-          XLSX.writeFile(workbook, "سجل_الطلاب.xlsx");
+          XLSX.utils.book_append_sheet(workbook, worksheet, "Ø§Ù„Ø·Ù„Ø§Ø¨");
+          XLSX.writeFile(workbook, "Ø³Ø¬Ù„_Ø§Ù„Ø·Ù„Ø§Ø¨.xlsx");
         };
 
         const generateTemplate = () => {
-          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم'];
-          const secondNames = ['حسين', 'حسن', 'عبدالرحمن', 'محمود', 'مصطفى', 'جعفر', 'عباس', 'كاظم', 'رضا', 'مهدي'];
-          const thirdNames = ['علي', 'محمد', 'جاسم', 'كريم', 'خلف', 'سالم', 'حمزة', 'فاضل'];
-          const fourthNames = ['عبدالله', 'ناصر', 'منصور', 'خليفة', 'سلطان', 'يحيى', 'زكريا'];
-          const titles = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'المالكي', 'الدوسري', 'التميمي', 'الخالدي'];
+          const firstNames = ['Ù…Ø­Ù…Ø¯', 'Ø£Ø­Ù…Ø¯', 'Ø¹Ø¨Ø¯Ø§Ù„Ù„Ù‡', 'Ø¹Ù„ÙŠ', 'Ø¹Ù…Ø±', 'Ø®Ø§Ù„Ø¯', 'Ø³Ø¹Ø¯', 'Ø³Ø¹ÙŠØ¯', 'ØµØ§Ù„Ø­', 'ÙÙ‡Ø¯', 'Ø³Ù„Ù…Ø§Ù†', 'ÙŠÙˆØ³Ù', 'Ø¥Ø¨Ø±Ø§Ù‡ÙŠÙ…'];
+          const secondNames = ['Ø­Ø³ÙŠÙ†', 'Ø­Ø³Ù†', 'Ø¹Ø¨Ø¯Ø§Ù„Ø±Ø­Ù…Ù†', 'Ù…Ø­Ù…ÙˆØ¯', 'Ù…ØµØ·ÙÙ‰', 'Ø¬Ø¹ÙØ±', 'Ø¹Ø¨Ø§Ø³', 'ÙƒØ§Ø¸Ù…', 'Ø±Ø¶Ø§', 'Ù…Ù‡Ø¯ÙŠ'];
+          const thirdNames = ['Ø¹Ù„ÙŠ', 'Ù…Ø­Ù…Ø¯', 'Ø¬Ø§Ø³Ù…', 'ÙƒØ±ÙŠÙ…', 'Ø®Ù„Ù', 'Ø³Ø§Ù„Ù…', 'Ø­Ù…Ø²Ø©', 'ÙØ§Ø¶Ù„'];
+          const fourthNames = ['Ø¹Ø¨Ø¯Ø§Ù„Ù„Ù‡', 'Ù†Ø§ØµØ±', 'Ù…Ù†ØµÙˆØ±', 'Ø®Ù„ÙŠÙØ©', 'Ø³Ù„Ø·Ø§Ù†', 'ÙŠØ­ÙŠÙ‰', 'Ø²ÙƒØ±ÙŠØ§'];
+          const titles = ['Ø§Ù„Ø´Ù…Ø±ÙŠ', 'Ø§Ù„Ø¹ØªÙŠØ¨ÙŠ', 'Ø§Ù„Ù‚Ø­Ø·Ø§Ù†ÙŠ', 'Ø§Ù„Ø¹Ù†Ø²ÙŠ', 'Ø§Ù„Ø­Ø±Ø¨ÙŠ', 'Ø§Ù„Ø²Ù‡Ø±Ø§Ù†ÙŠ', 'Ø§Ù„Ù…Ø§Ù„ÙƒÙŠ', 'Ø§Ù„Ø¯ÙˆØ³Ø±ÙŠ', 'Ø§Ù„ØªÙ…ÙŠÙ…ÙŠ', 'Ø§Ù„Ø®Ø§Ù„Ø¯ÙŠ'];
 
           const templateData = [];
           
@@ -219,20 +235,20 @@
                const pageNum = Math.floor(i / 30) + 1;
 
                templateData.push({
-                  'الاسم الأول': `${n1} ${n2} ${n3} ${n4}`, 
-                  'اللقب': title,
-                  'رقم القيد': reg.toString(),
-                  'رقم الصفحة': pageNum.toString(),
-                  'الحالة': 'مستمر',
-                  'الملاحظات': ''
+                  'Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø£ÙˆÙ„': `${n1} ${n2} ${n3} ${n4}`, 
+                  'Ø§Ù„Ù„Ù‚Ø¨': title,
+                  'Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯': reg.toString(),
+                  'Ø±Ù‚Ù… Ø§Ù„ØµÙØ­Ø©': pageNum.toString(),
+                  'Ø§Ù„Ø­Ø§Ù„Ø©': 'Ù…Ø³ØªÙ…Ø±',
+                  'Ø§Ù„Ù…Ù„Ø§Ø­Ø¸Ø§Øª': ''
                });
             }
           }
 
           const worksheet = XLSX.utils.json_to_sheet(templateData);
           const workbook = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 2000 طالب");
-          XLSX.writeFile(workbook, "نموذج_سجل_القيود_الكبير.xlsx");
+          XLSX.utils.book_append_sheet(workbook, worksheet, "Ù†Ù…ÙˆØ°Ø¬ 2000 Ø·Ø§Ù„Ø¨");
+          XLSX.writeFile(workbook, "Ù†Ù…ÙˆØ°Ø¬_Ø³Ø¬Ù„_Ø§Ù„Ù‚ÙŠÙˆØ¯_Ø§Ù„ÙƒØ¨ÙŠØ±.xlsx");
         };
 
         const readExcel = (file) => {
@@ -251,7 +267,7 @@
             reader.readAsArrayBuffer(file);
           });
         };
-
+        
         // ==========================================
         // UI COMPONENTS
         // ==========================================
@@ -272,7 +288,7 @@
                 <button 
                     onClick={onClose} 
                     className="absolute top-3 left-3 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all z-[60]"
-                    title="إغلاق"
+                    title="Ø¥ØºÙ„Ø§Ù‚"
                 >
                     <X size={20} />
                 </button>
@@ -288,7 +304,7 @@
                 {type === 'error' ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />}
               </div>
               <p className="text-slate-800 font-bold mb-5 text-sm">{message}</p>
-              <button onClick={onClose} className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm">حسناً</button>
+              <button onClick={onClose} className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm">Ø­Ø³Ù†Ø§Ù‹</button>
             </div>
           </Modal>
         );
@@ -299,8 +315,8 @@
               <h3 className="text-lg font-bold text-slate-800 mb-2">{title}</h3>
               <p className="text-slate-500 mb-6 text-sm">{message}</p>
               <div className="flex gap-3">
-                <button onClick={onCancel} className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm">إلغاء</button>
-                <button onClick={onConfirm} className={`flex-1 py-2.5 text-white rounded-xl font-bold text-sm ${isDestructive ? 'bg-red-500' : 'bg-blue-600'}`}>تأكيد</button>
+                <button onClick={onCancel} className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm">Ø¥Ù„ØºØ§Ø¡</button>
+                <button onClick={onConfirm} className={`flex-1 py-2.5 text-white rounded-xl font-bold text-sm ${isDestructive ? 'bg-red-500' : 'bg-blue-600'}`}>ØªØ£ÙƒÙŠØ¯</button>
               </div>
             </div>
           </Modal>
@@ -317,7 +333,7 @@
         );
 
         const SingleStudentPrint = ({ student }) => {
-          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
+          const statusLabels = { 'active': 'Ù…Ø³ØªÙ…Ø±', 'transferred': 'Ù…Ù†Ù‚ÙˆÙ„', 'left': 'ØªØ§Ø±Ùƒ', 'graduated': 'ØªØ®Ø±Ø¬' };
           const printDate = new Date().toLocaleDateString('ar-EG');
           return (
             <div className="hidden print:flex flex-col items-center justify-start w-full h-screen bg-white p-0 overflow-hidden">
@@ -329,43 +345,43 @@
 
                 <div className="text-center border-b-2 border-slate-900 pb-4 mb-4 relative z-10">
                   <div className="flex justify-between items-start mb-2 px-2">
-                    <div className="text-sm font-bold leading-relaxed">جمهورية العراق<br/>وزارة التربية<br/>المديرية العامة للتربية</div>
-                    <div className="w-20 h-20 border-2 border-slate-800 rounded-full flex items-center justify-center bg-slate-50 shadow-sm"><span className="text-3xl">🎓</span></div>
-                    <div className="text-sm font-bold leading-relaxed text-left">التاريخ: {printDate}<br/>العدد: ............</div>
+                    <div className="text-sm font-bold leading-relaxed">Ø¬Ù…Ù‡ÙˆØ±ÙŠØ© Ø§Ù„Ø¹Ø±Ø§Ù‚<br/>ÙˆØ²Ø§Ø±Ø© Ø§Ù„ØªØ±Ø¨ÙŠØ©<br/>Ø§Ù„Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„Ø¹Ø§Ù…Ø© Ù„Ù„ØªØ±Ø¨ÙŠØ©</div>
+                    <div className="w-20 h-20 border-2 border-slate-800 rounded-full flex items-center justify-center bg-slate-50 shadow-sm"><span className="text-3xl">ðŸŽ“</span></div>
+                    <div className="text-sm font-bold leading-relaxed text-left">Ø§Ù„ØªØ§Ø±ÙŠØ®: {printDate}<br/>Ø§Ù„Ø¹Ø¯Ø¯: ............</div>
                   </div>
-                  <h1 className="text-4xl font-black text-slate-900 mt-4 font-cairo tracking-wide">بطاقة الطالب الشخصية</h1>
-                  <p className="text-lg font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-6 py-1 rounded-full border border-slate-300">نسخة طبق الأصل من سجل القيود</p>
+                  <h1 className="text-4xl font-black text-slate-900 mt-4 font-cairo tracking-wide">Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ø·Ø§Ù„Ø¨ Ø§Ù„Ø´Ø®ØµÙŠØ©</h1>
+                  <p className="text-lg font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-6 py-1 rounded-full border border-slate-300">Ù†Ø³Ø®Ø© Ø·Ø¨Ù‚ Ø§Ù„Ø£ØµÙ„ Ù…Ù† Ø³Ø¬Ù„ Ø§Ù„Ù‚ÙŠÙˆØ¯</p>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-4 justify-start pt-2 px-4 relative z-10">
                    <div className="text-center space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                      <span className="text-lg font-bold text-slate-500 block">الاسم الرباعي واللقب</span>
-                      <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)} {student.lastName || ''}</div>
+                      <span className="text-lg font-bold text-slate-500 block">Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø±Ø¨Ø§Ø¹ÙŠ ÙˆØ§Ù„Ù„Ù‚Ø¨</span>
+                      <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)}</div>
                    </div>
 
                    <div className="grid grid-cols-2 gap-6 my-2">
                       <div className="border-2 border-slate-800 p-4 text-center rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
-                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">رقم القيد العام</span>
+                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯ Ø§Ù„Ø¹Ø§Ù…</span>
                         <div className="text-5xl font-mono font-black text-slate-900 tracking-wider">{student.regNumber}</div>
                       </div>
                       <div className="border-2 border-slate-800 p-4 text-center rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
-                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">رقم الصفحة</span>
+                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">Ø±Ù‚Ù… Ø§Ù„ØµÙØ­Ø©</span>
                         <div className="text-5xl font-mono font-black text-slate-900 tracking-wider">{student.pageNumber}</div>
                       </div>
                    </div>
 
                    <div className="grid grid-cols-2 gap-6 text-right px-2 mt-2">
                       <div className="flex flex-col border-b-2 border-slate-200 pb-2">
-                         <span className="text-base font-bold text-slate-500 mb-1">الحالة الدراسية</span>
+                         <span className="text-base font-bold text-slate-500 mb-1">Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ø¯Ø±Ø§Ø³ÙŠØ©</span>
                          <span className="text-2xl font-bold text-slate-900">{statusLabels[student.status || 'active']}</span>
                       </div>
                       <div className="flex flex-col border-b-2 border-slate-200 pb-2">
-                         <span className="text-base font-bold text-slate-500 mb-1">تاريخ التسجيل</span>
+                         <span className="text-base font-bold text-slate-500 mb-1">ØªØ§Ø±ÙŠØ® Ø§Ù„ØªØ³Ø¬ÙŠÙ„</span>
                          <span className="text-2xl font-bold text-slate-900 font-mono">{new Date(student.createdAt).toLocaleDateString('ar-EG')}</span>
                       </div>
                       {student.notes && (
                         <div className="col-span-2 flex flex-col bg-yellow-50 p-3 rounded-xl border border-yellow-200 mt-1">
-                           <span className="text-xs font-bold text-yellow-700 mb-1">ملاحظات</span>
+                           <span className="text-xs font-bold text-yellow-700 mb-1">Ù…Ù„Ø§Ø­Ø¸Ø§Øª</span>
                            <span className="text-lg font-bold text-slate-800">{student.notes}</span>
                         </div>
                       )}
@@ -373,12 +389,12 @@
                 </div>
 
                 <div className="mt-4 pt-4 border-t-2 border-slate-900 flex justify-between items-end px-8 pb-4 relative z-10">
-                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">توقيع الموظف المختص</div></div>
-                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">ختم وتوقيع المدير</div></div>
+                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">ØªÙˆÙ‚ÙŠØ¹ Ø§Ù„Ù…ÙˆØ¸Ù Ø§Ù„Ù…Ø®ØªØµ</div></div>
+                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">Ø®ØªÙ… ÙˆØªÙˆÙ‚ÙŠØ¹ Ø§Ù„Ù…Ø¯ÙŠØ±</div></div>
                 </div>
                 
                 <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none z-0 select-none">
-                     <div className="transform -rotate-45 text-[150px] font-black text-slate-900 whitespace-nowrap border-4 border-slate-900 p-12 rounded-3xl">سجل رسمي</div>
+                     <div className="transform -rotate-45 text-[150px] font-black text-slate-900 whitespace-nowrap border-4 border-slate-900 p-12 rounded-3xl">Ø³Ø¬Ù„ Ø±Ø³Ù…ÙŠ</div>
                 </div>
               </div>
             </div>
@@ -407,9 +423,9 @@
               {pages.map((pageStudents, pageIndex) => (
                 <div key={pageIndex} className="print-page-container">
                    <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]">
-                      <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
-                      <h1 className="text-xl font-bold flex-1 text-center">{title || "فهرس القيد العام"}</h1>
-                      <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
+                      <div className="text-[10px] font-medium text-gray-500 w-32 text-right">ØµÙØ­Ø© {pageIndex + 1} Ù…Ù† {totalPages}</div>
+                      <h1 className="text-xl font-bold flex-1 text-center">{title || "ÙÙ‡Ø±Ø³ Ø§Ù„Ù‚ÙŠØ¯ Ø§Ù„Ø¹Ø§Ù…"}</h1>
+                      <div className="text-[10px] font-medium text-gray-500 w-32 text-left">ØªØ§Ø±ÙŠØ®: {printDate}</div>
                    </div>
                    <div className="flex flex-row gap-[8mm] flex-1">
                      {[0, 1].map((colIndex) => {
@@ -419,10 +435,10 @@
                            <table className="w-full border-collapse table-fixed">
                              <thead>
                                <tr className="bg-gray-100 h-[36px]">
-                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">ت</th>
-                                 <th className="p-1 text-right">الاسم الكامل</th>
-                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ق</th>
-                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>
+                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">Øª</th>
+                                 <th className="p-1 text-right">Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">Ù‚</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">Øµ</th>
                                </tr>
                              </thead>
                              <tbody>
@@ -458,7 +474,7 @@
             e.preventDefault();
             setLoading(true);
             try { await signInWithEmailAndPassword(auth, email, password); } 
-            catch (err) { setError('بيانات الدخول غير صحيحة'); } 
+            catch (err) { setError('Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¯Ø®ÙˆÙ„ ØºÙŠØ± ØµØ­ÙŠØ­Ø©'); } 
             finally { setLoading(false); }
           };
           return (
@@ -466,13 +482,13 @@
               <div className="bg-white rounded-2xl shadow-2xl w-full max-md p-8 animate-fade-in">
                 <div className="text-center mb-8">
                   <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"><Users className="w-8 h-8 text-white" /></div>
-                  <h2 className="text-2xl font-bold text-slate-800">تسجيل الدخول</h2>
+                  <h2 className="text-2xl font-bold text-slate-800">ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„</h2>
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <input type="email" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <input type="password" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <input type="email" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input type="password" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±" value={password} onChange={(e) => setPassword(e.target.value)} />
                   {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg transition-all">{loading ? 'جاري التحقق...' : 'دخول'}</button>
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg transition-all">{loading ? 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù‚Ù‚...' : 'Ø¯Ø®ÙˆÙ„'}</button>
                 </form>
               </div>
             </div>
@@ -480,13 +496,13 @@
         };
 
         const themeColors = {
-          slate: { primary: 'bg-slate-900', hover: 'hover:bg-slate-800', secondary: 'bg-blue-600', secondaryHover: 'hover:bg-blue-700', ring: 'focus:ring-blue-500', name: 'الافتراضي (أزرق)' },
-          purple: { primary: 'bg-violet-900', hover: 'hover:bg-violet-800', secondary: 'bg-purple-600', secondaryHover: 'hover:bg-purple-700', ring: 'focus:ring-purple-500', name: 'بنفسجي' },
-          emerald: { primary: 'bg-teal-900', hover: 'hover:bg-teal-800', secondary: 'bg-emerald-600', secondaryHover: 'hover:bg-emerald-700', ring: 'focus:ring-emerald-500', name: 'أخضر' },
-          rose: { primary: 'bg-rose-900', hover: 'hover:bg-rose-800', secondary: 'bg-red-600', secondaryHover: 'hover:bg-red-700', ring: 'focus:ring-red-500', name: 'أحمر' },
-          amber: { primary: 'bg-amber-900', hover: 'hover:bg-amber-800', secondary: 'bg-orange-600', secondaryHover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', name: 'برتقالي' },
+          slate: { primary: 'bg-slate-900', hover: 'hover:bg-slate-800', secondary: 'bg-blue-600', secondaryHover: 'hover:bg-blue-700', ring: 'focus:ring-blue-500', name: 'Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠ (Ø£Ø²Ø±Ù‚)' },
+          purple: { primary: 'bg-violet-900', hover: 'hover:bg-violet-800', secondary: 'bg-purple-600', secondaryHover: 'hover:bg-purple-700', ring: 'focus:ring-purple-500', name: 'Ø¨Ù†ÙØ³Ø¬ÙŠ' },
+          emerald: { primary: 'bg-teal-900', hover: 'hover:bg-teal-800', secondary: 'bg-emerald-600', secondaryHover: 'hover:bg-emerald-700', ring: 'focus:ring-emerald-500', name: 'Ø£Ø®Ø¶Ø±' },
+          rose: { primary: 'bg-rose-900', hover: 'hover:bg-rose-800', secondary: 'bg-red-600', secondaryHover: 'hover:bg-red-700', ring: 'focus:ring-red-500', name: 'Ø£Ø­Ù…Ø±' },
+          amber: { primary: 'bg-amber-900', hover: 'hover:bg-amber-800', secondary: 'bg-orange-600', secondaryHover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', name: 'Ø¨Ø±ØªÙ‚Ø§Ù„ÙŠ' },
         };
-
+        
         const App = () => {
           const [user, setUser] = useState(null);
           const [loading, setLoading] = useState(true);
@@ -504,34 +520,39 @@
           const [visibleCount, setVisibleCount] = useState(150);
           const loadMoreRef = useRef(null);
           const [importing, setImporting] = useState(false);
+          const [importProgress, setImportProgress] = useState(0);
           const [printMode, setPrintMode] = useState('list');
           const [alertConfig, setAlertConfig] = useState(null);
           const [confirmConfig, setConfirmConfig] = useState(null);
           const [showScrollTop, setShowScrollTop] = useState(false);
           const [similarStudents, setSimilarStudents] = useState([]);
           const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
+          const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
           const [showThemeModal, setShowThemeModal] = useState(false);
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
-          const stats = useMemo(() => {
-            const active = students.filter(s => !s.isDeleted);
-            return {
-                total: active.length,
-                activeOnly: active.filter(s => (s.status || 'active') === 'active').length,
-                regs: new Set(active.map(s => s.regNumber)).size,
-                others: active.filter(s => (s.status || 'active') !== 'active').length,
-                deleted: students.filter(s => s.isDeleted).length
-            };
+          const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
+
+          const regsCount = useMemo(() => {
+             return new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber)).size;
           }, [students]);
 
           const regStats = useMemo(() => {
              const active = students.filter(s => !s.isDeleted);
-             const counts = {};
+             const statsMap = {};
              active.forEach(s => {
-                 counts[s.regNumber] = (counts[s.regNumber] || 0) + 1;
+                 const reg = s.regNumber;
+                 if (!statsMap[reg]) {
+                     statsMap[reg] = { total: 0, active: 0, transferred: 0, left: 0, graduated: 0 };
+                 }
+                 statsMap[reg].total++;
+                 const status = s.status || 'active';
+                 if (statsMap[reg][status] !== undefined) {
+                     statsMap[reg][status]++;
+                 }
              });
-             return Object.entries(counts).map(([reg, count]) => ({ reg, count })).sort((a, b) => Number(a.reg) - Number(b.reg));
+             return Object.entries(statsMap).map(([reg, counts]) => ({ reg, ...counts })).sort((a, b) => Number(a.reg) - Number(b.reg));
           }, [students]);
 
           const statusStats = useMemo(() => {
@@ -542,10 +563,10 @@
                 if (counts[st] !== undefined) counts[st]++;
             });
             return [
-                { label: 'مستمر', count: counts.active, color: 'bg-emerald-100 text-emerald-800' },
-                { label: 'منقول', count: counts.transferred, color: 'bg-amber-100 text-amber-800' },
-                { label: 'تارك', count: counts.left, color: 'bg-rose-100 text-rose-800' },
-                { label: 'تخرج', count: counts.graduated, color: 'bg-blue-100 text-blue-800' }
+                { label: 'Ù…Ø³ØªÙ…Ø±', count: counts.active, color: 'bg-emerald-100 text-emerald-800' },
+                { label: 'Ù…Ù†Ù‚ÙˆÙ„', count: counts.transferred, color: 'bg-amber-100 text-amber-800' },
+                { label: 'ØªØ§Ø±Ùƒ', count: counts.left, color: 'bg-rose-100 text-rose-800' },
+                { label: 'ØªØ®Ø±Ø¬', count: counts.graduated, color: 'bg-blue-100 text-blue-800' }
             ];
           }, [students]);
 
@@ -556,6 +577,35 @@
              }).filter(y => y !== null));
              return Array.from(y).sort((a,b) => b - a);
           }, [students]);
+
+          const refreshStats = async () => {
+             try {
+                 const baseConstraints = [where("isDeleted", "==", false)];
+                 if (selectedRegFilter) baseConstraints.push(where("regNumber", "==", selectedRegFilter));
+                 
+                 const totalQ = query(studentsCollection, ...baseConstraints);
+                 const totalSnap = await getCountFromServer(totalQ);
+                 const total = totalSnap.data().count;
+
+                 const activeQ = query(studentsCollection, ...baseConstraints, where("status", "==", "active"));
+                 const activeSnap = await getCountFromServer(activeQ);
+                 const active = activeSnap.data().count;
+
+                 const graduatedQ = query(studentsCollection, ...baseConstraints, where("status", "==", "graduated"));
+                 const graduatedSnap = await getCountFromServer(graduatedQ);
+                 const graduated = graduatedSnap.data().count;
+
+                 setStats({ total, active, graduated });
+             } catch (error) {
+                 console.error("Error fetching stats:", error);
+             }
+          };
+
+          useEffect(() => {
+             if (user) {
+                 refreshStats();
+             }
+          }, [user, selectedRegFilter]);
 
           useEffect(() => {
             const unsub = onAuthStateChanged(auth, (u) => {
@@ -603,6 +653,15 @@
           }, [colorTheme]);
 
           useEffect(() => {
+            localStorage.setItem('darkMode', isDarkMode);
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+          }, [isDarkMode]);
+
+          useEffect(() => {
             const observer = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting) setVisibleCount((prev) => prev + 50);
             }, { threshold: 0.1 });
@@ -614,14 +673,19 @@
             const file = e.target.files[0];
             if (!file) return;
             setImporting(true);
+            setImportProgress(0);
             try {
               const rows = await readExcel(file);
-              const batch = writeBatch(db);
+              const totalRows = rows.length;
               let count = 0;
-              rows.forEach(row => {
-                 const fName = row['الاسم الكامل'] || row['firstName'] || row['الاسم الأول'];
-                 const reg = row['رقم القيد'] || row['regNumber'];
-                 const page = row['رقم الصفحة'] || row['pageNumber'];
+              let batch = writeBatch(db);
+              let batchCount = 0;
+              
+              for (let i = 0; i < totalRows; i++) {
+                 const row = rows[i];
+                 const fName = row['Ø§Ù„Ø§Ø³Ù… Ø§Ù„ÙƒØ§Ù…Ù„'] || row['firstName'] || row['Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø£ÙˆÙ„'];
+                 const reg = row['Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯'] || row['regNumber'];
+                 const page = row['Ø±Ù‚Ù… Ø§Ù„ØµÙØ­Ø©'] || row['pageNumber'];
                  if (fName && reg) {
                     const ref = doc(studentsCollection);
                     batch.set(ref, {
@@ -632,12 +696,27 @@
                        createdAt: Date.now() + count
                     });
                     count++;
+                    batchCount++;
+                    
+                    if (batchCount === 400) {
+                        await batch.commit();
+                        batch = writeBatch(db);
+                        batchCount = 0;
+                        setImportProgress(Math.round((i / totalRows) * 100));
+                    }
                  }
-              });
-              await batch.commit();
-              setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
-            } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
+              }
+              
+              if (batchCount > 0) {
+                  await batch.commit();
+              }
+              
+              setImportProgress(100);
+              await refreshStats();
+              setAlertConfig({ message: `ØªÙ… Ø§Ø³ØªÙŠØ±Ø§Ø¯ ${count} Ø³Ø¬Ù„ Ø¨Ù†Ø¬Ø§Ø­`, type: 'success' });
+            } catch (e) { setAlertConfig({ message: "ÙØ´Ù„ Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯", type: 'error' }); }
             setImporting(false);
+            setTimeout(() => setImportProgress(0), 500);
           };
 
           const executeDeleteAll = async () => {
@@ -653,28 +732,31 @@
                   chunk.forEach((d) => batch.delete(d.ref));
                   await batch.commit();
                }
-               setAlertConfig({ message: 'تم حذف كافة البيانات بنجاح', type: 'success' });
+               await refreshStats();
+               setAlertConfig({ message: 'ØªÙ… Ø­Ø°Ù ÙƒØ§ÙØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ù†Ø¬Ø§Ø­', type: 'success' });
                setView('list');
-             } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); }
+             } catch (e) { setAlertConfig({ message: "ÙØ´Ù„ Ø­Ø°Ù Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª", type: 'error' }); }
              finally { setLoading(false); }
           };
 
           const handleRestore = async (id) => {
             try {
                 await updateDoc(doc(db, "students", id), { isDeleted: false });
-                setAlertConfig({ message: 'تم استعادة السجل بنجاح', type: 'success' });
+                await refreshStats();
+                setAlertConfig({ message: 'ØªÙ… Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ø³Ø¬Ù„ Ø¨Ù†Ø¬Ø§Ø­', type: 'success' });
             } catch(e) { console.error(e); }
           };
 
           const handleDeleteForever = (id) => {
             setConfirmConfig({
-                title: "حذف نهائي",
-                message: "هل أنت متأكد من الحذف النهائي؟ لا يمكن التراجع عن هذا الإجراء.",
+                title: "Ø­Ø°Ù Ù†Ù‡Ø§Ø¦ÙŠ",
+                message: "Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø§Ù„Ø­Ø°Ù Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØŸ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ø¹Ù† Ù‡Ø°Ø§ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡.",
                 isDestructive: true,
                 onConfirm: async () => {
                     await deleteDoc(doc(db, "students", id));
+                    await refreshStats();
                     setConfirmConfig(null);
-                    setAlertConfig({ message: 'تم الحذف نهائياً', type: 'success' });
+                    setAlertConfig({ message: 'ØªÙ… Ø§Ù„Ø­Ø°Ù Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹', type: 'success' });
                 }
             });
           };
@@ -700,18 +782,36 @@
             if (statusFilter !== 'ALL') res = res.filter(s => (s.status || 'active') === statusFilter);
             if (debouncedQuery) {
                const q = debouncedQuery.toLowerCase();
-               res = res.filter(s => s.firstName.toLowerCase().includes(q) || (s.lastName && s.lastName.toLowerCase().includes(q)));
+               res = res.filter(s => {
+                   const fullName = `${s.firstName} ${s.lastName || ''}`.toLowerCase();
+                   return fullName.includes(q);
+               });
+               res.sort((a, b) => {
+                   const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
+                   const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
+                   
+                   const aIndex = aName.indexOf(q);
+                   const bIndex = bName.indexOf(q);
+                   
+                   if (aIndex !== bIndex) {
+                       return aIndex - bIndex;
+                   }
+                   
+                   if (sortBy === 'alphabetical') return a.firstName.localeCompare(b.firstName);
+                   return b.createdAt - a.createdAt;
+               });
+            } else {
+               if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
+               else res.sort((a,b) => b.createdAt - a.createdAt);
             }
-            if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
-            else res.sort((a,b) => b.createdAt - a.createdAt);
             return res;
           }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]);
 
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-          const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
+          const arabicLetters = ['Ø£', 'Ø§', 'Ø¨', 'Øª', 'Ø«', 'Ø¬', 'Ø­', 'Ø®', 'Ø¯', 'Ø°', 'Ø±', 'Ø²', 'Ø³', 'Ø´', 'Øµ', 'Ø¶', 'Ø·', 'Ø¸', 'Ø¹', 'Øº', 'Ù', 'Ù‚', 'Ùƒ', 'Ù„', 'Ù…', 'Ù†', 'Ù‡Ù€', 'Ùˆ', 'ÙŠ'];
 
           if (!user) return <Login />;
-
+        
           return (
             <>
               <div className="min-h-screen no-print pb-20">
@@ -719,73 +819,72 @@
                   <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-base text-slate-800 cursor-pointer" onClick={() => setView('list')}>
                       <div className={`${currentTheme.primary} text-white p-1.5 rounded-lg shadow-lg transition-colors`}><Users size={18} /></div>
-                      <span>سجل القيود</span>
+                      <span>Ø³Ø¬Ù„ Ø§Ù„Ù‚ÙŠÙˆØ¯</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => setShowThemeModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Palette size={20} /></button>
                       <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={20} /></button>
-                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد؟", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
+                      <button onClick={() => setConfirmConfig({ title: "ØªØ³Ø¬ÙŠÙ„ Ø®Ø±ÙˆØ¬", message: "Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ØŸ", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
                     </div>
                   </div>
                 </header>
 
                 <main className="max-w-7xl mx-auto px-4 py-4">
-                    {loading ? <SkeletonLoader /> : (
+                    {loading && students.length === 0 ? <SkeletonLoader /> : (
                         <div className="animate-fade-in space-y-4">
                           {view === 'trash' && (
                             <div className="flex items-center justify-between bg-red-50 p-3 rounded-xl border border-red-100 animate-slide-up">
                                 <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
                                     <Trash2 size={20} />
-                                    <span>سلة المهملات</span>
+                                    <span>Ø³Ù„Ø© Ø§Ù„Ù…Ù‡Ù…Ù„Ø§Øª</span>
                                 </div>
-                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors"><ArrowLeft size={16}/> العودة</button>
+                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors"><ArrowLeft size={16}/> Ø§Ù„Ø¹ÙˆØ¯Ø©</button>
                             </div>
                           )}
 
                           {view !== 'trash' && (
-                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <StatCard title="إجمالي الطلاب" value={stats.total} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
-                                <StatCard title="المستمرون" value={stats.activeOnly} icon={<UserCheck size={18}/>} colorClass="bg-emerald-600" />
-                                <StatCard title="القيود" value={stats.regs} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
-                                <StatCard title="أخرى" value={stats.others} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                <StatCard title="Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø·Ù„Ø§Ø¨" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
+                                <StatCard title="Ø§Ù„Ù‚ÙŠÙˆØ¯" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
+                                <StatCard title="Ø§Ù„Ø­Ø§Ù„Ø§Øª" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
-                          {/* Sticky Search Only - Separated and thinner */}
-                          <div className="sticky top-14 z-30 bg-slate-50/95 backdrop-blur shadow-sm p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
+                          {/* Search Bar - Not Sticky */}
+                          <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
                              <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
                                  <Search className="text-slate-400 ml-1" size={16} />
-                                 <input className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                                 <input id="searchInput" className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="Ø§Ø¨Ø­Ø« Ø¨Ø§Ø³Ù… Ø§Ù„Ø·Ø§Ù„Ø¨..." value={search} onChange={(e) => setSearch(e.target.value)} />
                              </div>
                           </div>
 
                           {/* Filters - Not Sticky */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4">
                               <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
-                                  <option value="">جميع القيود</option>
-                                  {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => <option key={r} value={r}>قيد {r}</option>)}
+                                  <option value="">Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù‚ÙŠÙˆØ¯</option>
+                                  {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => <option key={r} value={r}>Ù‚ÙŠØ¯ {r}</option>)}
                               </select>
                               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
-                                  <option value="ALL">كل الحالات</option>
-                                  <option value="active">مستمر</option>
-                                  <option value="transferred">منقول</option>
-                                  <option value="left">تارك</option>
-                                  <option value="graduated">تخرج</option>
+                                  <option value="ALL">ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª</option>
+                                  <option value="active">Ù…Ø³ØªÙ…Ø±</option>
+                                  <option value="transferred">Ù…Ù†Ù‚ÙˆÙ„</option>
+                                  <option value="left">ØªØ§Ø±Ùƒ</option>
+                                  <option value="graduated">ØªØ®Ø±Ø¬</option>
                               </select>
                               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
-                                  <option value="recent">الأحدث</option>
-                                  <option value="alphabetical">أبجدي</option>
+                                  <option value="recent">Ø§Ù„Ø£Ø­Ø¯Ø«</option>
+                                  <option value="alphabetical">Ø£Ø¨Ø¬Ø¯ÙŠ</option>
                               </select>
                               <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
-                                  <option value="ALL">كل السنوات</option>
+                                  <option value="ALL">ÙƒÙ„ Ø§Ù„Ø³Ù†ÙˆØ§Øª</option>
                                   {years.map(y => <option key={y} value={y}>{y}</option>)}
                               </select>
                           </div>
 
                           {/* Action Buttons (Not Sticky) */}
                           <div className="flex gap-3">
-                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={16} /> إضافة سجل جديد</button>
-                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={16} /> خيارات الطباعة</button>
+                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={16} /> Ø¥Ø¶Ø§ÙØ© Ø³Ø¬Ù„ Ø¬Ø¯ÙŠØ¯</button>
+                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={16} /> Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©</button>
                           </div>
 
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
@@ -793,10 +892,10 @@
                               <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
                                 <tr>
                                   <th className="px-4 py-2 w-12 text-center">#</th>
-                                  <th className="px-4 py-2">اسم الطالب</th>
-                                  <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
-                                  <th className="px-4 py-2 w-24 text-center">الصفحة</th>
-                                  {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
+                                  <th className="px-4 py-2">Ø§Ø³Ù… Ø§Ù„Ø·Ø§Ù„Ø¨</th>
+                                  <th className="px-4 py-2 w-28 text-center">Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯</th>
+                                  <th className="px-4 py-2 w-24 text-center">Ø§Ù„ØµÙØ­Ø©</th>
+                                  {view === 'trash' && <th className="px-4 py-2 w-32 text-center">Ø¥Ø¬Ø±Ø§Ø¡Ø§Øª</th>}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 text-xs">
@@ -805,16 +904,16 @@
                                     <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
                                     <td className="px-4 py-2">
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'تخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
-                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</span>
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'ØªØ®Ø±Ø¬' : s.status === 'left' ? 'ØªØ§Ø±Ùƒ' : s.status === 'transferred' ? 'Ù…Ù†Ù‚ÙˆÙ„' : 'Ù…Ø³ØªÙ…Ø±'}></div>
+                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} / {s.lastName || ""}</span>
                                         </div>
                                     </td>
                                     <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                     <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
                                     {view === 'trash' && (
                                         <td className="px-4 py-2 text-center flex gap-1 justify-center">
-                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
-                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="Ø§Ø³ØªØ¹Ø§Ø¯Ø©"><RotateCcw size={14}/></button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="Ø­Ø°Ù Ù†Ù‡Ø§Ø¦ÙŠ"><Trash2 size={14}/></button>
                                         </td>
                                     )}
                                   </tr>
@@ -829,16 +928,16 @@
                                     <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
                                        <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
-                                       {cleanName(s.firstName)} {s.lastName || ""}
+                                       {cleanName(s.firstName)} / {s.lastName || ""}
                                     </h3>
                                     <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
-                                        <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>ق {s.regNumber}</span>
-                                        <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">ص {s.pageNumber}</span>
+                                        <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>Ù‚ {s.regNumber}</span>
+                                        <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">Øµ {s.pageNumber}</span>
                                     </div>
                                     {view === 'trash' && (
                                         <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
-                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
-                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> Ø§Ø³ØªØ¹Ø§Ø¯Ø©</button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> Ø­Ø°Ù Ù†Ù‡Ø§Ø¦ÙŠ</button>
                                         </div>
                                     )}
                                  </div>
@@ -850,15 +949,20 @@
                 </main>
 
                 {showScrollTop && (
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`fixed bottom-6 left-6 ${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl z-50 animate-fade-in transition-all`}>
-                        <ArrowUp size={20} />
-                    </button>
+                    <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50 animate-fade-in">
+                        <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="Ø¨Ø­Ø«">
+                            <Search size={20} />
+                        </button>
+                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}>
+                            <ArrowUp size={20} />
+                        </button>
+                    </div>
                 )}
 
                 {(view === 'add' || view === 'edit') && (
                     <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
                       <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4">
-                        <h2 className="text-lg font-bold">{view === 'add' ? 'إضافة سجل طالب' : 'تعديل بيانات الطالب'}</h2>
+                        <h2 className="text-lg font-bold">{view === 'add' ? 'Ø¥Ø¶Ø§ÙØ© Ø³Ø¬Ù„ Ø·Ø§Ù„Ø¨' : 'ØªØ¹Ø¯ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø·Ø§Ù„Ø¨'}</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const form = new FormData(e.target);
@@ -873,7 +977,7 @@
                             );
 
                             if (isDuplicate) {
-                                setAlertConfig({ message: "خطأ: هذا القيد مسجل بالفعل في نفس الصفحة لطالب آخر.", type: 'error' });
+                                setAlertConfig({ message: "Ø®Ø·Ø£: Ù‡Ø°Ø§ Ø§Ù„Ù‚ÙŠØ¯ Ù…Ø³Ø¬Ù„ Ø¨Ø§Ù„ÙØ¹Ù„ ÙÙŠ Ù†ÙØ³ Ø§Ù„ØµÙØ­Ø© Ù„Ø·Ø§Ù„Ø¨ Ø¢Ø®Ø±.", type: 'error' });
                                 return;
                             }
 
@@ -888,12 +992,17 @@
                                 createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now()
                             };
                             try {
-                                if (view === 'edit') await updateDoc(doc(db, "students", selectedId), data);
-                                else await addDoc(studentsCollection, data);
+                                if (view === 'edit') {
+                                    await updateDoc(doc(db, "students", selectedId), data);
+                                    setAlertConfig({ message: 'ØªÙ… ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ù†Ø¬Ø§Ø­', type: 'success' });
+                                } else {
+                                    await addDoc(studentsCollection, data);
+                                    setAlertConfig({ message: 'ØªÙ… Ø§Ù„Ø­ÙØ¸ Ø¨Ù†Ø¬Ø§Ø­', type: 'success' });
+                                }
+                                await refreshStats();
                                 setView('list');
                                 setSimilarStudents([]);
-                                setAlertConfig({ message: 'تم الحفظ بنجاح', type: 'success' });
-                            } catch(err) { setAlertConfig({ message: "حدث خطأ", type: 'error' }); }
+                            } catch(err) { setAlertConfig({ message: "Ø­Ø¯Ø« Ø®Ø·Ø£", type: 'error' }); }
                         }} className="space-y-3">
                            <div>
                                <input 
@@ -901,23 +1010,23 @@
                                    required 
                                    defaultValue={view === 'edit' ? cleanName(students.find(s=>s.id===selectedId)?.firstName) : ''} 
                                    className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} 
-                                   placeholder="اسم الطالب" 
+                                   placeholder="Ø§Ø³Ù… Ø§Ù„Ø·Ø§Ù„Ø¨" 
                                    onChange={(e) => checkSimilarStudents(e.target.value)} 
                                    autoComplete="off"
                                />
                                {similarStudents.length > 0 && (
                                    <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 animate-fade-in">
                                        <div className="flex items-center gap-1 text-amber-800 font-bold text-[10px] mb-1">
-                                           <AlertTriangle size={12}/>
-                                           <span>تنبيه: أسماء مشابهة مسجلة مسبقاً</span>
+                                            <AlertTriangle size={12}/>
+                                           <span>ØªÙ†Ø¨ÙŠÙ‡: Ø£Ø³Ù…Ø§Ø¡ Ù…Ø´Ø§Ø¨Ù‡Ø© Ù…Ø³Ø¬Ù„Ø© Ù…Ø³Ø¨Ù‚Ø§Ù‹</span>
                                        </div>
                                        <div className="max-h-24 overflow-y-auto space-y-1">
                                            {similarStudents.map(s => (
                                                <div key={s.id} className="flex justify-between items-center bg-white p-1.5 rounded-lg border border-amber-100 text-[10px]">
                                                    <span className="font-bold text-slate-700 truncate ml-1">{cleanName(s.firstName)}</span>
                                                    <div className="flex gap-1 flex-shrink-0">
-                                                       <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">قيد {s.regNumber}</span>
-                                                       <span className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded font-mono font-bold">ص {s.pageNumber}</span>
+                                                       <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">Ù‚ÙŠØ¯ {s.regNumber}</span>
+                                                       <span className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded font-mono font-bold">Øµ {s.pageNumber}</span>
                                                    </div>
                                                </div>
                                            ))}
@@ -925,35 +1034,35 @@
                                    </div>
                                )}
                            </div>
-                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="اللقب (اختياري)" />
+                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="Ø§Ù„Ù„Ù‚Ø¨ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)" />
                            <div className="grid grid-cols-2 gap-3">
-                             <input name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
-                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
+                             <input name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
+                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="Ø±Ù‚Ù… Ø§Ù„ØµÙØ­Ø©" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
                            </div>
                            <input type="date" name="createdAt" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} />
                            <div>
-                              <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">حالة الطالب</label>
+                              <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">Ø­Ø§Ù„Ø© Ø§Ù„Ø·Ø§Ù„Ø¨</label>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 <label className="cursor-pointer group">
                                     <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
-                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">مستمر</div>
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">Ù…Ø³ØªÙ…Ø±</div>
                                 </label>
                                 <label className="cursor-pointer group">
                                     <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} />
-                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">منقول</div>
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">Ù…Ù†Ù‚ÙˆÙ„</div>
                                 </label>
                                 <label className="cursor-pointer group">
                                     <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
-                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">تارك</div>
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">ØªØ§Ø±Ùƒ</div>
                                 </label>
                                 <label className="cursor-pointer group">
                                     <input type="radio" name="status" value="graduated" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'graduated'} />
-                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">تخرج</div>
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">ØªØ®Ø±Ø¬</div>
                                 </label>
                               </div>
                            </div>
-                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
-                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>حفظ</button>
+                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="Ù…Ù„Ø§Ø­Ø¸Ø§Øª (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)" />
+                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>Ø­ÙØ¸</button>
                         </form>
                       </div>
                     </Modal>
@@ -962,7 +1071,7 @@
                 {showThemeModal && (
                   <Modal onClose={() => setShowThemeModal(false)}>
                     <div className="bg-white rounded-2xl p-5 text-center space-y-4 shadow-xl">
-                       <h3 className="text-lg font-bold">اختر لون التطبيق</h3>
+                       <h3 className="text-lg font-bold">Ø§Ø®ØªØ± Ù„ÙˆÙ† Ø§Ù„ØªØ·Ø¨ÙŠÙ‚</h3>
                        <div className="grid grid-cols-2 gap-3">
                           {Object.entries(themeColors).map(([key, value]) => (
                             <button 
@@ -975,7 +1084,7 @@
                             </button>
                           ))}
                        </div>
-                       <button onClick={() => setShowThemeModal(false)} className="w-full py-2.5 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm">إغلاق</button>
+                       <button onClick={() => setShowThemeModal(false)} className="w-full py-2.5 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm">Ø¥ØºÙ„Ø§Ù‚</button>
                     </div>
                   </Modal>
                 )}
@@ -983,17 +1092,20 @@
                 {view === 'settings' && (
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3">
-                        <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> الإعدادات</h2>
-                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm"><span>سلة المهملات</span> <ArrowRight size={16}/></button>
-                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button>
-                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير Excel</button>
-                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> نموذج 2000 طالب</button>
+                        <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª</h2>
+                        <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center">
+                            <span className="flex items-center gap-2">{isDarkMode ? <Sun size={18} className="text-amber-500"/> : <Moon size={18} className="text-slate-600"/>} {isDarkMode ? 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù†Ù‡Ø§Ø±ÙŠ' : 'Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ù„ÙŠÙ„ÙŠ'}</span>
+                        </button>
+                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"><span>Ø³Ù„Ø© Ø§Ù„Ù…Ù‡Ù…Ù„Ø§Øª</span> <ArrowRight size={16}/></button>
+                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ù‚ÙŠÙˆØ¯</button>
+                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> ØªØµØ¯ÙŠØ± Excel</button>
+                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> Ù†Ù…ÙˆØ°Ø¬ 2000 Ø·Ø§Ù„Ø¨</button>
                         <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}>
-                            <span className="flex items-center gap-2"><Upload size={18}/> استيراد من Excel</span>
+                            <span className="flex items-center gap-2"><Upload size={18}/> Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù…Ù† Excel</span>
                             <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
                         </label>
                         <div className="pt-3 border-t border-slate-100 mt-1">
-                           <button onClick={() => setConfirmConfig({ title: "حذف شامل", message: "هل أنت متأكد من حذف كافة البيانات نهائياً؟", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> حذف كافة البيانات</button>
+                           <button onClick={() => setConfirmConfig({ title: "Ø­Ø°Ù Ø´Ø§Ù…Ù„", message: "Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù ÙƒØ§ÙØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ù†Ù‡Ø§Ø¦ÙŠØ§Ù‹ØŸ", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> Ø­Ø°Ù ÙƒØ§ÙØ© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª</button>
                         </div>
                       </div>
                     </Modal>
@@ -1003,35 +1115,43 @@
                     <Modal onClose={() => setView('list')}>
                         <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
                             <h2 className="text-lg font-bold flex items-center gap-2">
-                                <BarChart3 size={20} className="text-blue-600" /> إحصائيات القيود
+                                <BarChart3 size={20} className="text-blue-600" /> Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ù‚ÙŠÙˆØ¯
                             </h2>
                             <div className="overflow-y-auto flex-1 custom-scrollbar">
                                 <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50 sticky top-0 z-10">
                                         <tr>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">Ø¹Ø¯Ø¯ Ø§Ù„Ø·Ù„Ø§Ø¨</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {regStats.length > 0 ? regStats.map((item) => (
                                             <tr key={item.reg} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-3 font-bold text-slate-700 text-sm">قيد {item.reg}</td>
+                                                <td className="p-3 font-bold text-slate-700 text-sm align-top">Ù‚ÙŠØ¯ {item.reg}</td>
                                                 <td className="p-3 font-bold text-slate-900 text-sm">
-                                                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-lg">
-                                                        {item.count} طالب
-                                                    </span>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded-lg w-fit text-xs">
+                                                            Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: {item.total} Ø·Ø§Ù„Ø¨
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                                            {item.active > 0 && <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">Ù…Ø³ØªÙ…Ø±: {item.active}</span>}
+                                                            {item.transferred > 0 && <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">Ù…Ù†Ù‚ÙˆÙ„: {item.transferred}</span>}
+                                                            {item.left > 0 && <span className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">ØªØ§Ø±Ùƒ: {item.left}</span>}
+                                                            {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">ØªØ®Ø±Ø¬: {item.graduated}</span>}
+                                                        </div>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
+                                                <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù…ØªØ§Ø­Ø©</td>
                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
                             </div>
-                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
+                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">Ø¥ØºÙ„Ø§Ù‚</button>
                         </div>
                     </Modal>
                 )}
@@ -1040,14 +1160,14 @@
                     <Modal onClose={() => setView('list')}>
                         <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
                             <h2 className="text-lg font-bold flex items-center gap-2">
-                                <PieChart size={20} className="text-amber-500" /> إحصائيات الحالة الدراسية
+                                <PieChart size={20} className="text-amber-500" /> Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ø¯Ø±Ø§Ø³ÙŠØ©
                             </h2>
                             <div className="overflow-y-auto flex-1 custom-scrollbar">
                                 <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50 sticky top-0 z-10">
                                         <tr>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">الحالة</th>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">Ø§Ù„Ø­Ø§Ù„Ø©</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">Ø¹Ø¯Ø¯ Ø§Ù„Ø·Ù„Ø§Ø¨</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
@@ -1056,7 +1176,7 @@
                                                 <td className="p-3 font-bold text-slate-700 text-sm">{item.label}</td>
                                                 <td className="p-3 font-bold text-sm">
                                                     <span className={`px-2 py-1 rounded-lg ${item.color}`}>
-                                                        {item.count} طالب
+                                                        {item.count} Ø·Ø§Ù„Ø¨
                                                     </span>
                                                 </td>
                                             </tr>
@@ -1064,7 +1184,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
+                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">Ø¥ØºÙ„Ø§Ù‚</button>
                         </div>
                     </Modal>
                 )}
@@ -1072,7 +1192,7 @@
                 {view === 'detail' && selectedId && (() => {
                     const s = students.find(x => x.id === selectedId);
                     if (!s) return null;
-                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'تخرج' };
+                    const statusLabels = { 'active': 'Ù…Ø³ØªÙ…Ø±', 'transferred': 'Ù…Ù†Ù‚ÙˆÙ„', 'left': 'ØªØ§Ø±Ùƒ', 'graduated': 'ØªØ®Ø±Ø¬' };
                     const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700', 'graduated': 'bg-blue-100 text-blue-700' };
 
                     return (
@@ -1082,16 +1202,16 @@
             
                             <div className="relative">
                                 <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{cleanName(s.firstName)}</h1>
-                                <h2 className="text-lg font-bold text-slate-400">{s.lastName || ""}</h2>
+                                <h2 className="text-lg font-bold text-slate-400">/ {s.lastName || ""}</h2>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                <div className={`${currentTheme.primary} text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]`}>
-                                   <span className="text-slate-200 text-[10px] font-bold uppercase tracking-wider mb-1">رقم القيد</span>
+                                   <span className="text-slate-200 text-[10px] font-bold uppercase tracking-wider mb-1">Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯</span>
                                    <span className="text-3xl font-mono font-black">{s.regNumber}</span>
                                </div>
                                <div className="bg-white border-2 border-slate-100 p-4 rounded-xl shadow-sm flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]">
-                                   <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">رقم الصفحة</span>
+                                   <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">Ø±Ù‚Ù… Ø§Ù„ØµÙØ­Ø©</span>
                                    <span className="text-3xl font-mono font-black text-slate-800">{s.pageNumber}</span>
                                </div>
                             </div>
@@ -1101,7 +1221,7 @@
                                     <div className="flex items-center gap-2">
                                         <div className="p-1.5 bg-white rounded-lg shadow-sm"><Calendar size={16} className="text-slate-500"/></div>
                                         <div>
-                                            <div className="text-[10px] font-bold text-slate-400">تاريخ التسجيل</div>
+                                            <div className="text-[10px] font-bold text-slate-400">ØªØ§Ø±ÙŠØ® Ø§Ù„ØªØ³Ø¬ÙŠÙ„</div>
                                             <div className="font-bold text-slate-800 text-sm">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
                                         </div>
                                     </div>
@@ -1110,26 +1230,26 @@
                                     <div className="flex items-center gap-2">
                                         <div className="p-1.5 bg-white rounded-lg shadow-sm"><Info size={16} className="text-slate-500"/></div>
                                         <div>
-                                            <div className="text-[10px] font-bold text-slate-400">حالة القيد</div>
+                                            <div className="text-[10px] font-bold text-slate-400">Ø­Ø§Ù„Ø© Ø§Ù„Ù‚ÙŠØ¯</div>
                                             <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold mt-0.5 ${statusColors[s.status] || statusColors['active']}`}>
-                                                {statusLabels[s.status] || 'مستمر'}
+                                                {statusLabels[s.status] || 'Ù…Ø³ØªÙ…Ø±'}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 {s.notes && (
                                     <div className="pt-3 border-t border-slate-200">
-                                        <div className="text-[10px] font-bold text-slate-400 mb-1">ملاحظات</div>
+                                        <div className="text-[10px] font-bold text-slate-400 mb-1">Ù…Ù„Ø§Ø­Ø¸Ø§Øª</div>
                                         <p className="text-slate-700 font-medium leading-relaxed text-sm">{s.notes}</p>
                                     </div>
                                 )}
                             </div>
 
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}><Printer size={18}/> طباعة البطاقة</button>
+                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}><Printer size={18}/> Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„Ø¨Ø·Ø§Ù‚Ø©</button>
                             <div className="flex gap-2">
-                                <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">تعديل البيانات</button>
+                                <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª</button>
                                 {view !== 'trash' && (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "نقل إلى سلة المهملات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم الحذف بنجاح', type: 'success' }); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button>
+                                    <button onClick={() => setConfirmConfig({ title: "Ø­Ø°Ù Ø§Ù„Ø·Ø§Ù„Ø¨", message: "Ù†Ù‚Ù„ Ø¥Ù„Ù‰ Ø³Ù„Ø© Ø§Ù„Ù…Ù‡Ù…Ù„Ø§ØªØŸ", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'ØªÙ… Ø§Ù„Ø­Ø°Ù Ø¨Ù†Ø¬Ø§Ø­', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">Ø­Ø°Ù</button>
                                 )}
                             </div>
                          </div>
@@ -1140,14 +1260,14 @@
                 {showPrintModal && (
                     <Modal onClose={() => setShowPrintModal(false)}>
                        <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl">
-                          <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>طباعة السجل الحالي بالكامل</button>
-                          <div className="text-slate-400 text-[10px]">أو اطبع قيداً محدداً</div>
+                          <h3 className="text-lg font-bold">Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©</h3>
+                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„Ø­Ø§Ù„ÙŠ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„</button>
+                          <div className="text-slate-400 text-[10px]">Ø£Ùˆ Ø§Ø·Ø¨Ø¹ Ù‚ÙŠØ¯Ø§Ù‹ Ù…Ø­Ø¯Ø¯Ø§Ù‹</div>
                           <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
-                               <option value="">اختر رقم القيد...</option>
-                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد {r}</option>)}
+                               <option value="">Ø§Ø®ØªØ± Ø±Ù‚Ù… Ø§Ù„Ù‚ÙŠØ¯...</option>
+                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>Ù‚ÙŠØ¯ {r}</option>)}
                           </select>
-                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>طباعة القيد المختار</button>
+                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>Ø·Ø¨Ø§Ø¹Ø© Ø§Ù„Ù‚ÙŠØ¯ Ø§Ù„Ù…Ø®ØªØ§Ø±</button>
                        </div>
                     </Modal>
                 )}
@@ -1158,15 +1278,21 @@
                 {importing && (
                   <Modal onClose={() => {}} zIndex="z-[80]">
                     <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
-                      <div className="animate-spin text-blue-600"><Loader2 size={48} /></div>
-                      <h3 className="text-xl font-bold text-slate-800">جاري استيراد البيانات...</h3>
-                      <p className="text-slate-500">يرجى الانتظار قليلاً</p>
+                      <div className="relative flex items-center justify-center">
+                          <div className="animate-spin text-blue-600"><Loader2 size={64} /></div>
+                          <div className="absolute text-sm font-bold text-blue-800" dir="ltr">{importProgress}%</div>
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-800">Ø¬Ø§Ø±ÙŠ Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª...</h3>
+                      <p className="text-slate-500">ÙŠØ±Ø¬Ù‰ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø± Ù‚Ù„ÙŠÙ„Ø§Ù‹</p>
+                      <div className="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
+                          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}></div>
+                      </div>
                     </div>
                   </Modal>
                 )}
               </div>
               
-              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `سجل قيد رقم ${selectedRegFilter}` : "فهرس القيد العام"} />}
+              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `Ø³Ø¬Ù„ Ù‚ÙŠØ¯ Ø±Ù‚Ù… ${selectedRegFilter}` : "ÙÙ‡Ø±Ø³ Ø§Ù„Ù‚ÙŠØ¯ Ø§Ù„Ø¹Ø§Ù…"} />}
               {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
             </>
           );
