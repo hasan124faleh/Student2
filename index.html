@@ -127,6 +127,59 @@
       .animate-fade-in { animation: fade-in 0.2s ease-out; }
       @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+      
+      /* تلميحات الأدوات */
+      .tooltip {
+        position: relative;
+        display: inline-block;
+      }
+      
+      .tooltip .tooltip-text {
+        visibility: hidden;
+        width: 120px;
+        background-color: #1e293b;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        position: absolute;
+        z-index: 100;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 10px;
+        pointer-events: none;
+      }
+      
+      .tooltip:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+      
+      /* شارات الصلاحيات */
+      .role-badge {
+        @apply px-2 py-0.5 rounded-full text-[8px] font-bold;
+      }
+      .role-admin { @apply bg-purple-100 text-purple-700; }
+      .role-editor { @apply bg-blue-100 text-blue-700; }
+      .role-viewer { @apply bg-gray-100 text-gray-700; }
+      
+      /* مؤشرات التحميل المحسنة */
+      .loading-spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
     </style>
 
     <!-- React & Babel Support -->
@@ -155,11 +208,11 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Shield, History, Key, UserPlus, UserCog, Activity, Eye, Edit3, Copy, QrCode, Camera, Mic, Bell, Share2, DownloadCloud, UploadCloud, BookOpen, GraduationCap, Users2, FileOutput, FileInput, Layers, Sparkles, Link2, Hash, Flag, Star, Heart, ThumbsUp, Smile, Award, Trophy, Target, Compass, Globe, Map, MapPin, Bookmark, FolderOpen, FolderPlus, FolderMinus, Archive, Inbox, Send, Reply, MessageSquare, MessageCircle, Comment, Phone, Mail, Linkedin, Twitter, Facebook, Instagram, Youtube, Twitch, Github, GitBranch, GitCommit, GitMerge, GitPullRequest, GitCompare, GitFork
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer, orderBy, limit, Timestamp } from "firebase/firestore";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
         // ==========================================
@@ -177,13 +230,69 @@
 
         const app = initializeApp(firebaseConfig);
         
-        // Initialize Firestore with Persistent Local Cache (Modern Way)
+        // Initialize Firestore with Persistent Local Cache
         const db = initializeFirestore(app, {
             localCache: persistentLocalCache()
         });
 
         const auth = getAuth(app);
         const studentsCollection = collection(db, "students");
+        const usersCollection = collection(db, "users");
+        const activityLogsCollection = collection(db, "activity_logs");
+
+        // ==========================================
+        // صلاحيات المستخدمين
+        // ==========================================
+        const USER_ROLES = {
+          ADMIN: { 
+            name: 'مدير النظام', 
+            level: 3,
+            permissions: {
+              canDelete: true,
+              canEdit: true,
+              canAdd: true,
+              canExport: true,
+              canImport: true,
+              canManageUsers: true,
+              canViewLogs: true,
+              canDeleteForever: true,
+              canPrint: true,
+              canBulkOperations: true
+            }
+          },
+          EDITOR: { 
+            name: 'محرر', 
+            level: 2,
+            permissions: {
+              canDelete: false,
+              canEdit: true,
+              canAdd: true,
+              canExport: true,
+              canImport: true,
+              canManageUsers: false,
+              canViewLogs: false,
+              canDeleteForever: false,
+              canPrint: true,
+              canBulkOperations: false
+            }
+          },
+          VIEWER: { 
+            name: 'مشاهد', 
+            level: 1,
+            permissions: {
+              canDelete: false,
+              canEdit: false,
+              canAdd: false,
+              canExport: false,
+              canImport: false,
+              canManageUsers: false,
+              canViewLogs: false,
+              canDeleteForever: false,
+              canPrint: true,
+              canBulkOperations: false
+            }
+          }
+        };
 
         // ==========================================
         // UTILS
@@ -198,7 +307,35 @@
             return new Date(timestamp).toISOString().split('T')[0];
         };
 
-        const exportToExcel = (students) => {
+        const formatDateTime = (timestamp) => {
+          if (!timestamp) return '';
+          const date = new Date(timestamp);
+          return date.toLocaleDateString('ar-EG') + ' ' + date.toLocaleTimeString('ar-EG');
+        };
+
+        // تسجيل النشاطات
+        const logActivity = async (userId, userEmail, action, details, targetId = null) => {
+          try {
+            await addDoc(activityLogsCollection, {
+              userId,
+              userEmail,
+              action,
+              details,
+              targetId,
+              timestamp: Timestamp.now(),
+              ip: 'client-side' // يمكن تحسينه لاحقاً
+            });
+          } catch (error) {
+            console.error('Error logging activity:', error);
+          }
+        };
+
+        const exportToExcel = (students, userRole) => {
+          if (!userRole.permissions.canExport) {
+            alert('ليس لديك صلاحية لتصدير البيانات');
+            return;
+          }
+          
           const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
           const data = students.map(s => ({
             'الاسم الرباعي': cleanName(s.firstName),
@@ -268,6 +405,39 @@
           });
         };
         
+        // إنشاء رمز QR
+        const generateQRCode = (student) => {
+          const data = {
+            id: student.id,
+            name: cleanName(student.firstName) + ' ' + (student.lastName || ''),
+            regNumber: student.regNumber,
+            pageNumber: student.pageNumber
+          };
+          return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(JSON.stringify(data))}`;
+        };
+
+        // طلب إذن الإشعارات
+        const requestNotificationPermission = async () => {
+          if (!('Notification' in window)) {
+            console.log('هذا المتصفح لا يدعم الإشعارات');
+            return;
+          }
+          
+          if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            await Notification.requestPermission();
+          }
+        };
+
+        // عرض إشعار
+        const showNotification = (title, message, icon = '📋') => {
+          if (Notification.permission === 'granted') {
+            new Notification(title, { 
+              body: message,
+              icon: icon
+            });
+          }
+        };
+
         // ==========================================
         // UI COMPONENTS
         // ==========================================
@@ -329,6 +499,25 @@
               <div className="text-xl font-black text-slate-800 font-mono">{value}</div>
               <div className="text-[10px] text-slate-500 font-bold">{title}</div>
             </div>
+          </div>
+        );
+
+        const RoleBadge = ({ role }) => {
+          const roleInfo = USER_ROLES[role] || USER_ROLES.VIEWER;
+          const roleClass = role === 'ADMIN' ? 'role-admin' : role === 'EDITOR' ? 'role-editor' : 'role-viewer';
+          
+          return (
+            <span className={`role-badge ${roleClass} inline-flex items-center gap-1`}>
+              <Shield size={10} />
+              {roleInfo.name}
+            </span>
+          );
+        };
+
+        const Tooltip = ({ children, text }) => (
+          <div className="tooltip">
+            {children}
+            <span className="tooltip-text">{text}</span>
           </div>
         );
 
@@ -465,33 +654,437 @@
           );
         };
 
-        const Login = () => {
+        const Login = ({ onLoginSuccess }) => {
           const [email, setEmail] = useState('');
           const [password, setPassword] = useState('');
           const [error, setError] = useState('');
           const [loading, setLoading] = useState(false);
+          const [showResetPassword, setShowResetPassword] = useState(false);
+          
           const handleSubmit = async (e) => {
             e.preventDefault();
             setLoading(true);
-            try { await signInWithEmailAndPassword(auth, email, password); } 
-            catch (err) { setError('البريد الإلكتروني أو كلمة المرور غير صحيحة'); } 
+            try { 
+              const userCredential = await signInWithEmailAndPassword(auth, email, password);
+              // تسجيل نشاط تسجيل الدخول
+              await logActivity(userCredential.user.uid, email, 'LOGIN', 'تسجيل دخول إلى النظام');
+              showNotification('مرحباً بك', 'تم تسجيل الدخول بنجاح');
+              if (onLoginSuccess) onLoginSuccess(userCredential.user);
+            } 
+            catch (err) { 
+              setError('البريد الإلكتروني أو كلمة المرور غير صحيحة'); 
+            } 
             finally { setLoading(false); }
           };
+
+          const handleResetPassword = async () => {
+            if (!email) {
+              setError('الرجاء إدخال البريد الإلكتروني');
+              return;
+            }
+            setLoading(true);
+            try {
+              await sendPasswordResetEmail(auth, email);
+              setAlertConfig({ message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني', type: 'success' });
+              setShowResetPassword(false);
+            } catch (err) {
+              setError('فشل إرسال رابط إعادة التعيين');
+            } finally {
+              setLoading(false);
+            }
+          };
+
           return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl">
               <div className="bg-white rounded-2xl shadow-2xl w-full max-md p-8 animate-fade-in">
                 <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"><Users className="w-8 h-8 text-white" /></div>
-                  <h2 className="text-2xl font-bold text-slate-800">الدخول إلى النظام</h2>
+                  <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg">
+                    <GraduationCap className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800">نظام سجل القيد العام</h2>
+                  <p className="text-slate-500 text-sm mt-1">الدخول إلى النظام</p>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input type="email" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <input type="password" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg transition-all">{loading ? 'جاري التحقق...' : 'دخول'}</button>
-                </form>
+                
+                {!showResetPassword ? (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <input 
+                      type="email" 
+                      required 
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" 
+                      dir="ltr" 
+                      placeholder="البريد الإلكتروني" 
+                      value={email} 
+                      onChange={(e) => setEmail(e.target.value)} 
+                    />
+                    <input 
+                      type="password" 
+                      required 
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" 
+                      dir="ltr" 
+                      placeholder="كلمة المرور" 
+                      value={password} 
+                      onChange={(e) => setPassword(e.target.value)} 
+                    />
+                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    
+                    <button 
+                      type="submit" 
+                      disabled={loading} 
+                      className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg transition-all hover:bg-slate-800"
+                    >
+                      {loading ? 'جاري التحقق...' : 'دخول'}
+                    </button>
+                    
+                    <button 
+                      type="button"
+                      onClick={() => setShowResetPassword(true)}
+                      className="w-full text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      نسيت كلمة المرور؟
+                    </button>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-slate-600 text-sm text-center">
+                      أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور
+                    </p>
+                    <input 
+                      type="email" 
+                      className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" 
+                      dir="ltr" 
+                      placeholder="البريد الإلكتروني" 
+                      value={email} 
+                      onChange={(e) => setEmail(e.target.value)} 
+                    />
+                    <button 
+                      onClick={handleResetPassword}
+                      disabled={loading}
+                      className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg transition-all hover:bg-blue-700"
+                    >
+                      {loading ? 'جاري الإرسال...' : 'إرسال رابط إعادة التعيين'}
+                    </button>
+                    <button 
+                      onClick={() => setShowResetPassword(false)}
+                      className="w-full text-sm text-slate-600 hover:text-slate-800 transition-colors"
+                    >
+                      العودة إلى تسجيل الدخول
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
+          );
+        };
+
+        // مكون إدارة المستخدمين
+        const UserManagement = ({ currentUser, currentUserRole, onClose }) => {
+          const [users, setUsers] = useState([]);
+          const [loading, setLoading] = useState(true);
+          const [newUserEmail, setNewUserEmail] = useState('');
+          const [newUserRole, setNewUserRole] = useState('VIEWER');
+          const [newUserPassword, setNewUserPassword] = useState('');
+          const [showAddUser, setShowAddUser] = useState(false);
+
+          useEffect(() => {
+            loadUsers();
+          }, []);
+
+          const loadUsers = async () => {
+            setLoading(true);
+            try {
+              const querySnapshot = await getDocs(usersCollection);
+              const usersData = [];
+              querySnapshot.forEach((doc) => {
+                usersData.push({ id: doc.id, ...doc.data() });
+              });
+              setUsers(usersData);
+            } catch (error) {
+              console.error('Error loading users:', error);
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          const handleAddUser = async () => {
+            if (!newUserEmail || !newUserPassword) {
+              alert('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+              return;
+            }
+
+            try {
+              // إنشاء المستخدم في Firebase Auth
+              const userCredential = await createUserWithEmailAndPassword(auth, newUserEmail, newUserPassword);
+              
+              // إضافة المستخدم إلى مجموعة users مع الصلاحيات
+              await addDoc(usersCollection, {
+                uid: userCredential.user.uid,
+                email: newUserEmail,
+                role: newUserRole,
+                createdAt: Timestamp.now(),
+                createdBy: currentUser.uid
+              });
+
+              // تسجيل النشاط
+              await logActivity(currentUser.uid, currentUser.email, 'ADD_USER', `إضافة مستخدم جديد: ${newUserEmail}`);
+
+              setAlertConfig({ message: 'تم إضافة المستخدم بنجاح', type: 'success' });
+              setShowAddUser(false);
+              setNewUserEmail('');
+              setNewUserPassword('');
+              setNewUserRole('VIEWER');
+              loadUsers();
+            } catch (error) {
+              console.error('Error adding user:', error);
+              setAlertConfig({ message: 'فشل إضافة المستخدم', type: 'error' });
+            }
+          };
+
+          const handleUpdateUserRole = async (userId, newRole) => {
+            try {
+              // العثور على وثيقة المستخدم
+              const userDoc = users.find(u => u.uid === userId);
+              if (userDoc) {
+                await updateDoc(doc(db, "users", userDoc.id), { role: newRole });
+                
+                await logActivity(currentUser.uid, currentUser.email, 'UPDATE_USER_ROLE', `تغيير صلاحية المستخدم ${userId} إلى ${newRole}`);
+                
+                setAlertConfig({ message: 'تم تحديث صلاحية المستخدم', type: 'success' });
+                loadUsers();
+              }
+            } catch (error) {
+              console.error('Error updating user role:', error);
+              setAlertConfig({ message: 'فشل تحديث صلاحية المستخدم', type: 'error' });
+            }
+          };
+
+          const handleDeleteUser = async (userId) => {
+            try {
+              const userDoc = users.find(u => u.uid === userId);
+              if (userDoc) {
+                await deleteDoc(doc(db, "users", userDoc.id));
+                
+                await logActivity(currentUser.uid, currentUser.email, 'DELETE_USER', `حذف المستخدم ${userId}`);
+                
+                setAlertConfig({ message: 'تم حذف المستخدم', type: 'success' });
+                loadUsers();
+              }
+            } catch (error) {
+              console.error('Error deleting user:', error);
+              setAlertConfig({ message: 'فشل حذف المستخدم', type: 'error' });
+            }
+          };
+
+          if (!currentUserRole?.permissions.canManageUsers) {
+            return (
+              <Modal onClose={onClose}>
+                <div className="bg-white rounded-2xl p-8 text-center">
+                  <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">ليس لديك صلاحية</h3>
+                  <p className="text-slate-500 mb-4">أنت لا تملك صلاحية إدارة المستخدمين</p>
+                  <button onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-lg font-bold">إغلاق</button>
+                </div>
+              </Modal>
+            );
+          }
+
+          return (
+            <Modal onClose={onClose}>
+              <div className="bg-white rounded-2xl p-5 max-h-[80vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold flex items-center gap-2">
+                    <Users2 size={20} /> إدارة المستخدمين
+                  </h2>
+                  <button
+                    onClick={() => setShowAddUser(!showAddUser)}
+                    className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <UserPlus size={18} />
+                  </button>
+                </div>
+
+                {showAddUser && (
+                  <div className="bg-slate-50 p-4 rounded-xl mb-4 space-y-3">
+                    <h3 className="font-bold text-sm">إضافة مستخدم جديد</h3>
+                    <input
+                      type="email"
+                      placeholder="البريد الإلكتروني"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      className="w-full p-2 rounded-lg border outline-none"
+                      dir="ltr"
+                    />
+                    <input
+                      type="password"
+                      placeholder="كلمة المرور"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      className="w-full p-2 rounded-lg border outline-none"
+                      dir="ltr"
+                    />
+                    <select
+                      value={newUserRole}
+                      onChange={(e) => setNewUserRole(e.target.value)}
+                      className="w-full p-2 rounded-lg border outline-none"
+                    >
+                      <option value="ADMIN">مدير النظام</option>
+                      <option value="EDITOR">محرر</option>
+                      <option value="VIEWER">مشاهد</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleAddUser}
+                        className="flex-1 bg-green-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-green-700"
+                      >
+                        إضافة
+                      </button>
+                      <button
+                        onClick={() => setShowAddUser(false)}
+                        className="flex-1 bg-slate-200 py-2 rounded-lg font-bold text-sm hover:bg-slate-300"
+                      >
+                        إلغاء
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="loading-spinner"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {users.map((user) => (
+                      <div key={user.id} className="border rounded-lg p-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-bold text-sm">{user.email}</div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              <RoleBadge role={user.role} />
+                            </div>
+                            <div className="text-[8px] text-slate-400 mt-1">
+                              تمت الإضافة: {user.createdAt?.toDate().toLocaleDateString('ar-EG')}
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            {user.uid !== currentUser.uid && (
+                              <>
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => handleUpdateUserRole(user.uid, e.target.value)}
+                                  className="text-xs p-1 border rounded"
+                                >
+                                  <option value="ADMIN">مدير</option>
+                                  <option value="EDITOR">محرر</option>
+                                  <option value="VIEWER">مشاهد</option>
+                                </select>
+                                <button
+                                  onClick={() => handleDeleteUser(user.uid)}
+                                  className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Modal>
+          );
+        };
+
+        // مكون سجل النشاطات
+        const ActivityLog = ({ currentUser, currentUserRole, onClose }) => {
+          const [logs, setLogs] = useState([]);
+          const [loading, setLoading] = useState(true);
+
+          useEffect(() => {
+            loadLogs();
+          }, []);
+
+          const loadLogs = async () => {
+            setLoading(true);
+            try {
+              const q = query(activityLogsCollection, orderBy('timestamp', 'desc'), limit(100));
+              const querySnapshot = await getDocs(q);
+              const logsData = [];
+              querySnapshot.forEach((doc) => {
+                logsData.push({ id: doc.id, ...doc.data() });
+              });
+              setLogs(logsData);
+            } catch (error) {
+              console.error('Error loading logs:', error);
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          if (!currentUserRole?.permissions.canViewLogs) {
+            return (
+              <Modal onClose={onClose}>
+                <div className="bg-white rounded-2xl p-8 text-center">
+                  <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">ليس لديك صلاحية</h3>
+                  <p className="text-slate-500 mb-4">أنت لا تملك صلاحية عرض سجل النشاطات</p>
+                  <button onClick={onClose} className="px-4 py-2 bg-slate-100 rounded-lg font-bold">إغلاق</button>
+                </div>
+              </Modal>
+            );
+          }
+
+          const getActionIcon = (action) => {
+            switch(action) {
+              case 'ADD_STUDENT': return <UserPlus size={14} className="text-green-600" />;
+              case 'EDIT_STUDENT': return <Edit3 size={14} className="text-blue-600" />;
+              case 'DELETE_STUDENT': return <Trash2 size={14} className="text-red-600" />;
+              case 'LOGIN': return <LogOut size={14} className="text-purple-600" />;
+              case 'EXPORT': return <Download size={14} className="text-emerald-600" />;
+              case 'IMPORT': return <Upload size={14} className="text-amber-600" />;
+              case 'PRINT': return <Printer size={14} className="text-indigo-600" />;
+              default: return <Activity size={14} className="text-slate-600" />;
+            }
+          };
+
+          return (
+            <Modal onClose={onClose}>
+              <div className="bg-white rounded-2xl p-5 max-h-[80vh] overflow-y-auto">
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
+                  <History size={20} /> سجل النشاطات (آخر 100)
+                </h2>
+
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="loading-spinner"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {logs.map((log) => (
+                      <div key={log.id} className="border-b pb-2 last:border-0">
+                        <div className="flex items-start gap-2">
+                          {getActionIcon(log.action)}
+                          <div className="flex-1">
+                            <div className="flex justify-between">
+                              <span className="font-bold text-xs">{log.userEmail}</span>
+                              <span className="text-[8px] text-slate-400">
+                                {log.timestamp?.toDate().toLocaleString('ar-EG')}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-600 mt-1">{log.details}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {logs.length === 0 && (
+                      <p className="text-center text-slate-400 py-4">لا توجد نشاطات مسجلة</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Modal>
           );
         };
 
@@ -505,6 +1098,7 @@
         
         const App = () => {
           const [user, setUser] = useState(null);
+          const [userRole, setUserRole] = useState(null);
           const [loading, setLoading] = useState(true);
           const [students, setStudents] = useState([]);
           const [view, setView] = useState('list');
@@ -529,10 +1123,82 @@
           const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
           const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
           const [showThemeModal, setShowThemeModal] = useState(false);
+          const [showUserManagement, setShowUserManagement] = useState(false);
+          const [showActivityLog, setShowActivityLog] = useState(false);
+          const [showQRCode, setShowQRCode] = useState(false);
+          const [selectedStudentForQR, setSelectedStudentForQR] = useState(null);
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
           const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
+
+          // طلب إذن الإشعارات عند تحميل التطبيق
+          useEffect(() => {
+            requestNotificationPermission();
+          }, []);
+
+          // إضافة اختصارات لوحة المفاتيح
+          useEffect(() => {
+            const handleKeyDown = (e) => {
+              // Ctrl+F للبحث
+              if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput')?.focus();
+              }
+              // Ctrl+N لإضافة طالب جديد
+              if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                if (userRole?.permissions.canAdd) {
+                  setSelectedId(null);
+                  setView('add');
+                  setSimilarStudents([]);
+                }
+              }
+              // Ctrl+P للطباعة
+              if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                setShowPrintModal(true);
+              }
+              // Esc لإغلاق النوافذ المنبثقة
+              if (e.key === 'Escape') {
+                // سيتم التعامل معه من قبل المودالات
+              }
+            };
+
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+          }, [userRole]);
+
+          // تحميل صلاحية المستخدم
+          useEffect(() => {
+            const loadUserRole = async () => {
+              if (user) {
+                try {
+                  const q = query(usersCollection, where('uid', '==', user.uid));
+                  const querySnapshot = await getDocs(q);
+                  
+                  if (!querySnapshot.empty) {
+                    const userData = querySnapshot.docs[0].data();
+                    setUserRole(USER_ROLES[userData.role] || USER_ROLES.VIEWER);
+                  } else {
+                    // إذا لم يكن المستخدم مسجلاً في مجموعة users، نضيفه كمشاهد
+                    await addDoc(usersCollection, {
+                      uid: user.uid,
+                      email: user.email,
+                      role: 'VIEWER',
+                      createdAt: Timestamp.now()
+                    });
+                    setUserRole(USER_ROLES.VIEWER);
+                  }
+                } catch (error) {
+                  console.error('Error loading user role:', error);
+                  setUserRole(USER_ROLES.VIEWER);
+                }
+              }
+            };
+
+            loadUserRole();
+          }, [user]);
 
           const regsCount = useMemo(() => {
              return new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber)).size;
@@ -670,6 +1336,11 @@
           }, [students.length]);
 
           const handleImport = async (e) => {
+            if (!userRole?.permissions.canImport) {
+              setAlertConfig({ message: 'ليس لديك صلاحية لاستيراد البيانات', type: 'error' });
+              return;
+            }
+
             const file = e.target.files[0];
             if (!file) return;
             setImporting(true);
@@ -715,13 +1386,25 @@
               
               setImportProgress(100);
               await refreshStats();
+              
+              // تسجيل النشاط
+              await logActivity(user.uid, user.email, 'IMPORT', `استيراد ${count} سجل من Excel`);
+              showNotification('اكتمل الاستيراد', `تم استيراد ${count} سجل بنجاح`);
+              
               setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
-            } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
+            } catch (e) { 
+              setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); 
+            }
             setImporting(false);
             setTimeout(() => setImportProgress(0), 500);
           };
 
           const executeDeleteAll = async () => {
+             if (!userRole?.permissions.canDeleteForever) {
+               setAlertConfig({ message: 'ليس لديك صلاحية لحذف جميع البيانات', type: 'error' });
+               return;
+             }
+
              setConfirmConfig(null);
              setLoading(true);
              try {
@@ -735,9 +1418,14 @@
                   await batch.commit();
                }
                await refreshStats();
+               
+               await logActivity(user.uid, user.email, 'DELETE_ALL', 'حذف جميع البيانات');
+               
                setAlertConfig({ message: 'تم حذف جميع البيانات بنجاح', type: 'success' });
                setView('list');
-             } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); }
+             } catch (e) { 
+               setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); 
+             }
              finally { setLoading(false); }
           };
 
@@ -745,11 +1433,19 @@
             try {
                 await updateDoc(doc(db, "students", id), { isDeleted: false });
                 await refreshStats();
+                
+                await logActivity(user.uid, user.email, 'RESTORE_STUDENT', `استعادة طالب محذوف`, id);
+                
                 setAlertConfig({ message: 'تمت استعادة السجل بنجاح', type: 'success' });
             } catch(e) { console.error(e); }
           };
 
           const handleDeleteForever = (id) => {
+            if (!userRole?.permissions.canDeleteForever) {
+              setAlertConfig({ message: 'ليس لديك صلاحية للحذف النهائي', type: 'error' });
+              return;
+            }
+
             setConfirmConfig({
                 title: "حذف نهائي",
                 message: "هل أنت متأكد من حذف هذا السجل نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
@@ -757,6 +1453,9 @@
                 onConfirm: async () => {
                     await deleteDoc(doc(db, "students", id));
                     await refreshStats();
+                    
+                    await logActivity(user.uid, user.email, 'DELETE_FOREVER', `حذف نهائي لطالب`, id);
+                    
                     setConfirmConfig(null);
                     setAlertConfig({ message: 'تم الحذف النهائي', type: 'success' });
                 }
@@ -775,6 +1474,37 @@
                 s.firstName.includes(name)
             );
             setSimilarStudents(matches);
+          };
+
+          const handleAddStudent = async (data) => {
+            if (!userRole?.permissions.canAdd) {
+              setAlertConfig({ message: 'ليس لديك صلاحية لإضافة طلاب', type: 'error' });
+              return;
+            }
+
+            try {
+              const docRef = await addDoc(studentsCollection, data);
+              await logActivity(user.uid, user.email, 'ADD_STUDENT', `إضافة طالب جديد: ${data.firstName}`, docRef.id);
+              showNotification('تمت الإضافة', `تم إضافة الطالب ${data.firstName} بنجاح`);
+              return docRef;
+            } catch (error) {
+              throw error;
+            }
+          };
+
+          const handleEditStudent = async (id, data) => {
+            if (!userRole?.permissions.canEdit) {
+              setAlertConfig({ message: 'ليس لديك صلاحية لتعديل البيانات', type: 'error' });
+              return;
+            }
+
+            try {
+              await updateDoc(doc(db, "students", id), data);
+              await logActivity(user.uid, user.email, 'EDIT_STUDENT', `تعديل بيانات طالب: ${data.firstName}`, id);
+              showNotification('تم التعديل', `تم تعديل بيانات الطالب بنجاح`);
+            } catch (error) {
+              throw error;
+            }
           };
 
           const filtered = useMemo(() => {
@@ -810,9 +1540,8 @@
           }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]);
 
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-          const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
 
-          if (!user) return <Login />;
+          if (!user) return <Login onLoginSuccess={(user) => setUser(user)} />;
         
           return (
             <>
@@ -820,13 +1549,50 @@
                 <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80">
                   <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-base text-slate-800 cursor-pointer" onClick={() => setView('list')}>
-                      <div className={`${currentTheme.primary} text-white p-1.5 rounded-lg shadow-lg transition-colors`}><Users size={18} /></div>
+                      <div className={`${currentTheme.primary} text-white p-1.5 rounded-lg shadow-lg transition-colors`}>
+                        <GraduationCap size={18} />
+                      </div>
                       <span>سجل القيد العام</span>
+                      {userRole && (
+                        <span className="mr-2">
+                          <RoleBadge role={Object.keys(USER_ROLES).find(key => USER_ROLES[key] === userRole)} />
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <button onClick={() => setShowThemeModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Palette size={20} /></button>
-                      <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={20} /></button>
-                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد من تسجيل الخروج؟", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
+                      <Tooltip text="تغيير الألوان">
+                        <button onClick={() => setShowThemeModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                          <Palette size={20} />
+                        </button>
+                      </Tooltip>
+                      
+                      {userRole?.permissions.canViewLogs && (
+                        <Tooltip text="سجل النشاطات">
+                          <button onClick={() => setShowActivityLog(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                            <History size={20} />
+                          </button>
+                        </Tooltip>
+                      )}
+                      
+                      {userRole?.permissions.canManageUsers && (
+                        <Tooltip text="إدارة المستخدمين">
+                          <button onClick={() => setShowUserManagement(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                            <Users2 size={20} />
+                          </button>
+                        </Tooltip>
+                      )}
+                      
+                      <Tooltip text="الإعدادات">
+                        <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                          <Settings size={20} />
+                        </button>
+                      </Tooltip>
+                      
+                      <Tooltip text="تسجيل الخروج">
+                        <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد من تسجيل الخروج؟", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                          <LogOut size={20} />
+                        </button>
+                      </Tooltip>
                     </div>
                   </div>
                 </header>
@@ -840,27 +1606,40 @@
                                     <Trash2 size={20} />
                                     <span>سلة المحذوفات</span>
                                 </div>
-                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors"><ArrowLeft size={16}/> العودة إلى الرئيسية</button>
+                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors">
+                                  <ArrowLeft size={16}/> العودة إلى الرئيسية
+                                </button>
                             </div>
                           )}
 
                           {view !== 'trash' && (
                             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                                 <StatCard title="إجمالي الطلاب" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
-                                <StatCard title="عدد القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
-                                <StatCard title="الحالات الأخرى" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
+                                <StatCard title="عدد القيود" value={regsCount} icon={<Layers size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
+                                <StatCard title="الحالات الأخرى" value={stats.total - stats.active - stats.graduated} icon={<Activity size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
-                          {/* Search Bar - Not Sticky */}
+                          {/* Search Bar مع اختصار لوحة المفاتيح */}
                           <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
                              <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
                                  <Search className="text-slate-400 ml-1" size={16} />
-                                 <input id="searchInput" className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                                 <input 
+                                   id="searchInput" 
+                                   className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" 
+                                   placeholder="ابحث باسم الطالب... (Ctrl+F)" 
+                                   value={search} 
+                                   onChange={(e) => setSearch(e.target.value)} 
+                                 />
+                                 {search && (
+                                   <button onClick={() => setSearch('')} className="text-slate-400 hover:text-slate-600">
+                                     <X size={14} />
+                                   </button>
+                                 )}
                              </div>
                           </div>
 
-                          {/* Filters - Not Sticky */}
+                          {/* Filters */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4">
                               <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
                                   <option value="">جميع القيود</option>
@@ -883,12 +1662,26 @@
                               </select>
                           </div>
 
-                          {/* Action Buttons (Not Sticky) */}
+                          {/* Action Buttons مع صلاحيات */}
                           <div className="flex gap-3">
-                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={16} /> إضافة طالب جديد</button>
-                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={16} /> طباعة السجل</button>
+                                {userRole?.permissions.canAdd && (
+                                  <Tooltip text="إضافة طالب جديد (Ctrl+N)">
+                                    <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}>
+                                      <Plus size={16} /> إضافة طالب جديد
+                                    </button>
+                                  </Tooltip>
+                                )}
+                                
+                                {userRole?.permissions.canPrint && (
+                                  <Tooltip text="طباعة السجل (Ctrl+P)">
+                                    <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors">
+                                      <Printer size={16} /> طباعة السجل
+                                    </button>
+                                  </Tooltip>
+                                )}
                           </div>
 
+                          {/* Desktop Table View */}
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
                             <table className="w-full text-right border-collapse">
                               <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
@@ -897,12 +1690,13 @@
                                   <th className="px-4 py-2">اسم الطالب</th>
                                   <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
                                   <th className="px-4 py-2 w-24 text-center">الصفحة</th>
+                                  <th className="px-4 py-2 w-24 text-center">رمز QR</th>
                                   {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 text-xs">
                                 {displayed.map((s, idx) => (
-                                  <tr key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                  <tr key={s.id} onClick={() => { if(view !== 'trash' && userRole?.permissions.canEdit) { setSelectedId(s.id); setView('detail'); }}} className={`${view !== 'trash' && userRole?.permissions.canEdit ? 'hover:bg-blue-50/40 cursor-pointer' : ''} transition-all border-b border-slate-50 group h-10`}>
                                     <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
                                     <td className="px-4 py-2">
                                         <div className="flex items-center gap-2">
@@ -912,10 +1706,26 @@
                                     </td>
                                     <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                     <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
+                                    <td className="px-4 py-2 text-center">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedStudentForQR(s);
+                                          setShowQRCode(true);
+                                        }}
+                                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                                      >
+                                        <QrCode size={16} />
+                                      </button>
+                                    </td>
                                     {view === 'trash' && (
                                         <td className="px-4 py-2 text-center flex gap-1 justify-center">
-                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
-                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة">
+                                               <RotateCcw size={14}/>
+                                             </button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي">
+                                               <Trash2 size={14}/>
+                                             </button>
                                         </td>
                                     )}
                                   </tr>
@@ -924,22 +1734,37 @@
                             </table>
                           </div>
 
+                          {/* Mobile View */}
                           <div className="md:hidden space-y-2 mt-3">
                              {displayed.map((s, idx) => (
-                                 <div key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                 <div key={s.id} onClick={() => { if(view !== 'trash' && userRole?.permissions.canEdit) { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 ${view !== 'trash' && userRole?.permissions.canEdit ? 'hover:bg-slate-50 group cursor-pointer' : ''} transition-colors`}>
                                     <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
                                        <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
                                        {cleanName(s.firstName)} {s.lastName || ""}
                                     </h3>
-                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
+                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 items-center">
                                         <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedStudentForQR(s);
+                                            setShowQRCode(true);
+                                          }}
+                                          className="mr-auto text-slate-400"
+                                        >
+                                          <QrCode size={16} />
+                                        </button>
                                     </div>
                                     {view === 'trash' && (
                                         <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
-                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
-                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+                                               <RotateCcw size={14}/> استعادة
+                                             </button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1">
+                                               <Trash2 size={14}/> حذف نهائي
+                                             </button>
                                         </div>
                                     )}
                                  </div>
@@ -952,13 +1777,61 @@
 
                 {showScrollTop && (
                     <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50 animate-fade-in">
-                        <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="بحث">
-                            <Search size={20} />
-                        </button>
-                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}>
-                            <ArrowUp size={20} />
-                        </button>
+                        <Tooltip text="بحث (Ctrl+F)">
+                          <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="بحث">
+                              <Search size={20} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="أعلى الصفحة">
+                          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}>
+                              <ArrowUp size={20} />
+                          </button>
+                        </Tooltip>
                     </div>
+                )}
+
+                {/* QR Code Modal */}
+                {showQRCode && selectedStudentForQR && (
+                  <Modal onClose={() => { setShowQRCode(false); setSelectedStudentForQR(null); }}>
+                    <div className="bg-white rounded-2xl p-6 text-center">
+                      <h3 className="text-lg font-bold mb-4">رمز QR للطالب</h3>
+                      <div className="flex justify-center mb-4">
+                        <img 
+                          src={generateQRCode(selectedStudentForQR)} 
+                          alt="QR Code"
+                          className="border-2 border-slate-200 p-2 rounded-lg"
+                        />
+                      </div>
+                      <p className="font-bold text-sm mb-1">{cleanName(selectedStudentForQR.firstName)} {selectedStudentForQR.lastName || ''}</p>
+                      <p className="text-xs text-slate-500 mb-4">قيد {selectedStudentForQR.regNumber} | صفحة {selectedStudentForQR.pageNumber}</p>
+                      <button
+                        onClick={() => {
+                          // طباعة رمز QR
+                          const printWindow = window.open('', '_blank');
+                          printWindow.document.write(`
+                            <html dir="rtl">
+                              <head><title>رمز QR - ${selectedStudentForQR.firstName}</title></head>
+                              <body style="text-align: center; padding: 50px;">
+                                <h1>${selectedStudentForQR.firstName} ${selectedStudentForQR.lastName || ''}</h1>
+                                <p>رقم القيد: ${selectedStudentForQR.regNumber} | رقم الصفحة: ${selectedStudentForQR.pageNumber}</p>
+                                <img src="${generateQRCode(selectedStudentForQR)}" style="width: 300px; height: 300px;"/>
+                              </body>
+                            </html>
+                          `);
+                          printWindow.print();
+                        }}
+                        className="w-full py-2 bg-blue-600 text-white rounded-xl font-bold text-sm mb-2 hover:bg-blue-700"
+                      >
+                        طباعة الرمز
+                      </button>
+                      <button
+                        onClick={() => { setShowQRCode(false); setSelectedStudentForQR(null); }}
+                        className="w-full py-2 bg-slate-100 rounded-xl font-bold text-sm hover:bg-slate-200"
+                      >
+                        إغلاق
+                      </button>
+                    </div>
+                  </Modal>
                 )}
 
                 {(view === 'add' || view === 'edit') && (
@@ -995,16 +1868,18 @@
                             };
                             try {
                                 if (view === 'edit') {
-                                    await updateDoc(doc(db, "students", selectedId), data);
+                                    await handleEditStudent(selectedId, data);
                                     setAlertConfig({ message: 'تم تعديل البيانات بنجاح', type: 'success' });
                                 } else {
-                                    await addDoc(studentsCollection, data);
+                                    await handleAddStudent(data);
                                     setAlertConfig({ message: 'تم إضافة الطالب بنجاح', type: 'success' });
                                 }
                                 await refreshStats();
                                 setView('list');
                                 setSimilarStudents([]);
-                            } catch(err) { setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); }
+                            } catch(err) { 
+                              setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); 
+                            }
                         }} className="space-y-3">
                            <div>
                                <input 
@@ -1064,7 +1939,9 @@
                               </div>
                            </div>
                            <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
-                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>حفظ البيانات</button>
+                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>
+                             حفظ البيانات
+                           </button>
                         </form>
                       </div>
                     </Modal>
@@ -1095,20 +1972,46 @@
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3">
                         <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> الإعدادات</h2>
+                        
                         <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center">
-                            <span className="flex items-center gap-2">{isDarkMode ? <Sun size={18} className="text-amber-500"/> : <Moon size={18} className="text-slate-600"/>} {isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي'}</span>
+                            <span className="flex items-center gap-2">
+                              {isDarkMode ? <Sun size={18} className="text-amber-500"/> : <Moon size={18} className="text-slate-600"/>} 
+                              {isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
+                            </span>
                         </button>
-                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"><span>سلة المحذوفات</span> <ArrowRight size={16}/></button>
-                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button>
-                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير إلى Excel</button>
-                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> إنشاء نموذج (2000 طالب)</button>
-                        <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}>
-                            <span className="flex items-center gap-2"><Upload size={18}/> استيراد من Excel</span>
-                            <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
-                        </label>
-                        <div className="pt-3 border-t border-slate-100 mt-1">
-                           <button onClick={() => setConfirmConfig({ title: "حذف جميع البيانات", message: "هل أنت متأكد من حذف جميع البيانات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> حذف جميع البيانات</button>
-                        </div>
+                        
+                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center">
+                          <span>سلة المحذوفات</span> <ArrowRight size={16}/>
+                        </button>
+                        
+                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm">
+                          <BarChart3 size={18}/> إحصائيات القيود
+                        </button>
+                        
+                        {userRole?.permissions.canExport && (
+                          <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted), userRole)} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm">
+                            <Download size={18}/> تصدير إلى Excel
+                          </button>
+                        )}
+                        
+                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm">
+                          <FileSpreadsheet size={18}/> إنشاء نموذج (2000 طالب)
+                        </button>
+                        
+                        {userRole?.permissions.canImport && (
+                          <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}>
+                              <span className="flex items-center gap-2"><Upload size={18}/> استيراد من Excel</span>
+                              <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
+                          </label>
+                        )}
+                        
+                        {userRole?.permissions.canDeleteForever && (
+                          <div className="pt-3 border-t border-slate-100 mt-1">
+                             <button onClick={() => setConfirmConfig({ title: "حذف جميع البيانات", message: "هل أنت متأكد من حذف جميع البيانات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm">
+                               <Trash2 size={18}/> حذف جميع البيانات
+                             </button>
+                          </div>
+                        )}
                       </div>
                     </Modal>
                 )}
@@ -1227,6 +2130,15 @@
                                             <div className="font-bold text-slate-800 text-sm">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
                                         </div>
                                     </div>
+                                    <button
+                                      onClick={() => {
+                                        setSelectedStudentForQR(s);
+                                        setShowQRCode(true);
+                                      }}
+                                      className="p-2 bg-white rounded-lg shadow-sm hover:bg-slate-50"
+                                    >
+                                      <QrCode size={18} className="text-slate-500" />
+                                    </button>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-2">
@@ -1247,11 +2159,23 @@
                                 )}
                             </div>
 
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}><Printer size={18}/> طباعة البطاقة الشخصية</button>
+                            {userRole?.permissions.canPrint && (
+                              <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}>
+                                <Printer size={18}/> طباعة البطاقة الشخصية
+                              </button>
+                            )}
+                            
                             <div className="flex gap-2">
-                                <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">تعديل البيانات</button>
-                                {view !== 'trash' && (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button>
+                                {userRole?.permissions.canEdit && (
+                                  <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">
+                                    تعديل البيانات
+                                  </button>
+                                )}
+                                
+                                {view !== 'trash' && userRole?.permissions.canDelete && (
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">
+                                      حذف
+                                    </button>
                                 )}
                             </div>
                          </div>
@@ -1263,15 +2187,35 @@
                     <Modal onClose={() => setShowPrintModal(false)}>
                        <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl">
                           <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>طباعة السجل الحالي بالكامل</button>
+                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>
+                            طباعة السجل الحالي بالكامل
+                          </button>
                           <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div>
                           <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
                                <option value="">اختر رقم القيد...</option>
                                {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
                           </select>
-                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>طباعة القيد المحدد</button>
+                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>
+                            طباعة القيد المحدد
+                          </button>
                        </div>
                     </Modal>
+                )}
+
+                {showUserManagement && (
+                  <UserManagement 
+                    currentUser={user} 
+                    currentUserRole={userRole} 
+                    onClose={() => setShowUserManagement(false)} 
+                  />
+                )}
+
+                {showActivityLog && (
+                  <ActivityLog 
+                    currentUser={user} 
+                    currentUserRole={userRole} 
+                    onClose={() => setShowActivityLog(false)} 
+                  />
                 )}
 
                 {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
@@ -1304,4 +2248,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
+    </html>
