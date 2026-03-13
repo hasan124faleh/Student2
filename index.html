@@ -184,7 +184,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Mic, Maximize2, Minimize2
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Mic, Maximize2, Minimize2, Columns
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
@@ -240,8 +240,7 @@
             'الشعبة': s.section || '',
             'سنة التخرج': s.graduationYear || '',
             'جهة النقل': s.transferDestination || '',
-            'تاريخ الترك': s.dropoutDate ? new Date(s.dropoutDate).toLocaleDateString('ar-EG') : '',
-            'سبب الترك': s.dropoutReason || '',
+            'سنة الترك': s.dropoutYear || '',
             'ملاحظات': s.notes || '',
             'تاريخ التسجيل': new Date(s.createdAt).toLocaleDateString('ar-EG')
           }));
@@ -277,7 +276,7 @@
                   'رقم الصفحة': pageNum.toString(),
                   'الحالة الدراسية': 'مستمر',
                   'المرحلة': i % 2 === 0 ? 'متوسطة' : 'إعدادية',
-                  'الصف': i % 2 === 0 ? 'الثاني متوسط' : 'السادس الإعدادي',
+                  'الصف': i % 2 === 0 ? 'الثاني متوسط' : 'السادس علمي',
                   'الشعبة': i % 2 === 0 ? 'أ' : 'علمي',
                   'ملاحظات': ''
                });
@@ -462,16 +461,10 @@
                            <span className="text-2xl font-bold text-slate-900">{student.transferDestination}</span>
                         </div>
                       )}
-                      {student.dropoutDate && student.status === 'left' && (
+                      {student.dropoutYear && student.status === 'left' && (
                         <div className="flex flex-col border-b-2 border-slate-200 pb-2">
-                           <span className="text-base font-bold text-slate-500 mb-1">تاريخ الترك</span>
-                           <span className="text-2xl font-bold text-slate-900">{new Date(student.dropoutDate).toLocaleDateString('ar-EG')}</span>
-                        </div>
-                      )}
-                      {student.dropoutReason && student.status === 'left' && (
-                        <div className="flex flex-col border-b-2 border-slate-200 pb-2">
-                           <span className="text-base font-bold text-slate-500 mb-1">سبب الترك</span>
-                           <span className="text-2xl font-bold text-slate-900">{student.dropoutReason}</span>
+                           <span className="text-base font-bold text-slate-500 mb-1">سنة الترك</span>
+                           <span className="text-2xl font-bold text-slate-900">{student.dropoutYear}</span>
                         </div>
                       )}
                       {student.notes && (
@@ -628,6 +621,12 @@
           const [isListening, setIsListening] = useState(false);
           // Fullscreen State
           const [isFullscreen, setIsFullscreen] = useState(false);
+          // Column Visibility State
+          const [columnVisibility, setColumnVisibility] = useState(() => {
+            const saved = localStorage.getItem('columnVisibility');
+            return saved ? JSON.parse(saved) : { name: true, regNumber: true, pageNumber: true };
+          });
+          const [showColumnModal, setShowColumnModal] = useState(false);
           // Toast for shortcuts
           const [showShortcutToast, setShowShortcutToast] = useState(() => {
             return !localStorage.getItem('shortcutsToastShown');
@@ -708,6 +707,11 @@
           useEffect(() => {
             requestNotificationPermission();
           }, []);
+
+          // Save column visibility
+          useEffect(() => {
+            localStorage.setItem('columnVisibility', JSON.stringify(columnVisibility));
+          }, [columnVisibility]);
 
           // Hide shortcut toast after 5 seconds
           useEffect(() => {
@@ -872,8 +876,7 @@
                        section: row['الشعبة'] || '',
                        graduationYear: row['سنة التخرج'] || '',
                        transferDestination: row['جهة النقل'] || '',
-                       dropoutDate: row['تاريخ الترك'] ? new Date(row['تاريخ الترك']).getTime() : null,
-                       dropoutReason: row['سبب الترك'] || '',
+                       dropoutYear: row['سنة الترك'] || '',
                        status: row['الحالة الدراسية'] === 'منقول' ? 'transferred' : 
                                row['الحالة الدراسية'] === 'تارك' ? 'left' : 
                                row['الحالة الدراسية'] === 'متخرج' ? 'graduated' : 'active',
@@ -1130,8 +1133,8 @@
                              </div>
                           </div>
 
-                          {/* Filters */}
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4">
+                          {/* Filters and Column Customization */}
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-center mb-4">
                               <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9 col-span-1" title="تصفية حسب رقم القيد">
                                   <option value="">جميع القيود</option>
                                   {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
@@ -1151,6 +1154,14 @@
                                   <option value="ALL">جميع السنوات</option>
                                   {years.map(y => <option key={y} value={y}>{y}</option>)}
                               </select>
+                              <button 
+                                onClick={() => setShowColumnModal(true)}
+                                className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9 flex items-center justify-center gap-1 hover:bg-slate-50 transition-colors col-span-1"
+                                title="تخصيص الأعمدة الظاهرة"
+                              >
+                                <Columns size={14} />
+                                <span className="hidden sm:inline">الأعمدة</span>
+                              </button>
                           </div>
 
                           {/* Action Buttons */}
@@ -1165,11 +1176,9 @@
                               <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
                                 <tr>
                                   <th className="px-4 py-2 w-12 text-center">#</th>
-                                  <th className="px-4 py-2">اسم الطالب</th>
-                                  <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
-                                  <th className="px-4 py-2 w-24 text-center">الصفحة</th>
-                                  <th className="px-4 py-2 w-28 text-center">المرحلة</th>
-                                  <th className="px-4 py-2 w-24 text-center">الصف</th>
+                                  {columnVisibility.name && <th className="px-4 py-2">اسم الطالب</th>}
+                                  {columnVisibility.regNumber && <th className="px-4 py-2 w-28 text-center">رقم القيد</th>}
+                                  {columnVisibility.pageNumber && <th className="px-4 py-2 w-24 text-center">الصفحة</th>}
                                   {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
                                 </tr>
                               </thead>
@@ -1177,26 +1186,22 @@
                                 {displayed.map((s, idx) => (
                                   <tr key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
                                     <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                    <td className="px-4 py-2">
-                                        <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
-                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
-                                              {cleanName(s.firstName)} {s.lastName && <span className="text-slate-500"> / {s.lastName}</span>}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`} title="رقم القيد">{s.regNumber}</span></td>
-                                    <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]" title="رقم الصفحة">{s.pageNumber}</span></td>
-                                    <td className="px-4 py-2 text-center">
-                                        {s.educationLevel ? (
-                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${s.educationLevel === 'متوسطة' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                {s.educationLevel}
-                                            </span>
-                                        ) : '-'}
-                                    </td>
-                                    <td className="px-4 py-2 text-center text-xs font-bold text-slate-700">
-                                        {s.grade || '-'}
-                                    </td>
+                                    {columnVisibility.name && (
+                                      <td className="px-4 py-2">
+                                          <div className="flex items-center gap-2">
+                                              <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
+                                              <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
+                                                {cleanName(s.firstName)} {s.lastName && <span className="text-slate-500"> / {s.lastName}</span>}
+                                              </span>
+                                          </div>
+                                      </td>
+                                    )}
+                                    {columnVisibility.regNumber && (
+                                      <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`} title="رقم القيد">{s.regNumber}</span></td>
+                                    )}
+                                    {columnVisibility.pageNumber && (
+                                      <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]" title="رقم الصفحة">{s.pageNumber}</span></td>
+                                    )}
                                     {view === 'trash' && (
                                         <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                              <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة السجل"><RotateCcw size={14}/></button>
@@ -1218,19 +1223,9 @@
                                        <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
                                        {cleanName(s.firstName)} {s.lastName && <span className="text-slate-500 mr-1">/ {s.lastName}</span>}
                                     </h3>
-                                    <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
                                         <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`} title="رقم القيد">قيد {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm" title="رقم الصفحة">صفحة {s.pageNumber}</span>
-                                        {s.educationLevel && (
-                                            <span className={`px-2 py-0.5 rounded text-xs font-bold shadow-sm ${s.educationLevel === 'متوسطة' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                {s.educationLevel}
-                                            </span>
-                                        )}
-                                        {s.grade && (
-                                            <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-bold shadow-sm">
-                                                {s.grade}
-                                            </span>
-                                        )}
                                     </div>
                                     {view === 'trash' && (
                                         <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
@@ -1255,6 +1250,50 @@
                             <ArrowUp size={20} />
                         </button>
                     </div>
+                )}
+
+                {/* Column Customization Modal */}
+                {showColumnModal && (
+                  <Modal onClose={() => setShowColumnModal(false)}>
+                    <div className="bg-white rounded-2xl p-5 shadow-xl">
+                      <h3 className="text-lg font-bold mb-4">تخصيص الأعمدة</h3>
+                      <div className="space-y-3">
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer">
+                          <span className="font-bold text-slate-700">اسم الطالب</span>
+                          <input 
+                            type="checkbox" 
+                            checked={columnVisibility.name} 
+                            onChange={(e) => setColumnVisibility({...columnVisibility, name: e.target.checked})}
+                            className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer">
+                          <span className="font-bold text-slate-700">رقم القيد</span>
+                          <input 
+                            type="checkbox" 
+                            checked={columnVisibility.regNumber} 
+                            onChange={(e) => setColumnVisibility({...columnVisibility, regNumber: e.target.checked})}
+                            className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </label>
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer">
+                          <span className="font-bold text-slate-700">رقم الصفحة</span>
+                          <input 
+                            type="checkbox" 
+                            checked={columnVisibility.pageNumber} 
+                            onChange={(e) => setColumnVisibility({...columnVisibility, pageNumber: e.target.checked})}
+                            className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </label>
+                      </div>
+                      <button 
+                        onClick={() => setShowColumnModal(false)}
+                        className="w-full mt-4 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors"
+                      >
+                        تطبيق
+                      </button>
+                    </div>
+                  </Modal>
                 )}
 
                 {(view === 'add' || view === 'edit') && (
@@ -1291,8 +1330,7 @@
                                 section: form.get('section') || '',
                                 graduationYear: status === 'graduated' ? form.get('graduationYear') || '' : '',
                                 transferDestination: status === 'transferred' ? form.get('transferDestination') || '' : '',
-                                dropoutDate: status === 'left' ? (form.get('dropoutDate') ? new Date(form.get('dropoutDate')).getTime() : null) : null,
-                                dropoutReason: status === 'left' ? form.get('dropoutReason') || '' : '',
+                                dropoutYear: status === 'left' ? form.get('dropoutYear') || '' : '',
                                 notes: form.get('notes') || '',
                                 status: status,
                                 isDeleted: false,
@@ -1376,100 +1414,125 @@
                               </div>
                            </div>
 
-                           {/* المرحلة (تظهر لجميع الحالات) */}
+                           {/* المرحلة */}
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                              <div>
                                <label className="block text-[10px] font-bold text-slate-400 mb-1">المرحلة</label>
-                               <select name="educationLevel" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm">
+                               <select 
+                                 name="educationLevel" 
+                                 className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm"
+                                 onChange={(e) => {
+                                   // This will trigger re-render to update grade options
+                                   const event = new Event('change', { bubbles: true });
+                                   e.target.form?.querySelector('select[name="grade"]')?.dispatchEvent(event);
+                                 }}
+                               >
                                    <option value="">اختر المرحلة...</option>
                                    <option value="متوسطة" selected={view==='edit' && students.find(s=>s.id===selectedId)?.educationLevel === 'متوسطة'}>متوسطة</option>
                                    <option value="إعدادية" selected={view==='edit' && students.find(s=>s.id===selectedId)?.educationLevel === 'إعدادية'}>إعدادية</option>
                                </select>
                              </div>
                              
-                             {/* الصف الدراسي (يعتمد على المرحلة) */}
+                             {/* الصف الدراسي - يعتمد على المرحلة */}
                              <div>
                                <label className="block text-[10px] font-bold text-slate-400 mb-1">الصف الدراسي</label>
                                <select name="grade" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm">
                                    <option value="">اختر الصف...</option>
-                                   {/* هنا يمكن إضافة خيارات الصفوف حسب المرحلة المختارة */}
-                                   <option value="الأول متوسط" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الأول متوسط'}>الأول متوسط</option>
-                                   <option value="الثاني متوسط" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الثاني متوسط'}>الثاني متوسط</option>
-                                   <option value="الثالث متوسط" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الثالث متوسط'}>الثالث متوسط</option>
-                                   <option value="الرابع إعدادي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الرابع إعدادي'}>الرابع إعدادي</option>
-                                   <option value="الخامس إعدادي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الخامس إعدادي'}>الخامس إعدادي</option>
-                                   <option value="السادس إعدادي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'السادس إعدادي'}>السادس إعدادي</option>
+                                   <option value="الأول متوسط" data-level="متوسطة" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الأول متوسط'}>الأول متوسط</option>
+                                   <option value="الثاني متوسط" data-level="متوسطة" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الثاني متوسط'}>الثاني متوسط</option>
+                                   <option value="الثالث متوسط" data-level="متوسطة" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الثالث متوسط'}>الثالث متوسط</option>
+                                   <option value="الرابع علمي" data-level="إعدادية" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الرابع علمي'}>الرابع علمي</option>
+                                   <option value="الخامس علمي" data-level="إعدادية" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'الخامس علمي'}>الخامس علمي</option>
+                                   <option value="السادس علمي" data-level="إعدادية" selected={view==='edit' && students.find(s=>s.id===selectedId)?.grade === 'السادس علمي'}>السادس علمي</option>
                                </select>
                              </div>
                            </div>
 
-                           {/* الشعبة (تظهر للإعدادية) */}
+                           {/* الشعبة - مع خيارات مسبقة وإمكانية إدخال يدوي */}
                            <div>
-                             <label className="block text-[10px] font-bold text-slate-400 mb-1">الشعبة / التخصص</label>
-                             <select name="section" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm">
-                                 <option value="">اختر الشعبة...</option>
-                                 <option value="علمي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'علمي'}>علمي</option>
-                                 <option value="أدبي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'أدبي'}>أدبي</option>
-                                 <option value="تجاري" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'تجاري'}>تجاري</option>
-                                 <option value="صناعي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'صناعي'}>صناعي</option>
-                                 <option value="زراعي" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'زراعي'}>زراعي</option>
-                                 <option value="أ" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'أ'}>أ</option>
-                                 <option value="ب" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'ب'}>ب</option>
-                                 <option value="ج" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'ج'}>ج</option>
-                                 <option value="د" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'د'}>د</option>
-                             </select>
+                             <label className="block text-[10px] font-bold text-slate-400 mb-1">الشعبة</label>
+                             <div className="flex gap-2">
+                               <select 
+                                 name="section" 
+                                 className="flex-1 p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm"
+                                 onChange={(e) => {
+                                   // إذا تم اختيار قيمة وليست "أخرى"، قم بتعيينها مباشرة
+                                   if (e.target.value && e.target.value !== 'other') {
+                                     const customInput = document.querySelector('input[name="section_custom"]');
+                                     if (customInput) customInput.value = '';
+                                   }
+                                 }}
+                               >
+                                   <option value="">اختر الشعبة...</option>
+                                   <option value="أ" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'أ'}>أ</option>
+                                   <option value="ب" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'ب'}>ب</option>
+                                   <option value="ج" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'ج'}>ج</option>
+                                   <option value="د" selected={view==='edit' && students.find(s=>s.id===selectedId)?.section === 'د'}>د</option>
+                                   <option value="other">إدخال يدوي...</option>
+                               </select>
+                               <input 
+                                 type="text" 
+                                 name="section_custom" 
+                                 placeholder="أدخل الشعبة" 
+                                 className="w-24 p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm"
+                                 onChange={(e) => {
+                                   // عند الكتابة، قم بإلغاء تحديد القائمة المنسدلة
+                                   const select = document.querySelector('select[name="section"]');
+                                   if (select) select.value = 'other';
+                                 }}
+                                 defaultValue={view==='edit' && !['أ', 'ب', 'ج', 'د'].includes(students.find(s=>s.id===selectedId)?.section || '') ? students.find(s=>s.id===selectedId)?.section : ''}
+                               />
+                             </div>
+                             <p className="text-[8px] text-slate-400 mt-1">يمكنك اختيار شعبة من القائمة أو إدخالها يدوياً</p>
                            </div>
 
                            {/* حقول خاصة بالحالة */}
                            <div>
                              {/* سنة التخرج (للمتخرجين فقط) */}
-                             <div className="status-field" data-status="graduated">
-                               <label className="block text-[10px] font-bold text-slate-400 mb-1">سنة التخرج</label>
-                               <input 
-                                 type="number" 
-                                 name="graduationYear" 
-                                 min="1900" 
-                                 max="2100" 
-                                 className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" 
-                                 placeholder="مثال: 2024" 
-                                 defaultValue={view==='edit' ? students.find(s=>s.id===selectedId)?.graduationYear : ''}
-                               />
-                             </div>
+                             {statusFilter === 'graduated' && (
+                               <div className="status-field" data-status="graduated">
+                                 <label className="block text-[10px] font-bold text-slate-400 mb-1">سنة التخرج</label>
+                                 <input 
+                                   type="number" 
+                                   name="graduationYear" 
+                                   min="1900" 
+                                   max="2100" 
+                                   className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" 
+                                   placeholder="مثال: 2024" 
+                                   defaultValue={view==='edit' ? students.find(s=>s.id===selectedId)?.graduationYear : ''}
+                                 />
+                               </div>
+                             )}
 
                              {/* جهة النقل (للمنقولين فقط) */}
-                             <div className="status-field" data-status="transferred">
-                               <label className="block text-[10px] font-bold text-slate-400 mb-1">جهة النقل</label>
-                               <input 
-                                 type="text" 
-                                 name="transferDestination" 
-                                 className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" 
-                                 placeholder="أدخل اسم المدرسة / المؤسسة المنقول إليها" 
-                                 defaultValue={view==='edit' ? students.find(s=>s.id===selectedId)?.transferDestination : ''}
-                               />
-                             </div>
+                             {statusFilter === 'transferred' && (
+                               <div className="status-field" data-status="transferred">
+                                 <label className="block text-[10px] font-bold text-slate-400 mb-1">جهة النقل</label>
+                                 <input 
+                                   type="text" 
+                                   name="transferDestination" 
+                                   className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" 
+                                   placeholder="أدخل اسم المدرسة / المؤسسة المنقول إليها" 
+                                   defaultValue={view==='edit' ? students.find(s=>s.id===selectedId)?.transferDestination : ''}
+                                 />
+                               </div>
+                             )}
 
-                             {/* تاريخ الترك (للتاركين فقط) */}
-                             <div className="status-field" data-status="left">
-                               <label className="block text-[10px] font-bold text-slate-400 mb-1">تاريخ الترك</label>
-                               <input 
-                                 type="date" 
-                                 name="dropoutDate" 
-                                 className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" 
-                                 defaultValue={view==='edit' && students.find(s=>s.id===selectedId)?.dropoutDate ? formatDateForInput(students.find(s=>s.id===selectedId)?.dropoutDate) : ''}
-                               />
-                             </div>
-
-                             {/* سبب الترك (للتاركين فقط) */}
-                             <div className="status-field" data-status="left">
-                               <label className="block text-[10px] font-bold text-slate-400 mb-1">سبب الترك</label>
-                               <textarea 
-                                 name="dropoutReason" 
-                                 rows="2"
-                                 className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm resize-none" 
-                                 placeholder="أدخل سبب الترك"
-                                 defaultValue={view==='edit' ? students.find(s=>s.id===selectedId)?.dropoutReason : ''}
-                               />
-                             </div>
+                             {/* سنة الترك (للتاركين فقط) */}
+                             {statusFilter === 'left' && (
+                               <div className="status-field" data-status="left">
+                                 <label className="block text-[10px] font-bold text-slate-400 mb-1">سنة الترك</label>
+                                 <input 
+                                   type="number" 
+                                   name="dropoutYear" 
+                                   min="1900" 
+                                   max="2100" 
+                                   className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" 
+                                   placeholder="مثال: 2023" 
+                                   defaultValue={view==='edit' ? students.find(s=>s.id===selectedId)?.dropoutYear : ''}
+                                 />
+                               </div>
+                             )}
                            </div>
 
                            {/* تاريخ التسجيل */}
@@ -1695,21 +1758,11 @@
                                     </div>
                                 )}
                                 
-                                {s.status === 'left' && (
-                                    <>
-                                        {s.dropoutDate && (
-                                            <div className="border-b border-slate-200 pb-3">
-                                                <div className="text-[10px] font-bold text-slate-400">تاريخ الترك</div>
-                                                <div className="font-bold text-slate-800 text-sm">{new Date(s.dropoutDate).toLocaleDateString('ar-EG')}</div>
-                                            </div>
-                                        )}
-                                        {s.dropoutReason && (
-                                            <div className="border-b border-slate-200 pb-3">
-                                                <div className="text-[10px] font-bold text-slate-400">سبب الترك</div>
-                                                <div className="font-bold text-slate-800 text-sm">{s.dropoutReason}</div>
-                                            </div>
-                                        )}
-                                    </>
+                                {s.status === 'left' && s.dropoutYear && (
+                                    <div className="border-b border-slate-200 pb-3">
+                                        <div className="text-[10px] font-bold text-slate-400">سنة الترك</div>
+                                        <div className="font-bold text-slate-800 text-sm">{s.dropoutYear}</div>
+                                    </div>
                                 )}
 
                                 {s.notes && (
