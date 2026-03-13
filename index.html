@@ -1,1308 +1,1307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>سجل القيد العام</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+    
+    <!-- Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              cairo: ['Cairo', 'sans-serif'],
+            },
+            screens: {
+              'xs': '480px',
+            },
+            colors: {
+              danger: '#ef4444',
+              success: '#10b981',
+              warning: '#f59e0b',
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Cairo', sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+        overflow-x: hidden;
+      }
+      /* Print Styles */
+      @media print {
+        @page { 
+            size: A4; 
+            margin: 0 !important; 
+        } 
+        
+        html, body { 
+            margin: 0 !important; 
+            padding: 0 !important;
+            background-color: white; 
+            overflow: visible !important;
+            height: auto !important;
+            width: 210mm;
+        }
+        
+        .no-print { display: none !important; }
+        .print-only { display: block !important; }
+        
+        .print-page-container {
+            width: 210mm;
+            height: 297mm;
+            padding: 10mm 15mm;
+            box-sizing: border-box;
+            page-break-after: always;
+            break-after: page;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            position: relative;
+            background-color: white;
+            overflow: hidden;
+        }
 
-1	<!DOCTYPE html> 
-2	<html lang="ar" dir="rtl"> 
-3	<head> 
-4	    <meta charset="UTF-8" /> 
-5	    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
-6	    <title>سجل القيد العام</title> 
-7	     
-8	    <!-- Favicon --> 
-9	    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>"> 
-10	     
-11	    <!-- Styling --> 
-12	    <script src="https://cdn.tailwindcss.com"></script> 
-13	    <script> 
-14	      tailwind.config = { 
-15	        theme: { 
-16	          extend: { 
-17	            fontFamily: { 
-18	              cairo: ['Cairo', 'sans-serif'], 
-19	            }, 
-20	            screens: { 
-21	              'xs': '480px', 
-22	            }, 
-23	            colors: { 
-24	              danger: '#ef4444', 
-25	              success: '#10b981', 
-26	              warning: '#f59e0b', 
-27	            } 
-28	          } 
-29	        } 
-30	      } 
-31	    </script> 
-32	    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet"> 
-33	    <style> 
-34	      body { 
-35	        font-family: 'Cairo', sans-serif; 
-36	        background-color: #f8fafc; 
-37	        color: #1e293b; 
-38	        overflow-x: hidden; 
-39	      } 
-40	      /* Print Styles */ 
-41	      @media print { 
-42	        @page {  
-43	            size: A4;  
-44	            margin: 0 !important;  
-45	        }  
-46	         
-47	        html, body {  
-48	            margin: 0 !important;  
-49	            padding: 0 !important; 
-50	            background-color: white;  
-51	            overflow: visible !important; 
-52	            height: auto !important; 
-53	            width: 210mm; 
-54	        } 
-55	         
-56	        .no-print { display: none !important; } 
-57	        .print-only { display: block !important; } 
-58	         
-59	        .print-page-container { 
-60	            width: 210mm; 
-61	            height: 297mm; 
-62	            padding: 10mm 15mm; 
-63	            box-sizing: border-box; 
-64	            page-break-after: always; 
-65	            break-after: page; 
-66	            display: flex; 
-67	            flex-direction: column; 
-68	            justify-content: flex-start; 
-69	            align-items: stretch; 
-70	            position: relative; 
-71	            background-color: white; 
-72	            overflow: hidden; 
-73	        } 
-74	 
-75	        .print-page-container:last-child { 
-76	            page-break-after: auto; 
-77	            break-after: auto; 
-78	        } 
-79	 
-80	        table {  
-81	            width: 100%;  
-82	            border-collapse: collapse; 
-83	            table-layout: fixed; 
-84	        } 
-85	         
-86	        th, td { 
-87	            word-wrap: break-word; 
-88	            border: 1px solid black !important; 
-89	            padding: 2px 4px; 
-90	        } 
-91	 
-92	        tr { 
-93	            page-break-inside: avoid; 
-94	            break-inside: avoid; 
-95	        } 
-96	 
-97	        h1, .flex { 
-98	            -webkit-print-color-adjust: exact; 
-99	            print-color-adjust: exact; 
-100	        } 
-101	      } 
-102	      .print-only { display: none; } 
-103	       
-104	      /* Scrollbars */ 
-105	      ::-webkit-scrollbar { width: 8px; } 
-106	      ::-webkit-scrollbar-track { background-color: #f1f5f9; } 
-107	      ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; } 
-108	      ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; } 
-109	 
-110	      /* Dark Mode Base Styles */ 
-111	      html.dark body { background-color: #0f172a; color: #f8fafc; } 
-112	      html.dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; } 
-113	      html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; } 
-114	      html.dark .bg-slate-100 { background-color: #334155 !important; border-color: #475569 !important; color: #f8fafc !important; } 
-115	      html.dark .text-slate-800, html.dark .text-slate-900 { color: #f8fafc !important; } 
-116	      html.dark .text-slate-700 { color: #e2e8f0 !important; } 
-117	      html.dark .text-slate-600, html.dark .text-slate-500 { color: #cbd5e1 !important; } 
-118	      html.dark .text-slate-400 { color: #94a3b8 !important; } 
-119	      html.dark .border-slate-200, html.dark .border-slate-100, html.dark .border-slate-50 { border-color: #334155 !important; } 
-120	      html.dark input, html.dark select { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; } 
-121	      html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; } 
-122	      html.dark .hover\:bg-slate-100:hover { background-color: #475569 !important; } 
-123	      html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; } 
-124	      html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; } 
-125	 
-126	      @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } } 
-127	      .animate-fade-in { animation: fade-in 0.2s ease-out; } 
-128	      @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } 
-129	      .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); } 
-130	    </style> 
-131	 
-132	    <!-- React & Babel Support --> 
-133	    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script> 
-134	     
-135	    <!-- Import Map --> 
-136	    <script type="importmap"> 
-137	    { 
-138	      "imports": { 
-139	        "react": "https://esm.sh/react@18.2.0", 
-140	        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client", 
-141	        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0", 
-142	        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js", 
-143	        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js", 
-144	        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js", 
-145	        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs" 
-146	      } 
-147	    } 
-148	    </script> 
-149	</head> 
-150	<body> 
-151	    <div id="root"></div> 
-152	 
-153	    <script type="text/babel" data-type="module"> 
-154	        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'; 
-155	        import ReactDOM from 'react-dom/client'; 
-156	        import {  
-157	          Users, LogOut, Settings, Search, Plus, Printer,  
-158	          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun 
-159	        } from 'lucide-react'; 
-160	        import { initializeApp } from "firebase/app"; 
-161	        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore"; 
-162	        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth"; 
-163	        import * as XLSX from 'xlsx'; 
-164	 
-165	        // ========================================== 
-166	        // FIREBASE CONFIG 
-167	        // ========================================== 
-168	        const firebaseConfig = { 
-169	          apiKey: "AIzaSyC3Hyi-tVMui0ZyPsezvoxxSFjCJQBme9Q", 
-170	          authDomain: "ss-app-87ac7.firebaseapp.com", 
-171	          projectId: "ss-app-87ac7", 
-172	          storageBucket: "ss-app-87ac7.firebasestorage.app", 
-173	          messagingSenderId: "7671656513", 
-174	          appId: "1:7671656513:web:21b51edb450bddd1aad6c0", 
-175	          measurementId: "G-LQPLFRBGKH" 
-176	        }; 
-177	 
-178	        const app = initializeApp(firebaseConfig); 
-179	         
-180	        // Initialize Firestore with Persistent Local Cache (Modern Way) 
-181	        const db = initializeFirestore(app, { 
-182	            localCache: persistentLocalCache() 
-183	        }); 
-184	 
-185	        const auth = getAuth(app); 
-186	        const studentsCollection = collection(db, "students"); 
-187	 
-188	        // ========================================== 
-189	        // UTILS 
-190	        // ========================================== 
-191	        const cleanName = (name) => { 
-192	            if (!name) return ""; 
-193	            return name.replace(/\s+\d+$/, '').trim(); 
-194	        }; 
-195	 
-196	        const formatDateForInput = (timestamp) => { 
-197	            if (!timestamp) return new Date().toISOString().split('T')[0]; 
-198	            return new Date(timestamp).toISOString().split('T')[0]; 
-199	        }; 
-200	 
-201	        const exportToExcel = (students) => { 
-202	          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' }; 
-203	          const data = students.map(s => ({ 
-204	            'الاسم الرباعي': cleanName(s.firstName), 
-205	            'العائلة': s.lastName || '', 
-206	            'رقم القيد': s.regNumber, 
-207	            'رقم الصفحة': s.pageNumber, 
-208	            'الحالة الدراسية': statusMap[s.status || 'active'] || 'مستمر', 
-209	            'ملاحظات': s.notes || '', 
-210	            'تاريخ التسجيل': new Date(s.createdAt).toLocaleDateString('ar-EG') 
-211	          })); 
-212	          const worksheet = XLSX.utils.json_to_sheet(data); 
-213	          const workbook = XLSX.utils.book_new(); 
-214	          XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب"); 
-215	          XLSX.writeFile(workbook, "سجل_القيود_العام.xlsx"); 
-216	        }; 
-217	 
-218	        const generateTemplate = () => { 
-219	          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم']; 
-220	          const secondNames = ['حسين', 'حسن', 'عبدالرحمن', 'محمود', 'مصطفى', 'جعفر', 'عباس', 'كاظم', 'رضا', 'مهدي']; 
-221	          const thirdNames = ['علي', 'محمد', 'جاسم', 'كريم', 'خلف', 'سالم', 'حمزة', 'فاضل']; 
-222	          const fourthNames = ['عبدالله', 'ناصر', 'منصور', 'خليفة', 'سلطان', 'يحيى', 'زكريا']; 
-223	          const titles = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'المالكي', 'الدوسري', 'التميمي', 'الخالدي']; 
-224	 
-225	          const templateData = []; 
-226	           
-227	          for (let reg = 1; reg <= 10; reg++) { 
-228	            for (let i = 0; i < 200; i++) { 
-229	               const n1 = firstNames[Math.floor(Math.random() * firstNames.length)]; 
-230	               const n2 = secondNames[Math.floor(Math.random() * secondNames.length)]; 
-231	               const n3 = thirdNames[Math.floor(Math.random() * thirdNames.length)]; 
-232	               const n4 = fourthNames[Math.floor(Math.random() * fourthNames.length)]; 
-233	               const title = titles[Math.floor(Math.random() * titles.length)]; 
-234	                
-235	               const pageNum = Math.floor(i / 30) + 1; 
-236	 
-237	               templateData.push({ 
-238	                  'الاسم الرباعي': `${n1} ${n2} ${n3} ${n4}`,  
-239	                  'العائلة': title, 
-240	                  'رقم القيد': reg.toString(), 
-241	                  'رقم الصفحة': pageNum.toString(), 
-242	                  'الحالة الدراسية': 'مستمر', 
-243	                  'ملاحظات': '' 
-244	               }); 
-245	            } 
-246	          } 
-247	 
-248	          const worksheet = XLSX.utils.json_to_sheet(templateData); 
-249	          const workbook = XLSX.utils.book_new(); 
-250	          XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 2000 طالب"); 
-251	          XLSX.writeFile(workbook, "نموذج_سجل_القيود_الكبير.xlsx"); 
-252	        }; 
-253	 
-254	        const readExcel = (file) => { 
-255	          return new Promise((resolve, reject) => { 
-256	            const reader = new FileReader(); 
-257	            reader.onload = (e) => { 
-258	              try { 
-259	                const data = new Uint8Array(e.target.result); 
-260	                const workbook = XLSX.read(data, { type: 'array' }); 
-261	                const firstSheetName = workbook.SheetNames[0]; 
-262	                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]); 
-263	                resolve(jsonData); 
-264	              } catch (err) { reject(err); } 
-265	            }; 
-266	            reader.onerror = (error) => reject(error); 
-267	            reader.readAsArrayBuffer(file); 
-268	          }); 
-269	        }; 
-270	         
-271	        // ========================================== 
-272	        // UI COMPONENTS 
-273	        // ========================================== 
-274	        const SkeletonLoader = () => ( 
-275	          <div className="animate-pulse space-y-4"> 
-276	            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3"> 
-277	              {[...Array(4)].map((_, i) => ( 
-278	                <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 h-20"></div> 
-279	              ))} 
-280	            </div> 
-281	            <div className="bg-white p-2 rounded-xl border border-slate-100 h-12"></div> 
-282	          </div> 
-283	        ); 
-284	 
-285	        const Modal = ({ children, onClose, zIndex = "z-50" }) => ( 
-286	          <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}> 
-287	            <div className="w-full max-w-lg relative" onClick={e => e.stopPropagation()}> 
-288	                <button  
-289	                    onClick={onClose}  
-290	                    className="absolute top-3 left-3 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all z-[60]" 
-291	                    title="إغلاق" 
-292	                > 
-293	                    <X size={20} /> 
-294	                </button> 
-295	                {children} 
-296	            </div> 
-297	          </div> 
-298	        ); 
-299	 
-300	        const AlertModal = ({ message, type, onClose }) => ( 
-301	          <Modal onClose={onClose} zIndex="z-[60]"> 
-302	            <div className="bg-white rounded-2xl p-5 text-center shadow-2xl animate-slide-up"> 
-303	              <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-3 ${type === 'error' ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-500'}`}> 
-304	                {type === 'error' ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />} 
-305	              </div> 
-306	              <p className="text-slate-800 font-bold mb-5 text-sm">{message}</p> 
-307	              <button onClick={onClose} className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm">حسناً</button> 
-308	            </div> 
-309	          </Modal> 
-310	        ); 
-311	 
-312	        const ConfirmModal = ({ title, message, onConfirm, onCancel, isDestructive = false }) => ( 
-313	          <Modal onClose={onCancel} zIndex="z-[60]"> 
-314	            <div className="bg-white rounded-2xl p-5 text-center shadow-2xl animate-slide-up"> 
-315	              <h3 className="text-lg font-bold text-slate-800 mb-2">{title}</h3> 
-316	              <p className="text-slate-500 mb-6 text-sm">{message}</p> 
-317	              <div className="flex gap-3"> 
-318	                <button onClick={onCancel} className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm">إلغاء</button> 
-319	                <button onClick={onConfirm} className={`flex-1 py-2.5 text-white rounded-xl font-bold text-sm ${isDestructive ? 'bg-red-500' : 'bg-blue-600'}`}>تأكيد</button> 
-320	              </div> 
-321	            </div> 
-322	          </Modal> 
-323	        ); 
-324	 
-325	        const StatCard = ({ title, value, icon, colorClass, onClick }) => ( 
-326	          <div onClick={onClick} className={`bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md transition-all ${onClick ? 'cursor-pointer active:scale-95' : ''}`}> 
-327	            <div className={`p-2 rounded-xl ${colorClass} text-white shadow-md`}>{icon}</div> 
-328	            <div> 
-329	              <div className="text-xl font-black text-slate-800 font-mono">{value}</div> 
-330	              <div className="text-[10px] text-slate-500 font-bold">{title}</div> 
-331	            </div> 
-332	          </div> 
-333	        ); 
-334	 
-335	        const SingleStudentPrint = ({ student }) => { 
-336	          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' }; 
-337	          const printDate = new Date().toLocaleDateString('ar-EG'); 
-338	          return ( 
-339	            <div className="hidden print:flex flex-col items-center justify-start w-full h-screen bg-white p-0 overflow-hidden"> 
-340	              <div className="w-[190mm] h-[250mm] border-[6px] border-double border-slate-800 p-6 rounded-none relative overflow-hidden flex flex-col justify-between mx-auto mt-0 shadow-none"> 
-341	                <div className="absolute top-2 right-2 w-16 h-16 border-t-4 border-r-4 border-slate-900"></div> 
-342	                <div className="absolute top-2 left-2 w-16 h-16 border-t-4 border-l-4 border-slate-900"></div> 
-343	                <div className="absolute bottom-2 right-2 w-16 h-16 border-b-4 border-r-4 border-slate-900"></div> 
-344	                <div className="absolute bottom-2 left-2 w-16 h-16 border-b-4 border-l-4 border-slate-900"></div> 
-345	 
-346	                <div className="text-center border-b-2 border-slate-900 pb-4 mb-4 relative z-10"> 
-347	                  <div className="flex justify-between items-start mb-2 px-2"> 
-348	                    <div className="text-sm font-bold leading-relaxed">جمهورية العراق<br/>وزارة التربية<br/>المديرية العامة للتربية</div> 
-349	                    <div className="w-20 h-20 border-2 border-slate-800 rounded-full flex items-center justify-center bg-slate-50 shadow-sm"><span className="text-3xl">🎓</span></div> 
-350	                    <div className="text-sm font-bold leading-relaxed text-left">التاريخ: {printDate}<br/>العدد: ............</div> 
-351	                  </div> 
-352	                  <h1 className="text-4xl font-black text-slate-900 mt-4 font-cairo tracking-wide">بطاقة الطالب الشخصية</h1> 
-353	                  <p className="text-lg font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-6 py-1 rounded-full border border-slate-300">نسخة طبق الأصل من سجل القيد</p> 
-354	                </div> 
-355	 
-356	                <div className="flex-1 flex flex-col gap-4 justify-start pt-2 px-4 relative z-10"> 
-357	                   <div className="text-center space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200"> 
-358	                      <span className="text-lg font-bold text-slate-500 block">الاسم الرباعي والعائلة</span> 
-359	                      <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)} {student.lastName || ''}</div> 
-360	                   </div> 
-361	 
-362	                   <div className="grid grid-cols-2 gap-6 my-2"> 
-363	                      <div className="border-2 border-slate-800 p-4 text-center rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]"> 
-364	                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">رقم القيد العام</span> 
-365	                        <div className="text-5xl font-mono font-black text-slate-900 tracking-wider">{student.regNumber}</div> 
-366	                      </div> 
-367	                      <div className="border-2 border-slate-800 p-4 text-center rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]"> 
-368	                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">رقم الصفحة</span> 
-369	                        <div className="text-5xl font-mono font-black text-slate-900 tracking-wider">{student.pageNumber}</div> 
-370	                      </div> 
-371	                   </div> 
-372	 
-373	                   <div className="grid grid-cols-2 gap-6 text-right px-2 mt-2"> 
-374	                      <div className="flex flex-col border-b-2 border-slate-200 pb-2"> 
-375	                         <span className="text-base font-bold text-slate-500 mb-1">الوضع الأكاديمي</span> 
-376	                         <span className="text-2xl font-bold text-slate-900">{statusLabels[student.status || 'active']}</span> 
-377	                      </div> 
-378	                      <div className="flex flex-col border-b-2 border-slate-200 pb-2"> 
-379	                         <span className="text-base font-bold text-slate-500 mb-1">تاريخ القيد</span> 
-380	                         <span className="text-2xl font-bold text-slate-900 font-mono">{new Date(student.createdAt).toLocaleDateString('ar-EG')}</span> 
-381	                      </div> 
-382	                      {student.notes && ( 
-383	                        <div className="col-span-2 flex flex-col bg-yellow-50 p-3 rounded-xl border border-yellow-200 mt-1"> 
-384	                           <span className="text-xs font-bold text-yellow-700 mb-1">ملاحظات</span> 
-385	                           <span className="text-lg font-bold text-slate-800">{student.notes}</span> 
-386	                        </div> 
-387	                      )} 
-388	                   </div> 
-389	                </div> 
-390	 
-391	                <div className="mt-4 pt-4 border-t-2 border-slate-900 flex justify-between items-end px-8 pb-4 relative z-10"> 
-392	                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">توقيع الموظف المختص</div></div> 
-393	                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">ختم وتوقيع المدير</div></div> 
-394	                </div> 
-395	                 
-396	                <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none z-0 select-none"> 
-397	                     <div className="transform -rotate-45 text-[150px] font-black text-slate-900 whitespace-nowrap border-4 border-slate-900 p-12 rounded-3xl">وثيقة رسمية</div> 
-398	                </div> 
-399	              </div> 
-400	            </div> 
-401	          ); 
-402	        }; 
-403	 
-404	        const PrintView = ({ students, title }) => { 
-405	          const sortedStudents = useMemo(() => { 
-406	             return [...students].sort((a, b) => a.firstName.localeCompare(b.firstName)).map((s, i) => ({ ...s, printIndex: i + 1 })); 
-407	          }, [students]); 
-408	 
-409	          const ROWS_PER_COLUMN_MAX = 31;  
-410	          const COLUMNS_PER_PAGE = 2; 
-411	          const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE; 
-412	          const totalItems = sortedStudents.length; 
-413	          const totalPages = Math.ceil(totalItems / MAX_ITEMS_PER_PAGE); 
-414	          const printDate = new Date().toLocaleDateString('ar-EG'); 
-415	           
-416	          const pages = []; 
-417	          for (let i = 0; i < totalPages; i++) { 
-418	            pages.push(sortedStudents.slice(i * MAX_ITEMS_PER_PAGE, (i + 1) * MAX_ITEMS_PER_PAGE)); 
-419	          } 
-420	           
-421	          return ( 
-422	            <div className="print-only text-[9.5pt] dir-rtl"> 
-423	              {pages.map((pageStudents, pageIndex) => ( 
-424	                <div key={pageIndex} className="print-page-container"> 
-425	                   <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]"> 
-426	                      <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div> 
-427	                      <h1 className="text-xl font-bold flex-1 text-center">{title || "كشف القيد العام"}</h1> 
-428	                      <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div> 
-429	                   </div> 
-430	                   <div className="flex flex-row gap-[8mm] flex-1"> 
-431	                     {[0, 1].map((colIndex) => { 
-432	                       const colStudents = pageStudents.slice(colIndex * ROWS_PER_COLUMN_MAX, (colIndex + 1) * ROWS_PER_COLUMN_MAX); 
-433	                       return ( 
-434	                         <div key={colIndex} className="flex-1 flex flex-col"> 
-435	                           <table className="w-full border-collapse table-fixed"> 
-436	                             <thead> 
-437	                               <tr className="bg-gray-100 h-[36px]"> 
-438	                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">م</th> 
-439	                                 <th className="p-1 text-right">الاسم الكامل</th> 
-440	                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th> 
-441	                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">صفحة</th> 
-442	                               </tr> 
-443	                             </thead> 
-444	                             <tbody> 
-445	                               {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => { 
-446	                                 const s = colStudents[rowIndex]; 
-447	                                 return ( 
-448	                                   <tr key={rowIndex} className="h-[31px]"> 
-449	                                     <td className="px-1 text-center font-medium whitespace-nowrap">{s ? s.printIndex : ''}</td> 
-450	                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) + ' ' + (s.lastName || '') : ''}</td> 
-451	                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td> 
-452	                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td> 
-453	                                   </tr> 
-454	                                 ); 
-455	                               })} 
-456	                             </tbody> 
-457	                           </table> 
-458	                         </div> 
-459	                       ); 
-460	                     })} 
-461	                   </div> 
-462	                </div> 
-463	              ))} 
-464	            </div> 
-465	          ); 
-466	        }; 
-467	 
-468	        const Login = () => { 
-469	          const [email, setEmail] = useState(''); 
-470	          const [password, setPassword] = useState(''); 
-471	          const [error, setError] = useState(''); 
-472	          const [loading, setLoading] = useState(false); 
-473	          const handleSubmit = async (e) => { 
-474	            e.preventDefault(); 
-475	            setLoading(true); 
-476	            try { await signInWithEmailAndPassword(auth, email, password); }  
-477	            catch (err) { setError('البريد الإلكتروني أو كلمة المرور غير صحيحة'); }  
-478	            finally { setLoading(false); } 
-479	          }; 
-480	          return ( 
-481	            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl"> 
-482	              <div className="bg-white rounded-2xl shadow-2xl w-full max-md p-8 animate-fade-in"> 
-483	                <div className="text-center mb-8"> 
-484	                  <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"><Users className="w-8 h-8 text-white" /></div> 
-485	                  <h2 className="text-2xl font-bold text-slate-800">الدخول إلى النظام</h2> 
-486	                </div> 
-487	                <form onSubmit={handleSubmit} className="space-y-4"> 
-488	                  <input type="email" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} /> 
-489	                  <input type="password" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} /> 
-490	                  {error && <p className="text-red-500 text-sm text-center">{error}</p>} 
-491	                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg transition-all">{loading ? 'جاري التحقق...' : 'دخول'}</button> 
-492	                </form> 
-493	              </div> 
-494	            </div> 
-495	          ); 
-496	        }; 
-497	 
-498	        const themeColors = { 
-499	          slate: { primary: 'bg-slate-900', hover: 'hover:bg-slate-800', secondary: 'bg-blue-600', secondaryHover: 'hover:bg-blue-700', ring: 'focus:ring-blue-500', name: 'الأساسي (أزرق)' }, 
-500	          purple: { primary: 'bg-violet-900', hover: 'hover:bg-violet-800', secondary: 'bg-purple-600', secondaryHover: 'hover:bg-purple-700', ring: 'focus:ring-purple-500', name: 'بنفسجي' }, 
-501	          emerald: { primary: 'bg-teal-900', hover: 'hover:bg-teal-800', secondary: 'bg-emerald-600', secondaryHover: 'hover:bg-emerald-700', ring: 'focus:ring-emerald-500', name: 'أخضر' }, 
-502	          rose: { primary: 'bg-rose-900', hover: 'hover:bg-rose-800', secondary: 'bg-red-600', secondaryHover: 'hover:bg-red-700', ring: 'focus:ring-red-500', name: 'أحمر' }, 
-503	          amber: { primary: 'bg-amber-900', hover: 'hover:bg-amber-800', secondary: 'bg-orange-600', secondaryHover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', name: 'برتقالي' }, 
-504	        }; 
-505	         
-506	        const App = () => { 
-507	          const [user, setUser] = useState(null); 
-508	          const [loading, setLoading] = useState(true); 
-509	          const [students, setStudents] = useState([]); 
-510	          const [view, setView] = useState('list'); 
-511	          const [selectedId, setSelectedId] = useState(null); 
-512	          const [search, setSearch] = useState(''); 
-513	          const [debouncedQuery, setDebouncedQuery] = useState('');  
-514	          const [selectedRegFilter, setSelectedRegFilter] = useState('');  
-515	          const [statusFilter, setStatusFilter] = useState('ALL'); 
-516	          const [sortBy, setSortBy] = useState('recent'); 
-517	          const [yearFilter, setYearFilter] = useState('ALL'); 
-518	          const [showPrintModal, setShowPrintModal] = useState(false); 
-519	          const [printRegInput, setPrintRegInput] = useState(''); 
-520	          const [visibleCount, setVisibleCount] = useState(150); 
-521	          const loadMoreRef = useRef(null); 
-522	          const [importing, setImporting] = useState(false); 
-523	          const [importProgress, setImportProgress] = useState(0); 
-524	          const [printMode, setPrintMode] = useState('list'); 
-525	          const [alertConfig, setAlertConfig] = useState(null); 
-526	          const [confirmConfig, setConfirmConfig] = useState(null); 
-527	          const [showScrollTop, setShowScrollTop] = useState(false); 
-528	          const [similarStudents, setSimilarStudents] = useState([]); 
-529	          const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate'); 
-530	          const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true'); 
-531	          const [showThemeModal, setShowThemeModal] = useState(false); 
-532	 
-533	          const currentTheme = themeColors[colorTheme] || themeColors.slate; 
-534	 
-535	          const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 }); 
-536	 
-537	          const regsCount = useMemo(() => { 
-538	             return new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber)).size; 
-539	          }, [students]); 
-540	 
-541	          const regStats = useMemo(() => { 
-542	             const active = students.filter(s => !s.isDeleted); 
-543	             const statsMap = {}; 
-544	             active.forEach(s => { 
-545	                 const reg = s.regNumber; 
-546	                 if (!statsMap[reg]) { 
-547	                     statsMap[reg] = { total: 0, active: 0, transferred: 0, left: 0, graduated: 0 }; 
-548	                 } 
-549	                 statsMap[reg].total++; 
-550	                 const status = s.status || 'active'; 
-551	                 if (statsMap[reg][status] !== undefined) { 
-552	                     statsMap[reg][status]++; 
-553	                 } 
-554	             }); 
-555	             return Object.entries(statsMap).map(([reg, counts]) => ({ reg, ...counts })).sort((a, b) => Number(a.reg) - Number(b.reg)); 
-556	          }, [students]); 
-557	 
-558	          const statusStats = useMemo(() => { 
-559	            const active = students.filter(s => !s.isDeleted); 
-560	            const counts = { active: 0, transferred: 0, left: 0, graduated: 0 }; 
-561	            active.forEach(s => { 
-562	                const st = s.status || 'active'; 
-563	                if (counts[st] !== undefined) counts[st]++; 
-564	            }); 
-565	            return [ 
-566	                { label: 'مستمر', count: counts.active, color: 'bg-emerald-100 text-emerald-800' }, 
-567	                { label: 'منقول', count: counts.transferred, color: 'bg-amber-100 text-amber-800' }, 
-568	                { label: 'تارك', count: counts.left, color: 'bg-rose-100 text-rose-800' }, 
-569	                { label: 'متخرج', count: counts.graduated, color: 'bg-blue-100 text-blue-800' } 
-570	            ]; 
-571	          }, [students]); 
-572	 
-573	          const years = useMemo(() => { 
-574	             const y = new Set(students.map(s => { 
-575	                const d = new Date(s.createdAt); 
-576	                return isNaN(d.getFullYear()) ? null : d.getFullYear(); 
-577	             }).filter(y => y !== null)); 
-578	             return Array.from(y).sort((a,b) => b - a); 
-579	          }, [students]); 
-580	 
-581	          const refreshStats = async () => { 
-582	             try { 
-583	                 const baseConstraints = [where("isDeleted", "==", false)]; 
-584	                 if (selectedRegFilter) baseConstraints.push(where("regNumber", "==", selectedRegFilter)); 
-585	                  
-586	                 const totalQ = query(studentsCollection, ...baseConstraints); 
-587	                 const totalSnap = await getCountFromServer(totalQ); 
-588	                 const total = totalSnap.data().count; 
-589	 
-590	                 const activeQ = query(studentsCollection, ...baseConstraints, where("status", "==", "active")); 
-591	                 const activeSnap = await getCountFromServer(activeQ); 
-592	                 const active = activeSnap.data().count; 
-593	 
-594	                 const graduatedQ = query(studentsCollection, ...baseConstraints, where("status", "==", "graduated")); 
-595	                 const graduatedSnap = await getCountFromServer(graduatedQ); 
-596	                 const graduated = graduatedSnap.data().count; 
-597	 
-598	                 setStats({ total, active, graduated }); 
-599	             } catch (error) { 
-600	                 console.error("Error fetching stats:", error); 
-601	             } 
-602	          }; 
-603	 
-604	          useEffect(() => { 
-605	             if (user) { 
-606	                 refreshStats(); 
-607	             } 
-608	          }, [user, selectedRegFilter]); 
-609	 
-610	          useEffect(() => { 
-611	            const unsub = onAuthStateChanged(auth, (u) => { 
-612	              setUser(u); 
-613	              if (!u) setLoading(false); 
-614	            }); 
-615	            return () => unsub(); 
-616	          }, []); 
-617	 
-618	          useEffect(() => { 
-619	            if (!user) return; 
-620	            setLoading(true); 
-621	            const unsubscribe = onSnapshot(studentsCollection, (snapshot) => { 
-622	               const data = []; 
-623	               snapshot.forEach(d => { 
-624	                  const raw = d.data(); 
-625	                  const createdAt = raw.createdAt?.toMillis ? raw.createdAt.toMillis() : (raw.createdAt || Date.now()); 
-626	                  data.push({ id: d.id, ...raw, createdAt }); 
-627	               }); 
-628	               data.sort((a,b) => b.createdAt - a.createdAt); 
-629	               setStudents(data); 
-630	               setLoading(false); 
-631	            }, (error) => { 
-632	               console.error("Error fetching students:", error); 
-633	               setLoading(false); 
-634	            }); 
-635	            return () => unsubscribe(); 
-636	          }, [user]); 
-637	 
-638	          useEffect(() => { 
-639	            const timer = setTimeout(() => setDebouncedQuery(search), 300); 
-640	            return () => clearTimeout(timer); 
-641	          }, [search]); 
-642	 
-643	          useEffect(() => { 
-644	             const handleScroll = () => { 
-645	                setShowScrollTop(window.scrollY > 300); 
-646	             }; 
-647	             window.addEventListener('scroll', handleScroll); 
-648	             return () => window.removeEventListener('scroll', handleScroll); 
-649	          }, []); 
-650	 
-651	          useEffect(() => { 
-652	            localStorage.setItem('appTheme', colorTheme); 
-653	          }, [colorTheme]); 
-654	 
-655	          useEffect(() => { 
-656	            localStorage.setItem('darkMode', isDarkMode); 
-657	            if (isDarkMode) { 
-658	                document.documentElement.classList.add('dark'); 
-659	            } else { 
-660	                document.documentElement.classList.remove('dark'); 
-661	            } 
-662	          }, [isDarkMode]); 
-663	 
-664	          useEffect(() => { 
-665	            const observer = new IntersectionObserver((entries) => { 
-666	                if (entries[0].isIntersecting) setVisibleCount((prev) => prev + 50); 
-667	            }, { threshold: 0.1 }); 
-668	            if (loadMoreRef.current) observer.observe(loadMoreRef.current); 
-669	            return () => observer.disconnect(); 
-670	          }, [students.length]); 
-671	 
-672	          const handleImport = async (e) => { 
-673	            const file = e.target.files[0]; 
-674	            if (!file) return; 
-675	            setImporting(true); 
-676	            setImportProgress(0); 
-677	            try { 
-678	              const rows = await readExcel(file); 
-679	              const totalRows = rows.length; 
-680	              let count = 0; 
-681	              let batch = writeBatch(db); 
-682	              let batchCount = 0; 
-683	               
-684	              for (let i = 0; i < totalRows; i++) { 
-685	                 const row = rows[i]; 
-686	                 const fName = row['الاسم الرباعي'] || row['الاسم الكامل'] || row['firstName'] || row['الاسم الأول']; 
-687	                 const reg = row['رقم القيد'] || row['regNumber']; 
-688	                 const page = row['رقم الصفحة'] || row['pageNumber']; 
-689	                 if (fName && reg) { 
-690	                    const ref = doc(studentsCollection); 
-691	                    batch.set(ref, { 
-692	                       firstName: String(fName).trim(), 
-693	                       lastName: row['العائلة'] || '', 
-694	                       regNumber: String(reg).trim(), 
-695	                       pageNumber: String(page || '').trim(), 
-696	                       status: 'active', 
-697	                       isDeleted: false, 
-698	                       createdAt: Date.now() + count 
-699	                    }); 
-700	                    count++; 
-701	                    batchCount++; 
-702	                     
-703	                    if (batchCount === 400) { 
-704	                        await batch.commit(); 
-705	                        batch = writeBatch(db); 
-706	                        batchCount = 0; 
-707	                        setImportProgress(Math.round((i / totalRows) * 100)); 
-708	                    } 
-709	                 } 
-710	              } 
-711	               
-712	              if (batchCount > 0) { 
-713	                  await batch.commit(); 
-714	              } 
-715	               
-716	              setImportProgress(100); 
-717	              await refreshStats(); 
-718	              setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' }); 
-719	            } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); } 
-720	            setImporting(false); 
-721	            setTimeout(() => setImportProgress(0), 500); 
-722	          }; 
-723	 
-724	          const executeDeleteAll = async () => { 
-725	             setConfirmConfig(null); 
-726	             setLoading(true); 
-727	             try { 
-728	               const snap = await getDocs(studentsCollection); 
-729	               const CHUNK_SIZE = 400; 
-730	               const allDocs = snap.docs; 
-731	               for (let i = 0; i < allDocs.length; i += CHUNK_SIZE) { 
-732	                  const batch = writeBatch(db); 
-733	                  const chunk = allDocs.slice(i, i + CHUNK_SIZE); 
-734	                  chunk.forEach((d) => batch.delete(d.ref)); 
-735	                  await batch.commit(); 
-736	               } 
-737	               await refreshStats(); 
-738	               setAlertConfig({ message: 'تم حذف جميع البيانات بنجاح', type: 'success' }); 
-739	               setView('list'); 
-740	             } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); } 
-741	             finally { setLoading(false); } 
-742	          }; 
-743	 
-744	          const handleRestore = async (id) => { 
-745	            try { 
-746	                await updateDoc(doc(db, "students", id), { isDeleted: false }); 
-747	                await refreshStats(); 
-748	                setAlertConfig({ message: 'تمت استعادة السجل بنجاح', type: 'success' }); 
-749	            } catch(e) { console.error(e); } 
-750	          }; 
-751	 
-752	          const handleDeleteForever = (id) => { 
-753	            setConfirmConfig({ 
-754	                title: "حذف نهائي", 
-755	                message: "هل أنت متأكد من حذف هذا السجل نهائياً؟ لا يمكن التراجع عن هذا الإجراء.", 
-756	                isDestructive: true, 
-757	                onConfirm: async () => { 
-758	                    await deleteDoc(doc(db, "students", id)); 
-759	                    await refreshStats(); 
-760	                    setConfirmConfig(null); 
-761	                    setAlertConfig({ message: 'تم الحذف النهائي', type: 'success' }); 
-762	                } 
-763	            }); 
-764	          }; 
-765	 
-766	          const checkSimilarStudents = (val) => { 
-767	            const name = val.trim(); 
-768	            if (name.length < 2) { 
-769	                setSimilarStudents([]); 
-770	                return; 
-771	            } 
-772	            const matches = students.filter(s =>  
-773	                !s.isDeleted &&  
-774	                s.id !== selectedId && 
-775	                s.firstName.includes(name) 
-776	            ); 
-777	            setSimilarStudents(matches); 
-778	          }; 
-779	 
-780	          const filtered = useMemo(() => { 
-781	            let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted); 
-782	            if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter); 
-783	            if (yearFilter !== 'ALL') res = res.filter(s => new Date(s.createdAt).getFullYear().toString() === yearFilter); 
-784	            if (statusFilter !== 'ALL') res = res.filter(s => (s.status || 'active') === statusFilter); 
-785	            if (debouncedQuery) { 
-786	               const q = debouncedQuery.toLowerCase(); 
-787	               res = res.filter(s => { 
-788	                   const fullName = `${s.firstName} ${s.lastName || ''}`.toLowerCase(); 
-789	                   return fullName.includes(q); 
-790	               }); 
-791	               res.sort((a, b) => { 
-792	                   const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase(); 
-793	                   const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase(); 
-794	                    
-795	                   const aIndex = aName.indexOf(q); 
-796	                   const bIndex = bName.indexOf(q); 
-797	                    
-798	                   if (aIndex !== bIndex) { 
-799	                       return aIndex - bIndex; 
-800	                   } 
-801	                    
-802	                   if (sortBy === 'alphabetical') return a.firstName.localeCompare(b.firstName); 
-803	                   return b.createdAt - a.createdAt; 
-804	               }); 
-805	            } else { 
-806	               if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName)); 
-807	               else res.sort((a,b) => b.createdAt - a.createdAt); 
-808	            } 
-809	            return res; 
-810	          }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]); 
-811	 
-812	          const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]); 
-813	          const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي']; 
-814	 
-815	          if (!user) return <Login />; 
-816	         
-817	          return ( 
-818	            <> 
-819	              <div className="min-h-screen no-print pb-20"> 
-820	                <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80"> 
-821	                  <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between"> 
-822	                    <div className="flex items-center gap-2 font-bold text-base text-slate-800 cursor-pointer" onClick={() => setView('list')}> 
-823	                      <div className={`${currentTheme.primary} text-white p-1.5 rounded-lg shadow-lg transition-colors`}><Users size={18} /></div> 
-824	                      <span>سجل القيد العام</span> 
-825	                    </div> 
-826	                    <div className="flex items-center gap-1.5"> 
-827	                      <button onClick={() => setShowThemeModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Palette size={20} /></button> 
-828	                      <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={20} /></button> 
-829	                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد من تسجيل الخروج؟", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button> 
-830	                    </div> 
-831	                  </div> 
-832	                </header> 
-833	 
-834	                <main className="max-w-7xl mx-auto px-4 py-4"> 
-835	                    {loading && students.length === 0 ? <SkeletonLoader /> : ( 
-836	                        <div className="animate-fade-in space-y-4"> 
-837	                          {view === 'trash' && ( 
-838	                            <div className="flex items-center justify-between bg-red-50 p-3 rounded-xl border border-red-100 animate-slide-up"> 
-839	                                <div className="flex items-center gap-2 text-red-700 font-bold text-sm"> 
-840	                                    <Trash2 size={20} /> 
-841	                                    <span>سلة المحذوفات</span> 
-842	                                </div> 
-843	                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors"><ArrowLeft size={16}/> العودة إلى الرئيسية</button> 
-844	                            </div> 
-845	                          )} 
-846	 
-847	                          {view !== 'trash' && ( 
-848	                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3"> 
-849	                                <StatCard title="إجمالي الطلاب" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} /> 
-850	                                <StatCard title="عدد القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} /> 
-851	                                <StatCard title="الحالات الأخرى" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} /> 
-852	                            </div> 
-853	                          )} 
-854	 
-855	                          {/* Search Bar - Not Sticky */} 
-856	                          <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3"> 
-857	                             <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}> 
-858	                                 <Search className="text-slate-400 ml-1" size={16} /> 
-859	                                 <input id="searchInput" className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} /> 
-860	                             </div> 
-861	                          </div> 
-862	 
-863	                          {/* Filters - Not Sticky */} 
-864	                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4"> 
-865	                              <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9"> 
-866	                                  <option value="">جميع القيود</option> 
-867	                                  {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => <option key={r} value={r}>قيد رقم {r}</option>)} 
-868	                              </select> 
-869	                              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9"> 
-870	                                  <option value="ALL">جميع الحالات</option> 
-871	                                  <option value="active">مستمر</option> 
-872	                                  <option value="transferred">منقول</option> 
-873	                                  <option value="left">تارك</option> 
-874	                                  <option value="graduated">متخرج</option> 
-875	                              </select> 
-876	                              <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9"> 
-877	                                  <option value="recent">الأحدث أولاً</option> 
-878	                                  <option value="alphabetical">ترتيب أبجدي</option> 
-879	                              </select> 
-880	                              <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9"> 
-881	                                  <option value="ALL">جميع السنوات</option> 
-882	                                  {years.map(y => <option key={y} value={y}>{y}</option>)} 
-883	                              </select> 
-884	                          </div> 
-885	 
-886	                          {/* Action Buttons (Not Sticky) */} 
-887	                          <div className="flex gap-3"> 
-888	                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={16} /> إضافة طالب جديد</button> 
-889	                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={16} /> طباعة السجل</button> 
-890	                          </div> 
-891	 
-892	                          <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3"> 
-893	                            <table className="w-full text-right border-collapse"> 
-894	                              <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase"> 
-895	                                <tr> 
-896	                                  <th className="px-4 py-2 w-12 text-center">#</th> 
-897	                                  <th className="px-4 py-2">اسم الطالب</th> 
-898	                                  <th className="px-4 py-2 w-28 text-center">رقم القيد</th> 
-899	                                  <th className="px-4 py-2 w-24 text-center">الصفحة</th> 
-900	                                  {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>} 
-901	                                </tr> 
-902	                              </thead> 
-903	                              <tbody className="divide-y divide-slate-100 text-xs"> 
-904	                                {displayed.map((s, idx) => ( 
-905	                                  <tr key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}> 
-906	                                    <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td> 
-907	                                    <td className="px-4 py-2"> 
-908	                                        <div className="flex items-center gap-2"> 
-909	                                            <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div> 
-910	                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</span> 
-911	                                        </div> 
-912	                                    </td> 
-913	                                    <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td> 
-914	                                    <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td> 
-915	                                    {view === 'trash' && ( 
-916	                                        <td className="px-4 py-2 text-center flex gap-1 justify-center"> 
-917	                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button> 
-918	                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button> 
-919	                                        </td> 
-920	                                    )} 
-921	                                  </tr> 
-922	                                ))} 
-923	                              </tbody> 
-924	                            </table> 
-925	                          </div> 
-926	 
-927	                          <div className="md:hidden space-y-2 mt-3"> 
-928	                             {displayed.map((s, idx) => ( 
-929	                                 <div key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors ${view === 'trash' ? 'cursor-default' : ''}`}> 
-930	                                    <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div> 
-931	                                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center"> 
-932	                                       <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span> 
-933	                                       {cleanName(s.firstName)} {s.lastName || ""} 
-934	                                    </h3> 
-935	                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2"> 
-936	                                        <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span> 
-937	                                        <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span> 
-938	                                    </div> 
-939	                                    {view === 'trash' && ( 
-940	                                        <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2"> 
-941	                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button> 
-942	                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button> 
-943	                                        </div> 
-944	                                    )} 
-945	                                 </div> 
-946	                             ))} 
-947	                          </div> 
-948	                          <div ref={loadMoreRef} className="h-10"></div> 
-949	                        </div> 
-950	                    )} 
-951	                </main> 
-952	 
-953	                {showScrollTop && ( 
-954	                    <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50 animate-fade-in"> 
-955	                        <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="بحث"> 
-956	                            <Search size={20} /> 
-957	                        </button> 
-958	                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}> 
-959	                            <ArrowUp size={20} /> 
-960	                        </button> 
-961	                    </div> 
-962	                )} 
-963	 
-964	                {(view === 'add' || view === 'edit') && ( 
-965	                    <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}> 
-966	                      <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4"> 
-967	                        <h2 className="text-lg font-bold">{view === 'add' ? 'إضافة طالب جديد' : 'تعديل بيانات الطالب'}</h2> 
-968	                        <form onSubmit={async (e) => { 
-969	                            e.preventDefault(); 
-970	                            const form = new FormData(e.target); 
-971	                            const regNum = String(form.get('regNumber')).trim(); 
-972	                            const pageNum = String(form.get('pageNumber')).trim(); 
-973	                             
-974	                            const isDuplicate = students.some(s =>  
-975	                                !s.isDeleted &&  
-976	                                s.regNumber === regNum &&  
-977	                                s.pageNumber === pageNum &&  
-978	                                s.id !== selectedId 
-979	                            ); 
-980	 
-981	                            if (isDuplicate) { 
-982	                                setAlertConfig({ message: "خطأ: هذا القيد مسجل بالفعل في نفس الصفحة لطالب آخر", type: 'error' }); 
-983	                                return; 
-984	                            } 
-985	 
-986	                            const data = { 
-987	                                firstName: form.get('firstName'), 
-988	                                lastName: form.get('lastName'), 
-989	                                regNumber: regNum, 
-990	                                pageNumber: pageNum, 
-991	                                notes: form.get('notes'), 
-992	                                status: form.get('status') || 'active', 
-993	                                isDeleted: false, 
-994	                                createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now() 
-995	                            }; 
-996	                            try { 
-997	                                if (view === 'edit') { 
-998	                                    await updateDoc(doc(db, "students", selectedId), data); 
-999	                                    setAlertConfig({ message: 'تم تعديل البيانات بنجاح', type: 'success' }); 
-1000	                                } else { 
-1001	                                    await addDoc(studentsCollection, data); 
-1002	                                    setAlertConfig({ message: 'تم إضافة الطالب بنجاح', type: 'success' }); 
-1003	                                } 
-1004	                                await refreshStats(); 
-1005	                                setView('list'); 
-1006	                                setSimilarStudents([]); 
-1007	                            } catch(err) { setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); } 
-1008	                        }} className="space-y-3"> 
-1009	                           <div> 
-1010	                               <input  
-1011	                                   name="firstName"  
-1012	                                   required  
-1013	                                   defaultValue={view === 'edit' ? cleanName(students.find(s=>s.id===selectedId)?.firstName) : ''}  
-1014	                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`}  
-1015	                                   placeholder="الاسم الرباعي"  
-1016	                                   onChange={(e) => checkSimilarStudents(e.target.value)}  
-1017	                                   autoComplete="off" 
-1018	                               /> 
-1019	                               {similarStudents.length > 0 && ( 
-1020	                                   <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 animate-fade-in"> 
-1021	                                       <div className="flex items-center gap-1 text-amber-800 font-bold text-[10px] mb-1"> 
-1022	                                            <AlertTriangle size={12}/> 
-1023	                                           <span>تنبيه: توجد أسماء مشابهة مسجلة مسبقاً</span> 
-1024	                                       </div> 
-1025	                                       <div className="max-h-24 overflow-y-auto space-y-1"> 
-1026	                                           {similarStudents.map(s => ( 
-1027	                                               <div key={s.id} className="flex justify-between items-center bg-white p-1.5 rounded-lg border border-amber-100 text-[10px]"> 
-1028	                                                   <span className="font-bold text-slate-700 truncate ml-1">{cleanName(s.firstName)} {s.lastName || ''}</span> 
-1029	                                                   <div className="flex gap-1 flex-shrink-0"> 
-1030	                                                       <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">قيد {s.regNumber}</span> 
-1031	                                                       <span className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded font-mono font-bold">صفحة {s.pageNumber}</span> 
-1032	                                                   </div> 
-1033	                                               </div> 
-1034	                                           ))} 
-1035	                                       </div> 
-1036	                                   </div> 
-1037	                               )} 
-1038	                           </div> 
-1039	                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="العائلة (اختياري)" /> 
-1040	                           <div className="grid grid-cols-2 gap-3"> 
-1041	                             <input name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} /> 
-1042	                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} /> 
-1043	                           </div> 
-1044	                           <input type="date" name="createdAt" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} /> 
-1045	                           <div> 
-1046	                              <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">الوضع الأكاديمي</label> 
-1047	                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2"> 
-1048	                                <label className="cursor-pointer group"> 
-1049	                                    <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} /> 
-1050	                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">مستمر</div> 
-1051	                                </label> 
-1052	                                <label className="cursor-pointer group"> 
-1053	                                    <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} /> 
-1054	                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">منقول</div> 
-1055	                                </label> 
-1056	                                <label className="cursor-pointer group"> 
-1057	                                    <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} /> 
-1058	                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">تارك</div> 
-1059	                                </label> 
-1060	                                <label className="cursor-pointer group"> 
-1061	                                    <input type="radio" name="status" value="graduated" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'graduated'} /> 
-1062	                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">متخرج</div> 
-1063	                                </label> 
-1064	                              </div> 
-1065	                           </div> 
-1066	                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" /> 
-1067	                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>حفظ البيانات</button> 
-1068	                        </form> 
-1069	                      </div> 
-1070	                    </Modal> 
-1071	                )} 
-1072	 
-1073	                {showThemeModal && ( 
-1074	                  <Modal onClose={() => setShowThemeModal(false)}> 
-1075	                    <div className="bg-white rounded-2xl p-5 text-center space-y-4 shadow-xl"> 
-1076	                       <h3 className="text-lg font-bold">اختر لون التطبيق</h3> 
-1077	                       <div className="grid grid-cols-2 gap-3"> 
-1078	                          {Object.entries(themeColors).map(([key, value]) => ( 
-1079	                            <button  
-1080	                              key={key}  
-1081	                              onClick={() => { setColorTheme(key); setShowThemeModal(false); }} 
-1082	                              className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${colorTheme === key ? `border-black bg-slate-50` : 'border-transparent hover:bg-slate-50'}`} 
-1083	                            > 
-1084	                               <div className={`w-6 h-6 rounded-full ${value.primary}`}></div> 
-1085	                               <span className="font-bold text-slate-700 text-sm">{value.name}</span> 
-1086	                            </button> 
-1087	                          ))} 
-1088	                       </div> 
-1089	                       <button onClick={() => setShowThemeModal(false)} className="w-full py-2.5 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm">إغلاق</button> 
-1090	                    </div> 
-1091	                  </Modal> 
-1092	                )} 
-1093	 
-1094	                {view === 'settings' && ( 
-1095	                    <Modal onClose={() => setView('list')}> 
-1096	                      <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3"> 
-1097	                        <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> الإعدادات</h2> 
-1098	                        <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"> 
-1099	                            <span className="flex items-center gap-2">{isDarkMode ? <Sun size={18} className="text-amber-500"/> : <Moon size={18} className="text-slate-600"/>} {isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي'}</span> 
-1100	                        </button> 
-1101	                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"><span>سلة المحذوفات</span> <ArrowRight size={16}/></button> 
-1102	                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button> 
-1103	                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير إلى Excel</button> 
-1104	                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> إنشاء نموذج (2000 طالب)</button> 
-1105	                        <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}> 
-1106	                            <span className="flex items-center gap-2"><Upload size={18}/> استيراد من Excel</span> 
-1107	                            <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} /> 
-1108	                        </label> 
-1109	                        <div className="pt-3 border-t border-slate-100 mt-1"> 
-1110	                           <button onClick={() => setConfirmConfig({ title: "حذف جميع البيانات", message: "هل أنت متأكد من حذف جميع البيانات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> حذف جميع البيانات</button> 
-1111	                        </div> 
-1112	                      </div> 
-1113	                    </Modal> 
-1114	                )} 
-1115	 
-1116	                {view === 'stats' && ( 
-1117	                    <Modal onClose={() => setView('list')}> 
-1118	                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full"> 
-1119	                            <h2 className="text-lg font-bold flex items-center gap-2"> 
-1120	                                <BarChart3 size={20} className="text-blue-600" /> توزيع الطلاب حسب القيد 
-1121	                            </h2> 
-1122	                            <div className="overflow-y-auto flex-1 custom-scrollbar"> 
-1123	                                <table className="w-full text-right border-collapse"> 
-1124	                                    <thead className="bg-slate-50 sticky top-0 z-10"> 
-1125	                                        <tr> 
-1126	                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th> 
-1127	                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th> 
-1128	                                        </tr> 
-1129	                                    </thead> 
-1130	                                    <tbody className="divide-y divide-slate-100"> 
-1131	                                        {regStats.length > 0 ? regStats.map((item) => ( 
-1132	                                            <tr key={item.reg} className="hover:bg-slate-50 transition-colors"> 
-1133	                                                <td className="p-3 font-bold text-slate-700 text-sm align-top">قيد {item.reg}</td> 
-1134	                                                <td className="p-3 font-bold text-slate-900 text-sm"> 
-1135	                                                    <div className="flex flex-col gap-1.5"> 
-1136	                                                        <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded-lg w-fit text-xs"> 
-1137	                                                            الإجمالي: {item.total} طالب 
-1138	                                                        </span> 
-1139	                                                        <div className="flex flex-wrap gap-1.5 text-[10px]"> 
-1140	                                                            {item.active > 0 && <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">مستمر: {item.active}</span>} 
-1141	                                                            {item.transferred > 0 && <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">منقول: {item.transferred}</span>} 
-1142	                                                            {item.left > 0 && <span className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">تارك: {item.left}</span>} 
-1143	                                                            {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">متخرج: {item.graduated}</span>} 
-1144	                                                        </div> 
-1145	                                                    </div> 
-1146	                                                </td> 
-1147	                                            </tr> 
-1148	                                        )) : ( 
-1149	                                            <tr> 
-1150	                                                <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td> 
-1151	                                            </tr> 
-1152	                                        )} 
-1153	                                    </tbody> 
-1154	                                </table> 
-1155	                            </div> 
-1156	                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button> 
-1157	                        </div> 
-1158	                    </Modal> 
-1159	                )} 
-1160	 
-1161	                {view === 'statusStats' && ( 
-1162	                    <Modal onClose={() => setView('list')}> 
-1163	                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full"> 
-1164	                            <h2 className="text-lg font-bold flex items-center gap-2"> 
-1165	                                <PieChart size={20} className="text-amber-500" /> إحصائيات الوضع الأكاديمي 
-1166	                            </h2> 
-1167	                            <div className="overflow-y-auto flex-1 custom-scrollbar"> 
-1168	                                <table className="w-full text-right border-collapse"> 
-1169	                                    <thead className="bg-slate-50 sticky top-0 z-10"> 
-1170	                                        <tr> 
-1171	                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">الوضع الأكاديمي</th> 
-1172	                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th> 
-1173	                                        </tr> 
-1174	                                    </thead> 
-1175	                                    <tbody className="divide-y divide-slate-100"> 
-1176	                                        {statusStats.map((item) => ( 
-1177	                                            <tr key={item.label} className="hover:bg-slate-50 transition-colors"> 
-1178	                                                <td className="p-3 font-bold text-slate-700 text-sm">{item.label}</td> 
-1179	                                                <td className="p-3 font-bold text-sm"> 
-1180	                                                    <span className={`px-2 py-1 rounded-lg ${item.color}`}> 
-1181	                                                        {item.count} طالب 
-1182	                                                    </span> 
-1183	                                                </td> 
-1184	                                            </tr> 
-1185	                                        ))} 
-1186	                                    </tbody> 
-1187	                                </table> 
-1188	                            </div> 
-1189	                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button> 
-1190	                        </div> 
-1191	                    </Modal> 
-1192	                )} 
-1193	 
-1194	                {view === 'detail' && selectedId && (() => { 
-1195	                    const s = students.find(x => x.id === selectedId); 
-1196	                    if (!s) return null; 
-1197	                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' }; 
-1198	                    const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700', 'graduated': 'bg-blue-100 text-blue-700' }; 
-1199	 
-1200	                    return ( 
-1201	                      <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}> 
-1202	                         <div className="bg-white rounded-3xl shadow-2xl p-5 md:p-6 space-y-6 animate-slide-up relative overflow-hidden"> 
-1203	                             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full -mr-8 -mt-8"></div> 
-1204	             
-1205	                            <div className="relative"> 
-1206	                                <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{cleanName(s.firstName)}</h1> 
-1207	                                <h2 className="text-lg font-bold text-slate-400">{s.lastName || ""}</h2> 
-1208	                            </div> 
-1209	 
-1210	                            <div className="grid grid-cols-2 gap-3"> 
-1211	                               <div className={`${currentTheme.primary} text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]`}> 
-1212	                                   <span className="text-slate-200 text-[10px] font-bold uppercase tracking-wider mb-1">رقم القيد</span> 
-1213	                                   <span className="text-3xl font-mono font-black">{s.regNumber}</span> 
-1214	                               </div> 
-1215	                               <div className="bg-white border-2 border-slate-100 p-4 rounded-xl shadow-sm flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]"> 
-1216	                                   <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">رقم الصفحة</span> 
-1217	                                   <span className="text-3xl font-mono font-black text-slate-800">{s.pageNumber}</span> 
-1218	                               </div> 
-1219	                            </div> 
-1220	 
-1221	                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3"> 
-1222	                                <div className="flex justify-between items-center border-b border-slate-200 pb-3"> 
-1223	                                    <div className="flex items-center gap-2"> 
-1224	                                        <div className="p-1.5 bg-white rounded-lg shadow-sm"><Calendar size={16} className="text-slate-500"/></div> 
-1225	                                        <div> 
-1226	                                            <div className="text-[10px] font-bold text-slate-400">تاريخ القيد</div> 
-1227	                                            <div className="font-bold text-slate-800 text-sm">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</div> 
-1228	                                        </div> 
-1229	                                    </div> 
-1230	                                </div> 
-1231	                                <div className="flex justify-between items-center"> 
-1232	                                    <div className="flex items-center gap-2"> 
-1233	                                        <div className="p-1.5 bg-white rounded-lg shadow-sm"><Info size={16} className="text-slate-500"/></div> 
-1234	                                        <div> 
-1235	                                            <div className="text-[10px] font-bold text-slate-400">الوضع الأكاديمي</div> 
-1236	                                            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold mt-0.5 ${statusColors[s.status] || statusColors['active']}`}> 
-1237	                                                {statusLabels[s.status] || 'مستمر'} 
-1238	                                            </div> 
-1239	                                        </div> 
-1240	                                    </div> 
-1241	                                </div> 
-1242	                                {s.notes && ( 
-1243	                                    <div className="pt-3 border-t border-slate-200"> 
-1244	                                        <div className="text-[10px] font-bold text-slate-400 mb-1">ملاحظات</div> 
-1245	                                        <p className="text-slate-700 font-medium leading-relaxed text-sm">{s.notes}</p> 
-1246	                                    </div> 
-1247	                                )} 
-1248	                            </div> 
-1249	 
-1250	                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}><Printer size={18}/> طباعة البطاقة الشخصية</button> 
-1251	                            <div className="flex gap-2"> 
-1252	                                <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">تعديل البيانات</button> 
-1253	                                {view !== 'trash' && ( 
-1254	                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button> 
-1255	                                )} 
-1256	                            </div> 
-1257	                         </div> 
-1258	                      </Modal> 
-1259	                    ); 
-1260	                })()} 
-1261	 
-1262	                {showPrintModal && ( 
-1263	                    <Modal onClose={() => setShowPrintModal(false)}> 
-1264	                       <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl"> 
-1265	                          <h3 className="text-lg font-bold">خيارات الطباعة</h3> 
-1266	                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>طباعة السجل الحالي بالكامل</button> 
-1267	                          <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div> 
-1268	                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}> 
-1269	                               <option value="">اختر رقم القيد...</option> 
-1270	                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد رقم {r}</option>)} 
-1271	                          </select> 
-1272	                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>طباعة القيد المحدد</button> 
-1273	                       </div> 
-1274	                    </Modal> 
-1275	                )} 
-1276	 
-1277	                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />} 
-1278	                {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />} 
-1279	                 
-1280	                {importing && ( 
-1281	                  <Modal onClose={() => {}} zIndex="z-[80]"> 
-1282	                    <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl"> 
-1283	                      <div className="relative flex items-center justify-center"> 
-1284	                          <div className="animate-spin text-blue-600"><Loader2 size={64} /></div> 
-1285	                          <div className="absolute text-sm font-bold text-blue-800" dir="ltr">{importProgress}%</div> 
-1286	                      </div> 
-1287	                      <h3 className="text-xl font-bold text-slate-800">جاري استيراد البيانات...</h3> 
-1288	                      <p className="text-slate-500">يرجى الانتظار قليلاً</p> 
-1289	                      <div className="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden"> 
-1290	                          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}></div> 
-1291	                      </div> 
-1292	                    </div> 
-1293	                  </Modal> 
-1294	                )} 
-1295	              </div> 
-1296	               
-1297	              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `كشف الطلاب - قيد رقم ${selectedRegFilter}` : "كشف القيد العام"} />} 
-1298	              {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />} 
-1299	            </> 
-1300	          ); 
-1301	        }; 
-1302	 
-1303	        const root = ReactDOM.createRoot(document.getElementById('root')); 
-1304	        root.render(<App />); 
-1305	    </script> 
-1306	</body> 
-1307	</html> 
+        .print-page-container:last-child {
+            page-break-after: auto;
+            break-after: auto;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        th, td {
+            word-wrap: break-word;
+            border: 1px solid black !important;
+            padding: 2px 4px;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        h1, .flex {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+      }
+      .print-only { display: none; }
+      
+      /* Scrollbars */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background-color: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+      /* Dark Mode Base Styles */
+      html.dark body { background-color: #0f172a; color: #f8fafc; }
+      html.dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+      html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+      html.dark .bg-slate-100 { background-color: #334155 !important; border-color: #475569 !important; color: #f8fafc !important; }
+      html.dark .text-slate-800, html.dark .text-slate-900 { color: #f8fafc !important; }
+      html.dark .text-slate-700 { color: #e2e8f0 !important; }
+      html.dark .text-slate-600, html.dark .text-slate-500 { color: #cbd5e1 !important; }
+      html.dark .text-slate-400 { color: #94a3b8 !important; }
+      html.dark .border-slate-200, html.dark .border-slate-100, html.dark .border-slate-50 { border-color: #334155 !important; }
+      html.dark input, html.dark select { background-color: #0f172a !important; color: #f8fafc !important; border-color: #334155 !important; }
+      html.dark .hover\:bg-slate-50:hover { background-color: #334155 !important; }
+      html.dark .hover\:bg-slate-100:hover { background-color: #475569 !important; }
+      html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+      html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3) !important; }
+
+      @keyframes fade-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+      .animate-fade-in { animation: fade-in 0.2s ease-out; }
+      @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+
+    <!-- React & Babel Support -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1?deps=react@18.2.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+          Users, LogOut, Settings, Search, Plus, Printer, 
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun
+        } from 'lucide-react';
+        import { initializeApp } from "firebase/app";
+        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+        import * as XLSX from 'xlsx';
+
+        // ==========================================
+        // FIREBASE CONFIG
+        // ==========================================
+        const firebaseConfig = {
+          apiKey: "AIzaSyC3Hyi-tVMui0ZyPsezvoxxSFjCJQBme9Q",
+          authDomain: "ss-app-87ac7.firebaseapp.com",
+          projectId: "ss-app-87ac7",
+          storageBucket: "ss-app-87ac7.firebasestorage.app",
+          messagingSenderId: "7671656513",
+          appId: "1:7671656513:web:21b51edb450bddd1aad6c0",
+          measurementId: "G-LQPLFRBGKH"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        
+        // Initialize Firestore with Persistent Local Cache (Modern Way)
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache()
+        });
+
+        const auth = getAuth(app);
+        const studentsCollection = collection(db, "students");
+
+        // ==========================================
+        // UTILS
+        // ==========================================
+        const cleanName = (name) => {
+            if (!name) return "";
+            return name.replace(/\s+\d+$/, '').trim();
+        };
+
+        const formatDateForInput = (timestamp) => {
+            if (!timestamp) return new Date().toISOString().split('T')[0];
+            return new Date(timestamp).toISOString().split('T')[0];
+        };
+
+        const exportToExcel = (students) => {
+          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+          const data = students.map(s => ({
+            'الاسم الرباعي': cleanName(s.firstName),
+            'العائلة': s.lastName || '',
+            'رقم القيد': s.regNumber,
+            'رقم الصفحة': s.pageNumber,
+            'الحالة الدراسية': statusMap[s.status || 'active'] || 'مستمر',
+            'ملاحظات': s.notes || '',
+            'تاريخ التسجيل': new Date(s.createdAt).toLocaleDateString('ar-EG')
+          }));
+          const worksheet = XLSX.utils.json_to_sheet(data);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب");
+          XLSX.writeFile(workbook, "سجل_القيود_العام.xlsx");
+        };
+
+        const generateTemplate = () => {
+          const firstNames = ['محمد', 'أحمد', 'عبدالله', 'علي', 'عمر', 'خالد', 'سعد', 'سعيد', 'صالح', 'فهد', 'سلمان', 'يوسف', 'إبراهيم'];
+          const secondNames = ['حسين', 'حسن', 'عبدالرحمن', 'محمود', 'مصطفى', 'جعفر', 'عباس', 'كاظم', 'رضا', 'مهدي'];
+          const thirdNames = ['علي', 'محمد', 'جاسم', 'كريم', 'خلف', 'سالم', 'حمزة', 'فاضل'];
+          const fourthNames = ['عبدالله', 'ناصر', 'منصور', 'خليفة', 'سلطان', 'يحيى', 'زكريا'];
+          const titles = ['الشمري', 'العتيبي', 'القحطاني', 'العنزي', 'الحربي', 'الزهراني', 'المالكي', 'الدوسري', 'التميمي', 'الخالدي'];
+
+          const templateData = [];
+          
+          for (let reg = 1; reg <= 10; reg++) {
+            for (let i = 0; i < 200; i++) {
+               const n1 = firstNames[Math.floor(Math.random() * firstNames.length)];
+               const n2 = secondNames[Math.floor(Math.random() * secondNames.length)];
+               const n3 = thirdNames[Math.floor(Math.random() * thirdNames.length)];
+               const n4 = fourthNames[Math.floor(Math.random() * fourthNames.length)];
+               const title = titles[Math.floor(Math.random() * titles.length)];
+               
+               const pageNum = Math.floor(i / 30) + 1;
+
+               templateData.push({
+                  'الاسم الرباعي': `${n1} ${n2} ${n3} ${n4}`, 
+                  'العائلة': title,
+                  'رقم القيد': reg.toString(),
+                  'رقم الصفحة': pageNum.toString(),
+                  'الحالة الدراسية': 'مستمر',
+                  'ملاحظات': ''
+               });
+            }
+          }
+
+          const worksheet = XLSX.utils.json_to_sheet(templateData);
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, worksheet, "نموذج 2000 طالب");
+          XLSX.writeFile(workbook, "نموذج_سجل_القيود_الكبير.xlsx");
+        };
+
+        const readExcel = (file) => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
+                resolve(jsonData);
+              } catch (err) { reject(err); }
+            };
+            reader.onerror = (error) => reject(error);
+            reader.readAsArrayBuffer(file);
+          });
+        };
+        
+        // ==========================================
+        // UI COMPONENTS
+        // ==========================================
+        const SkeletonLoader = () => (
+          <div className="animate-pulse space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 h-20"></div>
+              ))}
+            </div>
+            <div className="bg-white p-2 rounded-xl border border-slate-100 h-12"></div>
+          </div>
+        );
+
+        const Modal = ({ children, onClose, zIndex = "z-50" }) => (
+          <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}>
+            <div className="w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-3 left-3 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all z-[60]"
+                    title="إغلاق"
+                >
+                    <X size={20} />
+                </button>
+                {children}
+            </div>
+          </div>
+        );
+
+        const AlertModal = ({ message, type, onClose }) => (
+          <Modal onClose={onClose} zIndex="z-[60]">
+            <div className="bg-white rounded-2xl p-5 text-center shadow-2xl animate-slide-up">
+              <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-3 ${type === 'error' ? 'bg-red-100 text-red-500' : 'bg-green-100 text-green-500'}`}>
+                {type === 'error' ? <AlertCircle size={24} /> : <CheckCircle2 size={24} />}
+              </div>
+              <p className="text-slate-800 font-bold mb-5 text-sm">{message}</p>
+              <button onClick={onClose} className="w-full py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm">حسناً</button>
+            </div>
+          </Modal>
+        );
+
+        const ConfirmModal = ({ title, message, onConfirm, onCancel, isDestructive = false }) => (
+          <Modal onClose={onCancel} zIndex="z-[60]">
+            <div className="bg-white rounded-2xl p-5 text-center shadow-2xl animate-slide-up">
+              <h3 className="text-lg font-bold text-slate-800 mb-2">{title}</h3>
+              <p className="text-slate-500 mb-6 text-sm">{message}</p>
+              <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm">إلغاء</button>
+                <button onClick={onConfirm} className={`flex-1 py-2.5 text-white rounded-xl font-bold text-sm ${isDestructive ? 'bg-red-500' : 'bg-blue-600'}`}>تأكيد</button>
+              </div>
+            </div>
+          </Modal>
+        );
+
+        const StatCard = ({ title, value, icon, colorClass, onClick }) => (
+          <div onClick={onClick} className={`bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md transition-all ${onClick ? 'cursor-pointer active:scale-95' : ''}`}>
+            <div className={`p-2 rounded-xl ${colorClass} text-white shadow-md`}>{icon}</div>
+            <div>
+              <div className="text-xl font-black text-slate-800 font-mono">{value}</div>
+              <div className="text-[10px] text-slate-500 font-bold">{title}</div>
+            </div>
+          </div>
+        );
+
+        const SingleStudentPrint = ({ student }) => {
+          const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+          const printDate = new Date().toLocaleDateString('ar-EG');
+          return (
+            <div className="hidden print:flex flex-col items-center justify-start w-full h-screen bg-white p-0 overflow-hidden">
+              <div className="w-[190mm] h-[250mm] border-[6px] border-double border-slate-800 p-6 rounded-none relative overflow-hidden flex flex-col justify-between mx-auto mt-0 shadow-none">
+                <div className="absolute top-2 right-2 w-16 h-16 border-t-4 border-r-4 border-slate-900"></div>
+                <div className="absolute top-2 left-2 w-16 h-16 border-t-4 border-l-4 border-slate-900"></div>
+                <div className="absolute bottom-2 right-2 w-16 h-16 border-b-4 border-r-4 border-slate-900"></div>
+                <div className="absolute bottom-2 left-2 w-16 h-16 border-b-4 border-l-4 border-slate-900"></div>
+
+                <div className="text-center border-b-2 border-slate-900 pb-4 mb-4 relative z-10">
+                  <div className="flex justify-between items-start mb-2 px-2">
+                    <div className="text-sm font-bold leading-relaxed">جمهورية العراق<br/>وزارة التربية<br/>المديرية العامة للتربية</div>
+                    <div className="w-20 h-20 border-2 border-slate-800 rounded-full flex items-center justify-center bg-slate-50 shadow-sm"><span className="text-3xl">🎓</span></div>
+                    <div className="text-sm font-bold leading-relaxed text-left">التاريخ: {printDate}<br/>العدد: ............</div>
+                  </div>
+                  <h1 className="text-4xl font-black text-slate-900 mt-4 font-cairo tracking-wide">بطاقة الطالب الشخصية</h1>
+                  <p className="text-lg font-bold text-slate-600 mt-2 bg-slate-100 inline-block px-6 py-1 rounded-full border border-slate-300">نسخة طبق الأصل من سجل القيد</p>
+                </div>
+
+                <div className="flex-1 flex flex-col gap-4 justify-start pt-2 px-4 relative z-10">
+                   <div className="text-center space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                      <span className="text-lg font-bold text-slate-500 block">الاسم الرباعي والعائلة</span>
+                      <div className="text-3xl font-black text-slate-900 pb-1">{cleanName(student.firstName)} {student.lastName || ''}</div>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-6 my-2">
+                      <div className="border-2 border-slate-800 p-4 text-center rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
+                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">رقم القيد العام</span>
+                        <div className="text-5xl font-mono font-black text-slate-900 tracking-wider">{student.regNumber}</div>
+                      </div>
+                      <div className="border-2 border-slate-800 p-4 text-center rounded-xl bg-white shadow-[2px_2px_0px_0px_rgba(30,41,59,1)]">
+                        <span className="text-base font-bold text-slate-600 uppercase block mb-1">رقم الصفحة</span>
+                        <div className="text-5xl font-mono font-black text-slate-900 tracking-wider">{student.pageNumber}</div>
+                      </div>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-6 text-right px-2 mt-2">
+                      <div className="flex flex-col border-b-2 border-slate-200 pb-2">
+                         <span className="text-base font-bold text-slate-500 mb-1">الوضع الأكاديمي</span>
+                         <span className="text-2xl font-bold text-slate-900">{statusLabels[student.status || 'active']}</span>
+                      </div>
+                      <div className="flex flex-col border-b-2 border-slate-200 pb-2">
+                         <span className="text-base font-bold text-slate-500 mb-1">تاريخ القيد</span>
+                         <span className="text-2xl font-bold text-slate-900 font-mono">{new Date(student.createdAt).toLocaleDateString('ar-EG')}</span>
+                      </div>
+                      {student.notes && (
+                        <div className="col-span-2 flex flex-col bg-yellow-50 p-3 rounded-xl border border-yellow-200 mt-1">
+                           <span className="text-xs font-bold text-yellow-700 mb-1">ملاحظات</span>
+                           <span className="text-lg font-bold text-slate-800">{student.notes}</span>
+                        </div>
+                      )}
+                   </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t-2 border-slate-900 flex justify-between items-end px-8 pb-4 relative z-10">
+                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">توقيع الموظف المختص</div></div>
+                   <div className="text-center"><div className="h-16"></div><div className="font-bold text-lg text-slate-900 border-t-2 border-slate-900 pt-2 w-40 mx-auto">ختم وتوقيع المدير</div></div>
+                </div>
+                
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none z-0 select-none">
+                     <div className="transform -rotate-45 text-[150px] font-black text-slate-900 whitespace-nowrap border-4 border-slate-900 p-12 rounded-3xl">وثيقة رسمية</div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        const PrintView = ({ students, title }) => {
+          const sortedStudents = useMemo(() => {
+             return [...students].sort((a, b) => a.firstName.localeCompare(b.firstName)).map((s, i) => ({ ...s, printIndex: i + 1 }));
+          }, [students]);
+
+          const ROWS_PER_COLUMN_MAX = 31; 
+          const COLUMNS_PER_PAGE = 2;
+          const MAX_ITEMS_PER_PAGE = ROWS_PER_COLUMN_MAX * COLUMNS_PER_PAGE;
+          const totalItems = sortedStudents.length;
+          const totalPages = Math.ceil(totalItems / MAX_ITEMS_PER_PAGE);
+          const printDate = new Date().toLocaleDateString('ar-EG');
+          
+          const pages = [];
+          for (let i = 0; i < totalPages; i++) {
+            pages.push(sortedStudents.slice(i * MAX_ITEMS_PER_PAGE, (i + 1) * MAX_ITEMS_PER_PAGE));
+          }
+          
+          return (
+            <div className="print-only text-[9.5pt] dir-rtl">
+              {pages.map((pageStudents, pageIndex) => (
+                <div key={pageIndex} className="print-page-container">
+                   <div className="flex justify-between items-end border-b-2 border-black pb-2 mb-4 w-full h-[40px]">
+                      <div className="text-[10px] font-medium text-gray-500 w-32 text-right">صفحة {pageIndex + 1} من {totalPages}</div>
+                      <h1 className="text-xl font-bold flex-1 text-center">{title || "كشف القيد العام"}</h1>
+                      <div className="text-[10px] font-medium text-gray-500 w-32 text-left">تاريخ: {printDate}</div>
+                   </div>
+                   <div className="flex flex-row gap-[8mm] flex-1">
+                     {[0, 1].map((colIndex) => {
+                       const colStudents = pageStudents.slice(colIndex * ROWS_PER_COLUMN_MAX, (colIndex + 1) * ROWS_PER_COLUMN_MAX);
+                       return (
+                         <div key={colIndex} className="flex-1 flex flex-col">
+                           <table className="w-full border-collapse table-fixed">
+                             <thead>
+                               <tr className="bg-gray-100 h-[36px]">
+                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">م</th>
+                                 <th className="p-1 text-right">الاسم الكامل</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">صفحة</th>
+                               </tr>
+                             </thead>
+                             <tbody>
+                               {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
+                                 const s = colStudents[rowIndex];
+                                 return (
+                                   <tr key={rowIndex} className="h-[31px]">
+                                     <td className="px-1 text-center font-medium whitespace-nowrap">{s ? s.printIndex : ''}</td>
+                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) + ' ' + (s.lastName || '') : ''}</td>
+                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
+                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
+                                   </tr>
+                                 );
+                               })}
+                             </tbody>
+                           </table>
+                         </div>
+                       );
+                     })}
+                   </div>
+                </div>
+              ))}
+            </div>
+          );
+        };
+
+        const Login = () => {
+          const [email, setEmail] = useState('');
+          const [password, setPassword] = useState('');
+          const [error, setError] = useState('');
+          const [loading, setLoading] = useState(false);
+          const handleSubmit = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch (err) { setError('البريد الإلكتروني أو كلمة المرور غير صحيحة'); } 
+            finally { setLoading(false); }
+          };
+          return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4" dir="rtl">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-md p-8 animate-fade-in">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-blue-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg"><Users className="w-8 h-8 text-white" /></div>
+                  <h2 className="text-2xl font-bold text-slate-800">الدخول إلى النظام</h2>
+                </div>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <input type="email" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="البريد الإلكتروني" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <input type="password" required className="w-full px-4 py-3 rounded-xl border border-slate-300 outline-none text-left bg-slate-50" dir="ltr" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                  <button type="submit" disabled={loading} className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg transition-all">{loading ? 'جاري التحقق...' : 'دخول'}</button>
+                </form>
+              </div>
+            </div>
+          );
+        };
+
+        const themeColors = {
+          slate: { primary: 'bg-slate-900', hover: 'hover:bg-slate-800', secondary: 'bg-blue-600', secondaryHover: 'hover:bg-blue-700', ring: 'focus:ring-blue-500', name: 'الأساسي (أزرق)' },
+          purple: { primary: 'bg-violet-900', hover: 'hover:bg-violet-800', secondary: 'bg-purple-600', secondaryHover: 'hover:bg-purple-700', ring: 'focus:ring-purple-500', name: 'بنفسجي' },
+          emerald: { primary: 'bg-teal-900', hover: 'hover:bg-teal-800', secondary: 'bg-emerald-600', secondaryHover: 'hover:bg-emerald-700', ring: 'focus:ring-emerald-500', name: 'أخضر' },
+          rose: { primary: 'bg-rose-900', hover: 'hover:bg-rose-800', secondary: 'bg-red-600', secondaryHover: 'hover:bg-red-700', ring: 'focus:ring-red-500', name: 'أحمر' },
+          amber: { primary: 'bg-amber-900', hover: 'hover:bg-amber-800', secondary: 'bg-orange-600', secondaryHover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', name: 'برتقالي' },
+        };
+        
+        const App = () => {
+          const [user, setUser] = useState(null);
+          const [loading, setLoading] = useState(true);
+          const [students, setStudents] = useState([]);
+          const [view, setView] = useState('list');
+          const [selectedId, setSelectedId] = useState(null);
+          const [search, setSearch] = useState('');
+          const [debouncedQuery, setDebouncedQuery] = useState(''); 
+          const [selectedRegFilter, setSelectedRegFilter] = useState(''); 
+          const [statusFilter, setStatusFilter] = useState('ALL');
+          const [sortBy, setSortBy] = useState('recent');
+          const [yearFilter, setYearFilter] = useState('ALL');
+          const [showPrintModal, setShowPrintModal] = useState(false);
+          const [printRegInput, setPrintRegInput] = useState('');
+          const [visibleCount, setVisibleCount] = useState(150);
+          const loadMoreRef = useRef(null);
+          const [importing, setImporting] = useState(false);
+          const [importProgress, setImportProgress] = useState(0);
+          const [printMode, setPrintMode] = useState('list');
+          const [alertConfig, setAlertConfig] = useState(null);
+          const [confirmConfig, setConfirmConfig] = useState(null);
+          const [showScrollTop, setShowScrollTop] = useState(false);
+          const [similarStudents, setSimilarStudents] = useState([]);
+          const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
+          const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
+          const [showThemeModal, setShowThemeModal] = useState(false);
+
+          const currentTheme = themeColors[colorTheme] || themeColors.slate;
+
+          const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
+
+          const regsCount = useMemo(() => {
+             return new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber)).size;
+          }, [students]);
+
+          const regStats = useMemo(() => {
+             const active = students.filter(s => !s.isDeleted);
+             const statsMap = {};
+             active.forEach(s => {
+                 const reg = s.regNumber;
+                 if (!statsMap[reg]) {
+                     statsMap[reg] = { total: 0, active: 0, transferred: 0, left: 0, graduated: 0 };
+                 }
+                 statsMap[reg].total++;
+                 const status = s.status || 'active';
+                 if (statsMap[reg][status] !== undefined) {
+                     statsMap[reg][status]++;
+                 }
+             });
+             return Object.entries(statsMap).map(([reg, counts]) => ({ reg, ...counts })).sort((a, b) => Number(a.reg) - Number(b.reg));
+          }, [students]);
+
+          const statusStats = useMemo(() => {
+            const active = students.filter(s => !s.isDeleted);
+            const counts = { active: 0, transferred: 0, left: 0, graduated: 0 };
+            active.forEach(s => {
+                const st = s.status || 'active';
+                if (counts[st] !== undefined) counts[st]++;
+            });
+            return [
+                { label: 'مستمر', count: counts.active, color: 'bg-emerald-100 text-emerald-800' },
+                { label: 'منقول', count: counts.transferred, color: 'bg-amber-100 text-amber-800' },
+                { label: 'تارك', count: counts.left, color: 'bg-rose-100 text-rose-800' },
+                { label: 'متخرج', count: counts.graduated, color: 'bg-blue-100 text-blue-800' }
+            ];
+          }, [students]);
+
+          const years = useMemo(() => {
+             const y = new Set(students.map(s => {
+                const d = new Date(s.createdAt);
+                return isNaN(d.getFullYear()) ? null : d.getFullYear();
+             }).filter(y => y !== null));
+             return Array.from(y).sort((a,b) => b - a);
+          }, [students]);
+
+          const refreshStats = async () => {
+             try {
+                 const baseConstraints = [where("isDeleted", "==", false)];
+                 if (selectedRegFilter) baseConstraints.push(where("regNumber", "==", selectedRegFilter));
+                 
+                 const totalQ = query(studentsCollection, ...baseConstraints);
+                 const totalSnap = await getCountFromServer(totalQ);
+                 const total = totalSnap.data().count;
+
+                 const activeQ = query(studentsCollection, ...baseConstraints, where("status", "==", "active"));
+                 const activeSnap = await getCountFromServer(activeQ);
+                 const active = activeSnap.data().count;
+
+                 const graduatedQ = query(studentsCollection, ...baseConstraints, where("status", "==", "graduated"));
+                 const graduatedSnap = await getCountFromServer(graduatedQ);
+                 const graduated = graduatedSnap.data().count;
+
+                 setStats({ total, active, graduated });
+             } catch (error) {
+                 console.error("Error fetching stats:", error);
+             }
+          };
+
+          useEffect(() => {
+             if (user) {
+                 refreshStats();
+             }
+          }, [user, selectedRegFilter]);
+
+          useEffect(() => {
+            const unsub = onAuthStateChanged(auth, (u) => {
+              setUser(u);
+              if (!u) setLoading(false);
+            });
+            return () => unsub();
+          }, []);
+
+          useEffect(() => {
+            if (!user) return;
+            setLoading(true);
+            const unsubscribe = onSnapshot(studentsCollection, (snapshot) => {
+               const data = [];
+               snapshot.forEach(d => {
+                  const raw = d.data();
+                  const createdAt = raw.createdAt?.toMillis ? raw.createdAt.toMillis() : (raw.createdAt || Date.now());
+                  data.push({ id: d.id, ...raw, createdAt });
+               });
+               data.sort((a,b) => b.createdAt - a.createdAt);
+               setStudents(data);
+               setLoading(false);
+            }, (error) => {
+               console.error("Error fetching students:", error);
+               setLoading(false);
+            });
+            return () => unsubscribe();
+          }, [user]);
+
+          useEffect(() => {
+            const timer = setTimeout(() => setDebouncedQuery(search), 300);
+            return () => clearTimeout(timer);
+          }, [search]);
+
+          useEffect(() => {
+             const handleScroll = () => {
+                setShowScrollTop(window.scrollY > 300);
+             };
+             window.addEventListener('scroll', handleScroll);
+             return () => window.removeEventListener('scroll', handleScroll);
+          }, []);
+
+          useEffect(() => {
+            localStorage.setItem('appTheme', colorTheme);
+          }, [colorTheme]);
+
+          useEffect(() => {
+            localStorage.setItem('darkMode', isDarkMode);
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+          }, [isDarkMode]);
+
+          useEffect(() => {
+            const observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) setVisibleCount((prev) => prev + 50);
+            }, { threshold: 0.1 });
+            if (loadMoreRef.current) observer.observe(loadMoreRef.current);
+            return () => observer.disconnect();
+          }, [students.length]);
+
+          const handleImport = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            setImporting(true);
+            setImportProgress(0);
+            try {
+              const rows = await readExcel(file);
+              const totalRows = rows.length;
+              let count = 0;
+              let batch = writeBatch(db);
+              let batchCount = 0;
+              
+              for (let i = 0; i < totalRows; i++) {
+                 const row = rows[i];
+                 const fName = row['الاسم الرباعي'] || row['الاسم الكامل'] || row['firstName'] || row['الاسم الأول'];
+                 const reg = row['رقم القيد'] || row['regNumber'];
+                 const page = row['رقم الصفحة'] || row['pageNumber'];
+                 if (fName && reg) {
+                    const ref = doc(studentsCollection);
+                    batch.set(ref, {
+                       firstName: String(fName).trim(),
+                       lastName: row['العائلة'] || '',
+                       regNumber: String(reg).trim(),
+                       pageNumber: String(page || '').trim(),
+                       status: 'active',
+                       isDeleted: false,
+                       createdAt: Date.now() + count
+                    });
+                    count++;
+                    batchCount++;
+                    
+                    if (batchCount === 400) {
+                        await batch.commit();
+                        batch = writeBatch(db);
+                        batchCount = 0;
+                        setImportProgress(Math.round((i / totalRows) * 100));
+                    }
+                 }
+              }
+              
+              if (batchCount > 0) {
+                  await batch.commit();
+              }
+              
+              setImportProgress(100);
+              await refreshStats();
+              setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
+            } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
+            setImporting(false);
+            setTimeout(() => setImportProgress(0), 500);
+          };
+
+          const executeDeleteAll = async () => {
+             setConfirmConfig(null);
+             setLoading(true);
+             try {
+               const snap = await getDocs(studentsCollection);
+               const CHUNK_SIZE = 400;
+               const allDocs = snap.docs;
+               for (let i = 0; i < allDocs.length; i += CHUNK_SIZE) {
+                  const batch = writeBatch(db);
+                  const chunk = allDocs.slice(i, i + CHUNK_SIZE);
+                  chunk.forEach((d) => batch.delete(d.ref));
+                  await batch.commit();
+               }
+               await refreshStats();
+               setAlertConfig({ message: 'تم حذف جميع البيانات بنجاح', type: 'success' });
+               setView('list');
+             } catch (e) { setAlertConfig({ message: "فشل حذف البيانات", type: 'error' }); }
+             finally { setLoading(false); }
+          };
+
+          const handleRestore = async (id) => {
+            try {
+                await updateDoc(doc(db, "students", id), { isDeleted: false });
+                await refreshStats();
+                setAlertConfig({ message: 'تمت استعادة السجل بنجاح', type: 'success' });
+            } catch(e) { console.error(e); }
+          };
+
+          const handleDeleteForever = (id) => {
+            setConfirmConfig({
+                title: "حذف نهائي",
+                message: "هل أنت متأكد من حذف هذا السجل نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+                isDestructive: true,
+                onConfirm: async () => {
+                    await deleteDoc(doc(db, "students", id));
+                    await refreshStats();
+                    setConfirmConfig(null);
+                    setAlertConfig({ message: 'تم الحذف النهائي', type: 'success' });
+                }
+            });
+          };
+
+          const checkSimilarStudents = (val) => {
+            const name = val.trim();
+            if (name.length < 2) {
+                setSimilarStudents([]);
+                return;
+            }
+            const matches = students.filter(s => 
+                !s.isDeleted && 
+                s.id !== selectedId &&
+                s.firstName.includes(name)
+            );
+            setSimilarStudents(matches);
+          };
+
+          const filtered = useMemo(() => {
+            let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted);
+            if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
+            if (yearFilter !== 'ALL') res = res.filter(s => new Date(s.createdAt).getFullYear().toString() === yearFilter);
+            if (statusFilter !== 'ALL') res = res.filter(s => (s.status || 'active') === statusFilter);
+            if (debouncedQuery) {
+               const q = debouncedQuery.toLowerCase();
+               res = res.filter(s => {
+                   const fullName = `${s.firstName} ${s.lastName || ''}`.toLowerCase();
+                   return fullName.includes(q);
+               });
+               res.sort((a, b) => {
+                   const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
+                   const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
+                   
+                   const aIndex = aName.indexOf(q);
+                   const bIndex = bName.indexOf(q);
+                   
+                   if (aIndex !== bIndex) {
+                       return aIndex - bIndex;
+                   }
+                   
+                   if (sortBy === 'alphabetical') return a.firstName.localeCompare(b.firstName);
+                   return b.createdAt - a.createdAt;
+               });
+            } else {
+               if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
+               else res.sort((a,b) => b.createdAt - a.createdAt);
+            }
+            return res;
+          }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]);
+
+          const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
+          const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
+
+          if (!user) return <Login />;
+        
+          return (
+            <>
+              <div className="min-h-screen no-print pb-20">
+                <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80">
+                  <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+                    <div className="flex items-center gap-2 font-bold text-base text-slate-800 cursor-pointer" onClick={() => setView('list')}>
+                      <div className={`${currentTheme.primary} text-white p-1.5 rounded-lg shadow-lg transition-colors`}><Users size={18} /></div>
+                      <span>سجل القيد العام</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => setShowThemeModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Palette size={20} /></button>
+                      <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={20} /></button>
+                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد من تسجيل الخروج؟", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
+                    </div>
+                  </div>
+                </header>
+
+                <main className="max-w-7xl mx-auto px-4 py-4">
+                    {loading && students.length === 0 ? <SkeletonLoader /> : (
+                        <div className="animate-fade-in space-y-4">
+                          {view === 'trash' && (
+                            <div className="flex items-center justify-between bg-red-50 p-3 rounded-xl border border-red-100 animate-slide-up">
+                                <div className="flex items-center gap-2 text-red-700 font-bold text-sm">
+                                    <Trash2 size={20} />
+                                    <span>سلة المحذوفات</span>
+                                </div>
+                                <button onClick={() => setView('list')} className="flex items-center gap-2 bg-white text-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm hover:bg-slate-50 transition-colors"><ArrowLeft size={16}/> العودة إلى الرئيسية</button>
+                            </div>
+                          )}
+
+                          {view !== 'trash' && (
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                <StatCard title="إجمالي الطلاب" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
+                                <StatCard title="عدد القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
+                                <StatCard title="الحالات الأخرى" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
+                            </div>
+                          )}
+
+                          {/* Search Bar - Not Sticky */}
+                          <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
+                             <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
+                                 <Search className="text-slate-400 ml-1" size={16} />
+                                 <input id="searchInput" className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                             </div>
+                          </div>
+
+                          {/* Filters - Not Sticky */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4">
+                              <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
+                                  <option value="">جميع القيود</option>
+                                  {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
+                              </select>
+                              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
+                                  <option value="ALL">جميع الحالات</option>
+                                  <option value="active">مستمر</option>
+                                  <option value="transferred">منقول</option>
+                                  <option value="left">تارك</option>
+                                  <option value="graduated">متخرج</option>
+                              </select>
+                              <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
+                                  <option value="recent">الأحدث أولاً</option>
+                                  <option value="alphabetical">ترتيب أبجدي</option>
+                              </select>
+                              <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
+                                  <option value="ALL">جميع السنوات</option>
+                                  {years.map(y => <option key={y} value={y}>{y}</option>)}
+                              </select>
+                          </div>
+
+                          {/* Action Buttons (Not Sticky) */}
+                          <div className="flex gap-3">
+                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={16} /> إضافة طالب جديد</button>
+                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={16} /> طباعة السجل</button>
+                          </div>
+
+                          <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
+                            <table className="w-full text-right border-collapse">
+                              <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
+                                <tr>
+                                  <th className="px-4 py-2 w-12 text-center">#</th>
+                                  <th className="px-4 py-2">اسم الطالب</th>
+                                  <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
+                                  <th className="px-4 py-2 w-24 text-center">الصفحة</th>
+                                  {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 text-xs">
+                                {displayed.map((s, idx) => (
+                                  <tr key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                    <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
+                                    <td className="px-4 py-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
+                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
+                                    <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
+                                    {view === 'trash' && (
+                                        <td className="px-4 py-2 text-center flex gap-1 justify-center">
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                                        </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <div className="md:hidden space-y-2 mt-3">
+                             {displayed.map((s, idx) => (
+                                 <div key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                    <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
+                                       <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
+                                       {cleanName(s.firstName)} {s.lastName || ""}
+                                    </h3>
+                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
+                                        <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
+                                        <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
+                                    </div>
+                                    {view === 'trash' && (
+                                        <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
+                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
+                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
+                                        </div>
+                                    )}
+                                 </div>
+                             ))}
+                          </div>
+                          <div ref={loadMoreRef} className="h-10"></div>
+                        </div>
+                    )}
+                </main>
+
+                {showScrollTop && (
+                    <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50 animate-fade-in">
+                        <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="بحث">
+                            <Search size={20} />
+                        </button>
+                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}>
+                            <ArrowUp size={20} />
+                        </button>
+                    </div>
+                )}
+
+                {(view === 'add' || view === 'edit') && (
+                    <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
+                      <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4">
+                        <h2 className="text-lg font-bold">{view === 'add' ? 'إضافة طالب جديد' : 'تعديل بيانات الطالب'}</h2>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            const form = new FormData(e.target);
+                            const regNum = String(form.get('regNumber')).trim();
+                            const pageNum = String(form.get('pageNumber')).trim();
+                            
+                            const isDuplicate = students.some(s => 
+                                !s.isDeleted && 
+                                s.regNumber === regNum && 
+                                s.pageNumber === pageNum && 
+                                s.id !== selectedId
+                            );
+
+                            if (isDuplicate) {
+                                setAlertConfig({ message: "خطأ: هذا القيد مسجل بالفعل في نفس الصفحة لطالب آخر", type: 'error' });
+                                return;
+                            }
+
+                            const data = {
+                                firstName: form.get('firstName'),
+                                lastName: form.get('lastName'),
+                                regNumber: regNum,
+                                pageNumber: pageNum,
+                                notes: form.get('notes'),
+                                status: form.get('status') || 'active',
+                                isDeleted: false,
+                                createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now()
+                            };
+                            try {
+                                if (view === 'edit') {
+                                    await updateDoc(doc(db, "students", selectedId), data);
+                                    setAlertConfig({ message: 'تم تعديل البيانات بنجاح', type: 'success' });
+                                } else {
+                                    await addDoc(studentsCollection, data);
+                                    setAlertConfig({ message: 'تم إضافة الطالب بنجاح', type: 'success' });
+                                }
+                                await refreshStats();
+                                setView('list');
+                                setSimilarStudents([]);
+                            } catch(err) { setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); }
+                        }} className="space-y-3">
+                           <div>
+                               <input 
+                                   name="firstName" 
+                                   required 
+                                   defaultValue={view === 'edit' ? cleanName(students.find(s=>s.id===selectedId)?.firstName) : ''} 
+                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} 
+                                   placeholder="الاسم الرباعي" 
+                                   onChange={(e) => checkSimilarStudents(e.target.value)} 
+                                   autoComplete="off"
+                               />
+                               {similarStudents.length > 0 && (
+                                   <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 animate-fade-in">
+                                       <div className="flex items-center gap-1 text-amber-800 font-bold text-[10px] mb-1">
+                                            <AlertTriangle size={12}/>
+                                           <span>تنبيه: توجد أسماء مشابهة مسجلة مسبقاً</span>
+                                       </div>
+                                       <div className="max-h-24 overflow-y-auto space-y-1">
+                                           {similarStudents.map(s => (
+                                               <div key={s.id} className="flex justify-between items-center bg-white p-1.5 rounded-lg border border-amber-100 text-[10px]">
+                                                   <span className="font-bold text-slate-700 truncate ml-1">{cleanName(s.firstName)} {s.lastName || ''}</span>
+                                                   <div className="flex gap-1 flex-shrink-0">
+                                                       <span className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono font-bold">قيد {s.regNumber}</span>
+                                                       <span className="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded font-mono font-bold">صفحة {s.pageNumber}</span>
+                                                   </div>
+                                               </div>
+                                           ))}
+                                       </div>
+                                   </div>
+                               )}
+                           </div>
+                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="العائلة (اختياري)" />
+                           <div className="grid grid-cols-2 gap-3">
+                             <input name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
+                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
+                           </div>
+                           <input type="date" name="createdAt" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} />
+                           <div>
+                              <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">الوضع الأكاديمي</label>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">مستمر</div>
+                                </label>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} />
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">منقول</div>
+                                </label>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">تارك</div>
+                                </label>
+                                <label className="cursor-pointer group">
+                                    <input type="radio" name="status" value="graduated" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'graduated'} />
+                                    <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">متخرج</div>
+                                </label>
+                              </div>
+                           </div>
+                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
+                           <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>حفظ البيانات</button>
+                        </form>
+                      </div>
+                    </Modal>
+                )}
+
+                {showThemeModal && (
+                  <Modal onClose={() => setShowThemeModal(false)}>
+                    <div className="bg-white rounded-2xl p-5 text-center space-y-4 shadow-xl">
+                       <h3 className="text-lg font-bold">اختر لون التطبيق</h3>
+                       <div className="grid grid-cols-2 gap-3">
+                          {Object.entries(themeColors).map(([key, value]) => (
+                            <button 
+                              key={key} 
+                              onClick={() => { setColorTheme(key); setShowThemeModal(false); }}
+                              className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${colorTheme === key ? `border-black bg-slate-50` : 'border-transparent hover:bg-slate-50'}`}
+                            >
+                               <div className={`w-6 h-6 rounded-full ${value.primary}`}></div>
+                               <span className="font-bold text-slate-700 text-sm">{value.name}</span>
+                            </button>
+                          ))}
+                       </div>
+                       <button onClick={() => setShowThemeModal(false)} className="w-full py-2.5 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm">إغلاق</button>
+                    </div>
+                  </Modal>
+                )}
+
+                {view === 'settings' && (
+                    <Modal onClose={() => setView('list')}>
+                      <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3">
+                        <h2 className="text-lg font-bold flex items-center gap-2"><Settings size={18}/> الإعدادات</h2>
+                        <button onClick={() => setIsDarkMode(!isDarkMode)} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center">
+                            <span className="flex items-center gap-2">{isDarkMode ? <Sun size={18} className="text-amber-500"/> : <Moon size={18} className="text-slate-600"/>} {isDarkMode ? 'الوضع النهاري' : 'الوضع الليلي'}</span>
+                        </button>
+                        <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"><span>سلة المحذوفات</span> <ArrowRight size={16}/></button>
+                        <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button>
+                        <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير إلى Excel</button>
+                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> إنشاء نموذج (2000 طالب)</button>
+                        <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}>
+                            <span className="flex items-center gap-2"><Upload size={18}/> استيراد من Excel</span>
+                            <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
+                        </label>
+                        <div className="pt-3 border-t border-slate-100 mt-1">
+                           <button onClick={() => setConfirmConfig({ title: "حذف جميع البيانات", message: "هل أنت متأكد من حذف جميع البيانات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> حذف جميع البيانات</button>
+                        </div>
+                      </div>
+                    </Modal>
+                )}
+
+                {view === 'stats' && (
+                    <Modal onClose={() => setView('list')}>
+                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <BarChart3 size={20} className="text-blue-600" /> توزيع الطلاب حسب القيد
+                            </h2>
+                            <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                <table className="w-full text-right border-collapse">
+                                    <thead className="bg-slate-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {regStats.length > 0 ? regStats.map((item) => (
+                                            <tr key={item.reg} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-3 font-bold text-slate-700 text-sm align-top">قيد {item.reg}</td>
+                                                <td className="p-3 font-bold text-slate-900 text-sm">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded-lg w-fit text-xs">
+                                                            الإجمالي: {item.total} طالب
+                                                        </span>
+                                                        <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                                            {item.active > 0 && <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">مستمر: {item.active}</span>}
+                                                            {item.transferred > 0 && <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">منقول: {item.transferred}</span>}
+                                                            {item.left > 0 && <span className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">تارك: {item.left}</span>}
+                                                            {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">متخرج: {item.graduated}</span>}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )) : (
+                                            <tr>
+                                                <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
+                        </div>
+                    </Modal>
+                )}
+
+                {view === 'statusStats' && (
+                    <Modal onClose={() => setView('list')}>
+                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
+                            <h2 className="text-lg font-bold flex items-center gap-2">
+                                <PieChart size={20} className="text-amber-500" /> إحصائيات الوضع الأكاديمي
+                            </h2>
+                            <div className="overflow-y-auto flex-1 custom-scrollbar">
+                                <table className="w-full text-right border-collapse">
+                                    <thead className="bg-slate-50 sticky top-0 z-10">
+                                        <tr>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">الوضع الأكاديمي</th>
+                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {statusStats.map((item) => (
+                                            <tr key={item.label} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-3 font-bold text-slate-700 text-sm">{item.label}</td>
+                                                <td className="p-3 font-bold text-sm">
+                                                    <span className={`px-2 py-1 rounded-lg ${item.color}`}>
+                                                        {item.count} طالب
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
+                        </div>
+                    </Modal>
+                )}
+
+                {view === 'detail' && selectedId && (() => {
+                    const s = students.find(x => x.id === selectedId);
+                    if (!s) return null;
+                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+                    const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700', 'graduated': 'bg-blue-100 text-blue-700' };
+
+                    return (
+                      <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
+                         <div className="bg-white rounded-3xl shadow-2xl p-5 md:p-6 space-y-6 animate-slide-up relative overflow-hidden">
+                             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full -mr-8 -mt-8"></div>
+            
+                            <div className="relative">
+                                <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{cleanName(s.firstName)}</h1>
+                                <h2 className="text-lg font-bold text-slate-400">{s.lastName || ""}</h2>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                               <div className={`${currentTheme.primary} text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]`}>
+                                   <span className="text-slate-200 text-[10px] font-bold uppercase tracking-wider mb-1">رقم القيد</span>
+                                   <span className="text-3xl font-mono font-black">{s.regNumber}</span>
+                               </div>
+                               <div className="bg-white border-2 border-slate-100 p-4 rounded-xl shadow-sm flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]">
+                                   <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">رقم الصفحة</span>
+                                   <span className="text-3xl font-mono font-black text-slate-800">{s.pageNumber}</span>
+                               </div>
+                            </div>
+
+                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
+                                <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-white rounded-lg shadow-sm"><Calendar size={16} className="text-slate-500"/></div>
+                                        <div>
+                                            <div className="text-[10px] font-bold text-slate-400">تاريخ القيد</div>
+                                            <div className="font-bold text-slate-800 text-sm">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-1.5 bg-white rounded-lg shadow-sm"><Info size={16} className="text-slate-500"/></div>
+                                        <div>
+                                            <div className="text-[10px] font-bold text-slate-400">الوضع الأكاديمي</div>
+                                            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold mt-0.5 ${statusColors[s.status] || statusColors['active']}`}>
+                                                {statusLabels[s.status] || 'مستمر'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {s.notes && (
+                                    <div className="pt-3 border-t border-slate-200">
+                                        <div className="text-[10px] font-bold text-slate-400 mb-1">ملاحظات</div>
+                                        <p className="text-slate-700 font-medium leading-relaxed text-sm">{s.notes}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}><Printer size={18}/> طباعة البطاقة الشخصية</button>
+                            <div className="flex gap-2">
+                                <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">تعديل البيانات</button>
+                                {view !== 'trash' && (
+                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button>
+                                )}
+                            </div>
+                         </div>
+                      </Modal>
+                    );
+                })()}
+
+                {showPrintModal && (
+                    <Modal onClose={() => setShowPrintModal(false)}>
+                       <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl">
+                          <h3 className="text-lg font-bold">خيارات الطباعة</h3>
+                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>طباعة السجل الحالي بالكامل</button>
+                          <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div>
+                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
+                               <option value="">اختر رقم القيد...</option>
+                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
+                          </select>
+                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>طباعة القيد المحدد</button>
+                       </div>
+                    </Modal>
+                )}
+
+                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
+                {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
+                
+                {importing && (
+                  <Modal onClose={() => {}} zIndex="z-[80]">
+                    <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
+                      <div className="relative flex items-center justify-center">
+                          <div className="animate-spin text-blue-600"><Loader2 size={64} /></div>
+                          <div className="absolute text-sm font-bold text-blue-800" dir="ltr">{importProgress}%</div>
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-800">جاري استيراد البيانات...</h3>
+                      <p className="text-slate-500">يرجى الانتظار قليلاً</p>
+                      <div className="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
+                          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}></div>
+                      </div>
+                    </div>
+                  </Modal>
+                )}
+              </div>
+              
+              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `كشف الطلاب - قيد رقم ${selectedRegFilter}` : "كشف القيد العام"} />}
+              {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
+            </>
+          );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
