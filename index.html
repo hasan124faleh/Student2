@@ -435,10 +435,10 @@
                            <table className="w-full border-collapse table-fixed">
                              <thead>
                                <tr className="bg-gray-100 h-[36px]">
-                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">م</th>
+                                 <th className="p-1 text-center w-[35px] text-[8.5pt]">ت</th>
                                  <th className="p-1 text-right">الاسم الكامل</th>
                                  <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>
-                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">صفحة</th>
+                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>
                                </tr>
                              </thead>
                              <tbody>
@@ -845,10 +845,9 @@
                           )}
 
                           {view !== 'trash' && (
-                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
                                 <StatCard title="إجمالي الطلاب" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
                                 <StatCard title="عدد القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
-                                <StatCard title="الحالات الأخرى" value={stats.total - stats.active - stats.graduated} icon={<AlertTriangle size={18}/>} colorClass="bg-amber-500" onClick={() => setView('statusStats')} />
                             </div>
                           )}
 
@@ -907,7 +906,9 @@
                                     <td className="px-4 py-2">
                                         <div className="flex items-center gap-2">
                                             <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
-                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{cleanName(s.firstName)} {s.lastName || ""}</span>
+                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
+                                                {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
@@ -930,7 +931,7 @@
                                     <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
                                     <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
                                        <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
-                                       {cleanName(s.firstName)} {s.lastName || ""}
+                                       {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
                                     </h3>
                                     <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
                                         <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
