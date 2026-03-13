@@ -37,6 +37,38 @@
         color: #1e293b;
         overflow-x: hidden;
       }
+      /* Tooltip Styles */
+      [data-tooltip] {
+        position: relative;
+        cursor: pointer;
+      }
+      [data-tooltip]:before {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 8px;
+        padding: 6px 12px;
+        background-color: #1e293b;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        white-space: nowrap;
+        border-radius: 8px;
+        z-index: 60;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        pointer-events: none;
+      }
+      [data-tooltip]:hover:before {
+        opacity: 1;
+        visibility: visible;
+        margin-bottom: 12px;
+      }
+      
       /* Print Styles */
       @media print {
         @page { 
@@ -127,6 +159,53 @@
       .animate-fade-in { animation: fade-in 0.2s ease-out; }
       @keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       .animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+      
+      /* Fullscreen Mode */
+      .fullscreen-mode {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 9999;
+        background-color: inherit;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+      
+      /* Voice Search Animation */
+      .voice-listening {
+        animation: pulse 1.5s infinite;
+      }
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      }
+      
+      /* Offline Indicator */
+      .offline-indicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #f59e0b;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: bold;
+        z-index: 100;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        animation: slide-up 0.3s ease;
+      }
+      
+      /* Print Template Selector */
+      .print-template-item {
+        transition: all 0.2s ease;
+      }
+      .print-template-item:hover {
+        transform: translateX(-4px);
+      }
     </style>
 
     <!-- React & Babel Support -->
@@ -155,10 +234,10 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, MessageSquare, Grid, List, CheckSquare
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
-        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer } from "firebase/firestore";
+        import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer, enableNetwork, disableNetwork } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
 
@@ -322,8 +401,12 @@
           </Modal>
         );
 
-        const StatCard = ({ title, value, icon, colorClass, onClick }) => (
-          <div onClick={onClick} className={`bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md transition-all ${onClick ? 'cursor-pointer active:scale-95' : ''}`}>
+        const StatCard = ({ title, value, icon, colorClass, onClick, tooltip }) => (
+          <div 
+            onClick={onClick} 
+            data-tooltip={tooltip}
+            className={`bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md transition-all ${onClick ? 'cursor-pointer active:scale-95' : ''}`}
+          >
             <div className={`p-2 rounded-xl ${colorClass} text-white shadow-md`}>{icon}</div>
             <div>
               <div className="text-xl font-black text-slate-800 font-mono">{value}</div>
@@ -401,7 +484,7 @@
           );
         };
 
-        const PrintView = ({ students, title }) => {
+        const PrintView = ({ students, title, selectedFields = ['name', 'regNumber', 'pageNumber'] }) => {
           const sortedStudents = useMemo(() => {
              return [...students].sort((a, b) => a.firstName.localeCompare(b.firstName)).map((s, i) => ({ ...s, printIndex: i + 1 }));
           }, [students]);
@@ -436,20 +519,31 @@
                              <thead>
                                <tr className="bg-gray-100 h-[36px]">
                                  <th className="p-1 text-center w-[35px] text-[8.5pt]">ت</th>
-                                 <th className="p-1 text-right">الاسم الكامل</th>
-                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>
-                                 <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>
+                                 {selectedFields.includes('name') && <th className="p-1 text-right">الاسم الكامل</th>}
+                                 {selectedFields.includes('regNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>}
+                                 {selectedFields.includes('pageNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>}
+                                 {selectedFields.includes('status') && <th className="p-1 text-center w-[50px] font-bold text-[8.5pt]">الحالة</th>}
                                </tr>
                              </thead>
                              <tbody>
                                {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
                                  const s = colStudents[rowIndex];
+                                 const statusMap = { 'active': 'م', 'transferred': 'ن', 'left': 'ت', 'graduated': 'خ' };
                                  return (
                                    <tr key={rowIndex} className="h-[31px]">
                                      <td className="px-1 text-center font-medium whitespace-nowrap">{s ? s.printIndex : ''}</td>
-                                     <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) + ' ' + (s.lastName || '') : ''}</td>
-                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
-                                     <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
+                                     {selectedFields.includes('name') && (
+                                       <td className="px-2 align-middle whitespace-nowrap overflow-hidden leading-relaxed font-bold">{s ? cleanName(s.firstName) + ' ' + (s.lastName || '') : ''}</td>
+                                     )}
+                                     {selectedFields.includes('regNumber') && (
+                                       <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.regNumber : ''}</td>
+                                     )}
+                                     {selectedFields.includes('pageNumber') && (
+                                       <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? s.pageNumber : ''}</td>
+                                     )}
+                                     {selectedFields.includes('status') && (
+                                       <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? statusMap[s.status || 'active'] : ''}</td>
+                                     )}
                                    </tr>
                                  );
                                })}
@@ -529,10 +623,110 @@
           const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
           const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
           const [showThemeModal, setShowThemeModal] = useState(false);
+          
+          // New state for enhanced features
+          const [isFullscreen, setIsFullscreen] = useState(false);
+          const [isOffline, setIsOffline] = useState(!navigator.onLine);
+          const [isListening, setIsListening] = useState(false);
+          const [selectedStudents, setSelectedStudents] = useState([]);
+          const [showPrintTemplateModal, setShowPrintTemplateModal] = useState(false);
+          const [printTemplateFields, setPrintTemplateFields] = useState(['name', 'regNumber', 'pageNumber']);
+          const [showShareModal, setShowShareModal] = useState(false);
+          const [shareText, setShareText] = useState('');
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
           const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
+
+          // Keyboard shortcuts
+          useEffect(() => {
+            const handleKeyDown = (e) => {
+              // Ctrl+F for search
+              if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput')?.focus();
+              }
+              // Ctrl+P for print
+              if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                setShowPrintModal(true);
+              }
+              // Ctrl+N for new student
+              if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                setSelectedId(null);
+                setView('add');
+                setSimilarStudents([]);
+              }
+              // Esc to close modals
+              if (e.key === 'Escape') {
+                setShowPrintModal(false);
+                setShowThemeModal(false);
+                setShowPrintTemplateModal(false);
+                setShowShareModal(false);
+              }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+          }, []);
+
+          // Online/Offline detection
+          useEffect(() => {
+            const handleOnline = () => {
+              setIsOffline(false);
+              enableNetwork(db).then(() => {
+                setAlertConfig({ message: 'تم الاتصال بالإنترنت، جاري المزامنة...', type: 'success' });
+              });
+            };
+            const handleOffline = () => {
+              setIsOffline(true);
+              disableNetwork(db);
+              setAlertConfig({ message: 'أنت الآن في وضع عدم الاتصال. سيتم المزامنة تلقائياً عند الاتصال.', type: 'warning' });
+            };
+            
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+            
+            return () => {
+              window.removeEventListener('online', handleOnline);
+              window.removeEventListener('offline', handleOffline);
+            };
+          }, []);
+
+          // Voice search
+          const startVoiceSearch = () => {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+              setAlertConfig({ message: 'متصفحك لا يدعم البحث الصوتي', type: 'error' });
+              return;
+            }
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = () => {
+              setIsListening(true);
+            };
+            
+            recognition.onresult = (event) => {
+              const transcript = event.results[0][0].transcript;
+              setSearch(transcript);
+              setIsListening(false);
+            };
+            
+            recognition.onerror = () => {
+              setIsListening(false);
+              setAlertConfig({ message: 'فشل التعرف على الصوت، حاول مرة أخرى', type: 'error' });
+            };
+            
+            recognition.onend = () => {
+              setIsListening(false);
+            };
+            
+            recognition.start();
+          };
 
           const regsCount = useMemo(() => {
              return new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber)).size;
@@ -777,6 +971,24 @@
             setSimilarStudents(matches);
           };
 
+          // Share via WhatsApp
+          const shareViaWhatsApp = (studentsToShare) => {
+            const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+            let text = "📋 *سجل القيد العام - بيانات الطلاب*\n\n";
+            
+            studentsToShare.forEach((s, index) => {
+              text += `*${index + 1}. ${cleanName(s.firstName)} ${s.lastName || ''}*\n`;
+              text += `📌 رقم القيد: ${s.regNumber}\n`;
+              text += `📄 رقم الصفحة: ${s.pageNumber}\n`;
+              text += `🎓 الحالة: ${statusMap[s.status || 'active']}\n`;
+              if (s.notes) text += `📝 ملاحظات: ${s.notes}\n`;
+              text += `📅 تاريخ القيد: ${new Date(s.createdAt).toLocaleDateString('ar-EG')}\n\n`;
+            });
+            
+            setShareText(text);
+            setShowShareModal(true);
+          };
+
           const filtered = useMemo(() => {
             let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted);
             if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
@@ -810,13 +1022,33 @@
           }, [students, debouncedQuery, selectedRegFilter, statusFilter, sortBy, yearFilter, view]);
 
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
-          const arabicLetters = ['أ', 'ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'هـ', 'و', 'ي'];
+          
+          // Toggle fullscreen
+          const toggleFullscreen = () => {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen();
+              setIsFullscreen(true);
+            } else {
+              if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullscreen(false);
+              }
+            }
+          };
 
           if (!user) return <Login />;
         
           return (
             <>
-              <div className="min-h-screen no-print pb-20">
+              <div className={`min-h-screen no-print pb-20 ${isFullscreen ? 'fullscreen-mode' : ''}`}>
+                {/* Offline Indicator */}
+                {isOffline && (
+                  <div className="offline-indicator flex items-center gap-2">
+                    <WifiOff size={16} />
+                    <span>وضع عدم الاتصال</span>
+                  </div>
+                )}
+
                 <header className="bg-white border-b sticky top-0 z-40 shadow-sm backdrop-blur-md bg-white/80">
                   <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2 font-bold text-base text-slate-800 cursor-pointer" onClick={() => setView('list')}>
@@ -824,9 +1056,35 @@
                       <span>سجل القيد العام</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <button onClick={() => setShowThemeModal(true)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Palette size={20} /></button>
-                      <button onClick={() => setView('settings')} className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"><Settings size={20} /></button>
-                      <button onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد من تسجيل الخروج؟", onConfirm: () => signOut(auth) })} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={20} /></button>
+                      {/* Tooltip buttons */}
+                      <button 
+                        onClick={toggleFullscreen} 
+                        data-tooltip={isFullscreen ? 'خروج من ملء الشاشة' : 'وضع ملء الشاشة'}
+                        className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                      </button>
+                      <button 
+                        onClick={() => setShowThemeModal(true)} 
+                        data-tooltip="تغيير ألوان التطبيق"
+                        className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        <Palette size={20} />
+                      </button>
+                      <button 
+                        onClick={() => setView('settings')} 
+                        data-tooltip="الإعدادات"
+                        className="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+                      >
+                        <Settings size={20} />
+                      </button>
+                      <button 
+                        onClick={() => setConfirmConfig({ title: "تسجيل خروج", message: "هل أنت متأكد من تسجيل الخروج؟", onConfirm: () => signOut(auth) })} 
+                        data-tooltip="تسجيل الخروج"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <LogOut size={20} />
+                      </button>
                     </div>
                   </div>
                 </header>
@@ -845,21 +1103,75 @@
                           )}
 
                           {view !== 'trash' && (
-                            <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
-                                <StatCard title="إجمالي الطلاب" value={students.filter(s => !s.isDeleted).length} icon={<Users size={18}/>} colorClass={currentTheme.secondary} />
-                                <StatCard title="عدد القيود" value={regsCount} icon={<FileSpreadsheet size={18}/>} colorClass="bg-indigo-600" onClick={() => setView('stats')} />
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                                <StatCard 
+                                  title="إجمالي الطلاب" 
+                                  value={students.filter(s => !s.isDeleted).length} 
+                                  icon={<Users size={18}/>} 
+                                  colorClass={currentTheme.secondary}
+                                  tooltip="عدد الطلاب المسجلين في النظام"
+                                />
+                                <StatCard 
+                                  title="عدد القيود" 
+                                  value={regsCount} 
+                                  icon={<FileSpreadsheet size={18}/>} 
+                                  colorClass="bg-indigo-600" 
+                                  onClick={() => setView('stats')}
+                                  tooltip="عرض إحصائيات تفصيلية حسب رقم القيد"
+                                />
+                                <StatCard 
+                                  title="المحدد" 
+                                  value={selectedStudents.length} 
+                                  icon={<CheckSquare size={18}/>} 
+                                  colorClass="bg-purple-600"
+                                  tooltip="عدد الطلاب المحددين للمشاركة"
+                                />
                             </div>
                           )}
 
-                          {/* Search Bar - Not Sticky */}
+                          {/* Search Bar with Voice */}
                           <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
                              <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
                                  <Search className="text-slate-400 ml-1" size={16} />
-                                 <input id="searchInput" className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" placeholder="ابحث باسم الطالب..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                                 <input 
+                                   id="searchInput" 
+                                   className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" 
+                                   placeholder="ابحث باسم الطالب... (Ctrl+F)" 
+                                   value={search} 
+                                   onChange={(e) => setSearch(e.target.value)} 
+                                 />
+                                 <button 
+                                   onClick={startVoiceSearch}
+                                   data-tooltip="بحث صوتي"
+                                   className={`p-1.5 rounded-full transition-all ${isListening ? 'voice-listening bg-red-100 text-red-600' : 'hover:bg-slate-100 text-slate-400'}`}
+                                 >
+                                   {isListening ? <Mic size={16} className="text-red-600" /> : <Mic size={16} />}
+                                 </button>
                              </div>
                           </div>
 
-                          {/* Filters - Not Sticky */}
+                          {/* Selection Actions */}
+                          {selectedStudents.length > 0 && (
+                            <div className="bg-blue-50 p-2 rounded-xl border border-blue-200 flex items-center justify-between animate-fade-in">
+                              <span className="text-xs font-bold text-blue-700">تم تحديد {selectedStudents.length} طالب</span>
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => shareViaWhatsApp(selectedStudents.map(id => students.find(s => s.id === id)).filter(Boolean))}
+                                  className="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                                >
+                                  <Share2 size={14} /> مشاركة
+                                </button>
+                                <button 
+                                  onClick={() => setSelectedStudents([])}
+                                  className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold"
+                                >
+                                  إلغاء التحديد
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Filters */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4">
                               <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
                                   <option value="">جميع القيود</option>
@@ -882,29 +1194,83 @@
                               </select>
                           </div>
 
-                          {/* Action Buttons (Not Sticky) */}
+                          {/* Action Buttons */}
                           <div className="flex gap-3">
-                                <button onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}><Plus size={16} /> إضافة طالب جديد</button>
-                                <button onClick={() => setShowPrintModal(true)} className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"><Printer size={16} /> طباعة السجل</button>
+                                <button 
+                                  onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} 
+                                  data-tooltip="إضافة طالب جديد (Ctrl+N)"
+                                  className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}
+                                >
+                                  <Plus size={16} /> إضافة طالب جديد
+                                </button>
+                                <button 
+                                  onClick={() => setShowPrintModal(true)} 
+                                  data-tooltip="طباعة السجل (Ctrl+P)"
+                                  className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+                                >
+                                  <Printer size={16} /> طباعة السجل
+                                </button>
+                                <button 
+                                  onClick={() => setShowPrintTemplateModal(true)}
+                                  data-tooltip="تخصيص قالب الطباعة"
+                                  className="flex-1 bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"
+                                >
+                                  <FileText size={16} /> تخصيص الطباعة
+                                </button>
                           </div>
 
+                          {/* Desktop Table View */}
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
                             <table className="w-full text-right border-collapse">
                               <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
                                 <tr>
+                                  <th className="px-2 py-2 w-12 text-center">
+                                    <input 
+                                      type="checkbox" 
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedStudents(displayed.map(s => s.id));
+                                        } else {
+                                          setSelectedStudents([]);
+                                        }
+                                      }}
+                                      checked={selectedStudents.length === displayed.length && displayed.length > 0}
+                                      className="rounded border-slate-300"
+                                    />
+                                  </th>
                                   <th className="px-4 py-2 w-12 text-center">#</th>
                                   <th className="px-4 py-2">اسم الطالب</th>
                                   <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
                                   <th className="px-4 py-2 w-24 text-center">الصفحة</th>
+                                  <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                   {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100 text-xs">
                                 {displayed.map((s, idx) => (
-                                  <tr key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`hover:bg-blue-50/40 cursor-pointer transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                  <tr key={s.id} className={`hover:bg-blue-50/40 transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                    <td className="px-2 py-2 text-center">
+                                      <input 
+                                        type="checkbox"
+                                        checked={selectedStudents.includes(s.id)}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          if (e.target.checked) {
+                                            setSelectedStudents([...selectedStudents, s.id]);
+                                          } else {
+                                            setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                          }
+                                        }}
+                                        className="rounded border-slate-300"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    </td>
                                     <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
                                     <td className="px-4 py-2">
-                                        <div className="flex items-center gap-2">
+                                        <div 
+                                          className="flex items-center gap-2 cursor-pointer" 
+                                          onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                        >
                                             <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
                                             <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
                                                 {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
@@ -913,6 +1279,16 @@
                                     </td>
                                     <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                     <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
+                                    <td className="px-4 py-2 text-center">
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                        s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
+                                        s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
+                                        s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
+                                        'bg-emerald-100 text-emerald-700'
+                                      }`}>
+                                        {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
+                                      </span>
+                                    </td>
                                     {view === 'trash' && (
                                         <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                              <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
@@ -925,24 +1301,53 @@
                             </table>
                           </div>
 
+                          {/* Mobile Card View */}
                           <div className="md:hidden space-y-2 mt-3">
                              {displayed.map((s, idx) => (
-                                 <div key={s.id} onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}} className={`bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors ${view === 'trash' ? 'cursor-default' : ''}`}>
-                                    <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center">
-                                       <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
-                                       {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
-                                    </h3>
-                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2">
-                                        <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
-                                        <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
+                                 <div key={s.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
+                                    <div className="absolute top-2 right-2">
+                                      <input 
+                                        type="checkbox"
+                                        checked={selectedStudents.includes(s.id)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedStudents([...selectedStudents, s.id]);
+                                          } else {
+                                            setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                          }
+                                        }}
+                                        className="rounded border-slate-300 ml-2"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
                                     </div>
-                                    {view === 'trash' && (
-                                        <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2">
+                                    <div 
+                                      className={`${view === 'trash' ? 'cursor-default' : 'cursor-pointer'}`}
+                                      onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                    >
+                                      <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                      <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center mr-8">
+                                         <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
+                                         {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
+                                      </h3>
+                                      <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 mr-8">
+                                          <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
+                                          <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
+                                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                            s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
+                                            s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
+                                            s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
+                                            'bg-emerald-100 text-emerald-700'
+                                          }`}>
+                                            {s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}
+                                          </span>
+                                      </div>
+                                      {view === 'trash' && (
+                                        <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2 mr-8">
                                              <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
                                              <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
                                         </div>
-                                    )}
+                                      )}
+                                    </div>
                                  </div>
                              ))}
                           </div>
@@ -953,15 +1358,24 @@
 
                 {showScrollTop && (
                     <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50 animate-fade-in">
-                        <button onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" title="بحث">
+                        <button 
+                          onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => document.getElementById('searchInput')?.focus(), 500); }} 
+                          className="bg-white text-slate-700 p-2.5 rounded-full shadow-xl border border-slate-200 hover:bg-slate-50 transition-all" 
+                          data-tooltip="بحث"
+                        >
                             <Search size={20} />
                         </button>
-                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}>
+                        <button 
+                          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} 
+                          className={`${currentTheme.primary} ${currentTheme.hover} text-white p-2.5 rounded-full shadow-xl transition-all`}
+                          data-tooltip="العودة للأعلى"
+                        >
                             <ArrowUp size={20} />
                         </button>
                     </div>
                 )}
 
+                {/* Add/Edit Modal */}
                 {(view === 'add' || view === 'edit') && (
                     <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
                       <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4">
@@ -1071,6 +1485,7 @@
                     </Modal>
                 )}
 
+                {/* Theme Modal */}
                 {showThemeModal && (
                   <Modal onClose={() => setShowThemeModal(false)}>
                     <div className="bg-white rounded-2xl p-5 text-center space-y-4 shadow-xl">
@@ -1092,6 +1507,7 @@
                   </Modal>
                 )}
 
+                {/* Settings Modal */}
                 {view === 'settings' && (
                     <Modal onClose={() => setView('list')}>
                       <div className="bg-white rounded-2xl shadow-xl p-5 space-y-3">
@@ -1114,6 +1530,7 @@
                     </Modal>
                 )}
 
+                {/* Stats Modal */}
                 {view === 'stats' && (
                     <Modal onClose={() => setView('list')}>
                         <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
@@ -1159,39 +1576,174 @@
                     </Modal>
                 )}
 
-                {view === 'statusStats' && (
-                    <Modal onClose={() => setView('list')}>
-                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
-                            <h2 className="text-lg font-bold flex items-center gap-2">
-                                <PieChart size={20} className="text-amber-500" /> إحصائيات الوضع الأكاديمي
-                            </h2>
-                            <div className="overflow-y-auto flex-1 custom-scrollbar">
-                                <table className="w-full text-right border-collapse">
-                                    <thead className="bg-slate-50 sticky top-0 z-10">
-                                        <tr>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">الوضع الأكاديمي</th>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {statusStats.map((item) => (
-                                            <tr key={item.label} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-3 font-bold text-slate-700 text-sm">{item.label}</td>
-                                                <td className="p-3 font-bold text-sm">
-                                                    <span className={`px-2 py-1 rounded-lg ${item.color}`}>
-                                                        {item.count} طالب
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
-                        </div>
+                {/* Print Template Customization Modal */}
+                {showPrintTemplateModal && (
+                  <Modal onClose={() => setShowPrintTemplateModal(false)}>
+                    <div className="bg-white rounded-2xl p-5 space-y-4">
+                      <h3 className="text-lg font-bold">تخصيص قالب الطباعة</h3>
+                      <p className="text-xs text-slate-500">اختر الحقول التي تريد ظهورها في المطبوعات</p>
+                      
+                      <div className="space-y-3">
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
+                          <span className="font-bold text-sm">الاسم الكامل</span>
+                          <input 
+                            type="checkbox" 
+                            checked={printTemplateFields.includes('name')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setPrintTemplateFields([...printTemplateFields, 'name']);
+                              } else {
+                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'name'));
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </label>
+                        
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
+                          <span className="font-bold text-sm">رقم القيد</span>
+                          <input 
+                            type="checkbox" 
+                            checked={printTemplateFields.includes('regNumber')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setPrintTemplateFields([...printTemplateFields, 'regNumber']);
+                              } else {
+                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'regNumber'));
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </label>
+                        
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
+                          <span className="font-bold text-sm">رقم الصفحة</span>
+                          <input 
+                            type="checkbox" 
+                            checked={printTemplateFields.includes('pageNumber')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setPrintTemplateFields([...printTemplateFields, 'pageNumber']);
+                              } else {
+                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'pageNumber'));
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </label>
+                        
+                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
+                          <span className="font-bold text-sm">الحالة الدراسية (م - ن - ت - خ)</span>
+                          <input 
+                            type="checkbox" 
+                            checked={printTemplateFields.includes('status')}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setPrintTemplateFields([...printTemplateFields, 'status']);
+                              } else {
+                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'status'));
+                              }
+                            }}
+                            className="rounded border-slate-300"
+                          />
+                        </label>
+                      </div>
+
+                      <div className="flex gap-3 pt-3">
+                        <button 
+                          onClick={() => {
+                            setPrintTemplateFields(['name', 'regNumber', 'pageNumber', 'status']);
+                            setShowPrintTemplateModal(false);
+                          }}
+                          className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm"
+                        >
+                          تطبيق وحفظ
+                        </button>
+                        <button 
+                          onClick={() => setShowPrintTemplateModal(false)}
+                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
+                        >
+                          إغلاق
+                        </button>
+                      </div>
+                    </div>
+                  </Modal>
+                )}
+
+                {/* Share Modal */}
+                {showShareModal && (
+                  <Modal onClose={() => setShowShareModal(false)}>
+                    <div className="bg-white rounded-2xl p-5 space-y-4">
+                      <h3 className="text-lg font-bold">مشاركة عبر واتساب</h3>
+                      <textarea 
+                        value={shareText}
+                        onChange={(e) => setShareText(e.target.value)}
+                        className="w-full h-64 p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm font-medium"
+                        dir="ltr"
+                      />
+                      <div className="flex gap-3">
+                        <a 
+                          href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                          onClick={() => setShowShareModal(false)}
+                        >
+                          <MessageSquare size={18} />
+                          فتح واتساب
+                        </a>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(shareText);
+                            setAlertConfig({ message: 'تم نسخ النص', type: 'success' });
+                          }}
+                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
+                        >
+                          نسخ النص
+                        </button>
+                      </div>
+                    </div>
+                  </Modal>
+                )}
+
+                {/* Print Modal */}
+                {showPrintModal && (
+                    <Modal onClose={() => setShowPrintModal(false)}>
+                       <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl">
+                          <h3 className="text-lg font-bold">خيارات الطباعة</h3>
+                          <button 
+                            onClick={() => { 
+                              setPrintMode('list'); 
+                              setPrintRegInput(''); 
+                              setShowPrintModal(false); 
+                              setTimeout(() => window.print(), 500); 
+                            }} 
+                            className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}
+                          >
+                            طباعة السجل الحالي بالكامل
+                          </button>
+                          <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div>
+                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
+                               <option value="">اختر رقم القيد...</option>
+                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
+                          </select>
+                          <button 
+                            onClick={() => { 
+                              setPrintMode('list'); 
+                              setSelectedRegFilter(printRegInput); 
+                              setShowPrintModal(false); 
+                              setTimeout(() => window.print(), 500); 
+                            }} 
+                            className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} 
+                            disabled={!printRegInput}
+                          >
+                            طباعة القيد المحدد
+                          </button>
+                       </div>
                     </Modal>
                 )}
 
+                {/* Detail Modal */}
                 {view === 'detail' && selectedId && (() => {
                     const s = students.find(x => x.id === selectedId);
                     if (!s) return null;
@@ -1248,32 +1800,55 @@
                                 )}
                             </div>
 
-                            <button onClick={() => { setSelectedId(s.id); setPrintMode('single'); setTimeout(() => window.print(), 500); }} className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}><Printer size={18}/> طباعة البطاقة الشخصية</button>
+                            <button 
+                              onClick={() => { 
+                                setSelectedId(s.id); 
+                                setPrintMode('single'); 
+                                setTimeout(() => window.print(), 500); 
+                              }} 
+                              className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}
+                            >
+                              <Printer size={18}/> طباعة البطاقة الشخصية
+                            </button>
+                            
+                            <button 
+                              onClick={() => shareViaWhatsApp([s])}
+                              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm"
+                            >
+                              <Share2 size={18}/> مشاركة عبر واتساب
+                            </button>
+                            
                             <div className="flex gap-2">
-                                <button onClick={() => { setView('edit'); setSimilarStudents([]); }} className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm">تعديل البيانات</button>
+                                <button 
+                                  onClick={() => { setView('edit'); setSimilarStudents([]); }} 
+                                  className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm"
+                                >
+                                  تعديل البيانات
+                                </button>
                                 {view !== 'trash' && (
-                                    <button onClick={() => setConfirmConfig({ title: "حذف الطالب", message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", onConfirm: async () => { await updateDoc(doc(db, "students", s.id), { isDeleted: true }); setView('list'); setConfirmConfig(null); setSelectedId(null); setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); await refreshStats(); } })} className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm">حذف</button>
+                                    <button 
+                                      onClick={() => setConfirmConfig({ 
+                                        title: "حذف الطالب", 
+                                        message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", 
+                                        onConfirm: async () => { 
+                                          await updateDoc(doc(db, "students", s.id), { isDeleted: true }); 
+                                          setView('list'); 
+                                          setConfirmConfig(null); 
+                                          setSelectedId(null); 
+                                          setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); 
+                                          await refreshStats(); 
+                                        } 
+                                      })} 
+                                      className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm"
+                                    >
+                                      حذف
+                                    </button>
                                 )}
                             </div>
                          </div>
                       </Modal>
                     );
                 })()}
-
-                {showPrintModal && (
-                    <Modal onClose={() => setShowPrintModal(false)}>
-                       <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl">
-                          <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button onClick={() => { setPrintMode('list'); setPrintRegInput(''); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}>طباعة السجل الحالي بالكامل</button>
-                          <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div>
-                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
-                               <option value="">اختر رقم القيد...</option>
-                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
-                          </select>
-                          <button onClick={() => { setPrintMode('list'); setSelectedRegFilter(printRegInput); setShowPrintModal(false); setTimeout(() => window.print(), 500); }} className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} disabled={!printRegInput}>طباعة القيد المحدد</button>
-                       </div>
-                    </Modal>
-                )}
 
                 {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
                 {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
@@ -1295,7 +1870,7 @@
                 )}
               </div>
               
-              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `كشف الطلاب - قيد رقم ${selectedRegFilter}` : "كشف القيد العام"} />}
+              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `كشف الطلاب - قيد رقم ${selectedRegFilter}` : "كشف القيد العام"} selectedFields={printTemplateFields} />}
               {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
             </>
           );
