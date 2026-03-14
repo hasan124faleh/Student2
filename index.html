@@ -207,91 +207,188 @@
         transform: translateX(-4px);
       }
 
-      /* Alphabet Scrollbar - Updated Design */
-      .alphabet-scrollbar {
+      /* New Touch Scrollable Alphabet Bar */
+      .touch-alphabet-scrollbar {
         position: fixed;
         right: 10px;
         top: 50%;
         transform: translateY(-50%);
-        width: 40px;
-        height: 80vh;
-        background-color: rgba(255, 255, 255, 0.95);
-        border-radius: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        backdrop-filter: blur(8px);
-        border: 1px solid #e2e8f0;
+        width: 45px;
+        height: 75vh;
+        max-height: 600px;
+        background: linear-gradient(145deg, rgba(255,255,255,0.98), rgba(248,250,252,0.98));
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 35px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15), inset 0 2px 4px rgba(255,255,255,0.8);
+        border: 1px solid rgba(226,232,240,0.8);
         z-index: 40;
         padding: 15px 0;
         display: flex;
         flex-direction: column;
         align-items: center;
-        overflow-y: auto;
-        scrollbar-width: none;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
       }
       
-      .alphabet-scrollbar::-webkit-scrollbar {
+      .touch-alphabet-scrollbar:active {
+        background: linear-gradient(145deg, rgba(255,255,255,1), rgba(241,245,249,1));
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+      }
+      
+      .alphabet-scroll-content {
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 0;
+        cursor: grab;
+        touch-action: pan-y;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      .alphabet-scroll-content:active {
+        cursor: grabbing;
+      }
+      
+      .alphabet-scroll-content::-webkit-scrollbar {
         display: none;
       }
       
-      .alphabet-letter-dot {
-        width: 24px;
-        height: 24px;
+      .alphabet-letter-item {
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         background-color: #f1f5f9;
-        margin: 4px 0;
-        transition: all 0.2s ease;
+        margin: 2px 0;
+        transition: all 0.15s ease;
         cursor: pointer;
-        border: 1px solid #cbd5e1;
-        position: relative;
+        border: 1.5px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        color: #334155;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        touch-action: manipulation;
       }
       
-      .alphabet-letter-dot.active {
+      .alphabet-letter-item.active {
         background-color: #2563eb;
         border-color: #2563eb;
+        color: white;
+        transform: scale(1.15);
+        box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+      }
+      
+      .alphabet-letter-item.has-students {
+        background-color: #2563eb;
+        border-color: #2563eb;
+        color: white;
+        opacity: 0.8;
+      }
+      
+      .alphabet-letter-item.has-students.active {
+        opacity: 1;
         transform: scale(1.2);
-        box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
       }
       
-      .alphabet-letter-dot:hover {
+      .alphabet-letter-item:active {
+        transform: scale(1.2);
         background-color: #2563eb;
         border-color: #2563eb;
-        transform: scale(1.1);
+        color: white;
       }
       
-      html.dark .alphabet-scrollbar {
-        background-color: #1e293b;
-        border-color: #334155;
-      }
-      
-      html.dark .alphabet-letter-dot {
-        background-color: #334155;
-        border-color: #475569;
-      }
-
-      /* Floating Letter Popup */
-      .floating-letter-popup {
-        position: fixed;
+      .alphabet-scroll-indicator {
+        position: absolute;
+        right: 55px;
         background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         color: white;
         padding: 8px 16px;
         border-radius: 30px;
         font-size: 18px;
         font-weight: bold;
-        z-index: 100;
-        pointer-events: none;
+        white-space: nowrap;
         box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        animation: fade-in 0.15s ease-out;
         border: 2px solid #3b82f6;
-        min-width: 60px;
-        text-align: center;
-        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 45;
+        transition: opacity 0.15s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 80px;
       }
       
-      .floating-letter-popup span {
-        display: block;
+      .alphabet-scroll-indicator span {
         font-size: 12px;
         color: #94a3b8;
         margin-top: 2px;
+      }
+      
+      html.dark .touch-alphabet-scrollbar {
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border-color: #334155;
+      }
+      
+      html.dark .alphabet-letter-item {
+        background-color: #334155;
+        border-color: #475569;
+        color: #e2e8f0;
+      }
+      
+      html.dark .alphabet-letter-item.has-students {
+        background-color: #3b82f6;
+        border-color: #60a5fa;
+        color: white;
+      }
+      
+      /* Floating preview */
+      .letter-preview {
+        position: fixed;
+        background: #1e293b;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 46;
+        pointer-events: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        border: 1px solid #3b82f6;
+      }
+      
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .touch-alphabet-scrollbar {
+          width: 38px;
+          right: 5px;
+        }
+        
+        .alphabet-letter-item {
+          width: 28px;
+          height: 28px;
+          font-size: 14px;
+        }
+        
+        .alphabet-scroll-indicator {
+          right: 45px;
+          padding: 6px 12px;
+          font-size: 16px;
+          min-width: 70px;
+        }
       }
       
       /* Section header with letter */
@@ -388,17 +485,29 @@
       .status-left { background: #ffe4e6; color: #b91c1c; }
       .status-graduated { background: #dbeafe; color: #1e40af; }
       
-      /* Responsive adjustments */
-      @media (max-width: 768px) {
-        .alphabet-scrollbar {
-          width: 30px;
-          right: 5px;
-        }
-        
-        .alphabet-letter-dot {
-          width: 18px;
-          height: 18px;
-        }
+      /* PDF Share Modal */
+      .pdf-preview {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+      }
+      
+      .pdf-preview-page {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-right: 4px solid #2563eb;
+      }
+      
+      .share-option-button {
+        transition: all 0.2s ease;
+      }
+      
+      .share-option-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
       }
     </style>
 
@@ -436,7 +545,8 @@
           ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, 
           ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, 
           Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, 
-          MessageSquare, Grid, List, CheckSquare, School, FileDown, FileUp
+          MessageSquare, Grid, List, CheckSquare, School, FileDown, FileUp,
+          Mail, Facebook, Twitter, Copy
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer, enableNetwork, disableNetwork } from "firebase/firestore";
@@ -880,11 +990,22 @@
           const [showShareModal, setShowShareModal] = useState(false);
           const [shareText, setShareText] = useState('');
           const [shareStudents, setShareStudents] = useState([]);
-          const [hoveredLetter, setHoveredLetter] = useState(null);
-          const [hoveredLetterCount, setHoveredLetterCount] = useState(0);
-          const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+          const [showPDFShareModal, setShowPDFShareModal] = useState(false);
+          const [pdfShareStudents, setPDFShareStudents] = useState([]);
+          const [pdfPreviewBlob, setPDFPreviewBlob] = useState(null);
           const [showPrintSelectedModal, setShowPrintSelectedModal] = useState(false);
           const [editFormData, setEditFormData] = useState(null);
+          
+          // New refs for touch scrollbar
+          const alphabetScrollRef = useRef(null);
+          const scrollContentRef = useRef(null);
+          const [activeLetter, setActiveLetter] = useState('');
+          const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+          const [indicatorLetter, setIndicatorLetter] = useState('');
+          const [indicatorCount, setIndicatorCount] = useState(0);
+          const [indicatorPosition, setIndicatorPosition] = useState({ x: 0, y: 0 });
+          const touchStartY = useRef(0);
+          const isDragging = useRef(false);
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
@@ -908,29 +1029,107 @@
 
           const arabicLetters = ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
 
-          // Scroll to letter function
+          // Enhanced scroll to letter function with smooth behavior
           const scrollToLetter = (letter) => {
             const element = document.getElementById(`section-${letter}`);
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setActiveLetter(letter);
             }
           };
 
-          // Track mouse for tooltip
-          const handleMouseMove = (e) => {
-            setMousePosition({ x: e.clientX, y: e.clientY });
+          // Handle touch/mouse scroll on alphabet bar
+          const handleScrollStart = (e) => {
+            e.preventDefault();
+            isDragging.current = true;
+            touchStartY.current = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
           };
 
-          // Handle letter hover
-          const handleLetterHover = (letter) => {
-            setHoveredLetter(letter);
-            setHoveredLetterCount(studentsByLetter[letter]?.length || 0);
+          const handleScrollMove = (e) => {
+            if (!isDragging.current) return;
+            e.preventDefault();
+            
+            const currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+            const deltaY = currentY - touchStartY.current;
+            
+            if (scrollContentRef.current) {
+              scrollContentRef.current.scrollTop += deltaY * 2;
+              touchStartY.current = currentY;
+              
+              // Find the closest letter to current scroll position
+              const letterItems = scrollContentRef.current.querySelectorAll('.alphabet-letter-item');
+              let closestLetter = null;
+              let minDistance = Infinity;
+              
+              letterItems.forEach(item => {
+                const rect = item.getBoundingClientRect();
+                const distance = Math.abs(rect.top + rect.height/2 - window.innerHeight/2);
+                if (distance < minDistance) {
+                  minDistance = distance;
+                  closestLetter = item.getAttribute('data-letter');
+                }
+              });
+              
+              if (closestLetter) {
+                setIndicatorLetter(closestLetter);
+                setIndicatorCount(studentsByLetter[closestLetter]?.length || 0);
+                setIndicatorPosition({ x: e.clientX, y: e.clientY });
+                setShowScrollIndicator(true);
+              }
+            }
+          };
+
+          const handleScrollEnd = (e) => {
+            isDragging.current = false;
+            setShowScrollIndicator(false);
+          };
+
+          // Click on letter item
+          const handleLetterClick = (letter) => {
+            scrollToLetter(letter);
           };
 
           useEffect(() => {
-            window.addEventListener('mousemove', handleMouseMove);
-            return () => window.removeEventListener('mousemove', handleMouseMove);
+            const scrollBar = alphabetScrollRef.current;
+            if (scrollBar) {
+              scrollBar.addEventListener('touchstart', handleScrollStart, { passive: false });
+              scrollBar.addEventListener('touchmove', handleScrollMove, { passive: false });
+              scrollBar.addEventListener('touchend', handleScrollEnd);
+              scrollBar.addEventListener('mousedown', handleScrollStart);
+              window.addEventListener('mousemove', handleScrollMove);
+              window.addEventListener('mouseup', handleScrollEnd);
+              
+              return () => {
+                scrollBar.removeEventListener('touchstart', handleScrollStart);
+                scrollBar.removeEventListener('touchmove', handleScrollMove);
+                scrollBar.removeEventListener('touchend', handleScrollEnd);
+                scrollBar.removeEventListener('mousedown', handleScrollStart);
+                window.removeEventListener('mousemove', handleScrollMove);
+                window.removeEventListener('mouseup', handleScrollEnd);
+              };
+            }
           }, []);
+
+          // Observer for active letter
+          useEffect(() => {
+            if (sortBy !== 'alphabetical' || debouncedQuery) return;
+            
+            const observer = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                  const letter = entry.target.id.replace('section-', '');
+                  setActiveLetter(letter);
+                }
+              });
+            }, { threshold: 0.3, rootMargin: '-70px 0px 0px 0px' });
+            
+            Object.keys(studentsByLetter).forEach(letter => {
+              const element = document.getElementById(`section-${letter}`);
+              if (element) observer.observe(element);
+            });
+            
+            return () => observer.disconnect();
+          }, [studentsByLetter, sortBy, debouncedQuery]);
 
           // Keyboard shortcuts
           useEffect(() => {
@@ -958,6 +1157,7 @@
                 setShowThemeModal(false);
                 setShowPrintTemplateModal(false);
                 setShowShareModal(false);
+                setShowPDFShareModal(false);
                 setShowPrintSelectedModal(false);
               }
             };
@@ -1021,6 +1221,83 @@
             };
             
             recognition.start();
+          };
+
+          // Generate PDF and share via WhatsApp
+          const sharePDFViaWhatsApp = async (studentsToShare) => {
+            if (studentsToShare.length === 0) {
+              setAlertConfig({ message: 'لا توجد بيانات للمشاركة', type: 'warning' });
+              return;
+            }
+            
+            try {
+              // Create PDF
+              const doc = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+              });
+              
+              doc.setFont('cairo', 'normal');
+              doc.setFontSize(18);
+              doc.text('بطاقة الطالب الشخصية', 105, 15, { align: 'center' });
+              
+              doc.setFontSize(10);
+              doc.text(`تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}`, 105, 22, { align: 'center' });
+              
+              const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+              
+              let yPos = 30;
+              
+              studentsToShare.forEach((student, index) => {
+                if (index > 0) {
+                  doc.addPage();
+                  yPos = 20;
+                }
+                
+                // Header
+                doc.setFontSize(14);
+                doc.text(`الطالب: ${cleanName(student.firstName)} ${student.lastName || ''}`, 105, yPos, { align: 'center' });
+                yPos += 10;
+                
+                // Student card
+                autoTable(doc, {
+                  startY: yPos,
+                  head: [['رقم القيد', 'رقم الصفحة', 'الحالة', 'تاريخ القيد']],
+                  body: [[
+                    student.regNumber,
+                    student.pageNumber,
+                    statusMap[student.status || 'active'],
+                    new Date(student.createdAt).toLocaleDateString('ar-EG')
+                  ]],
+                  styles: { font: 'cairo', fontSize: 10, halign: 'center' },
+                  headStyles: { fillColor: [37, 99, 235], textColor: 255 },
+                  margin: { left: 10, right: 10 }
+                });
+                
+                yPos = doc.lastAutoTable.finalY + 10;
+                
+                if (student.notes) {
+                  doc.setFontSize(10);
+                  doc.text(`ملاحظات: ${student.notes}`, 10, yPos);
+                }
+                
+                if (student.status === 'transferred' && student.transferredSchool) {
+                  doc.setFontSize(10);
+                  doc.text(`المدرسة المنقول إليها: ${student.transferredSchool}`, 10, yPos + 5);
+                }
+              });
+              
+              // Convert to blob
+              const pdfBlob = doc.output('blob');
+              setPDFPreviewBlob(pdfBlob);
+              setPDFShareStudents(studentsToShare);
+              setShowPDFShareModal(true);
+              
+            } catch (error) {
+              console.error('Error generating PDF:', error);
+              setAlertConfig({ message: 'فشل إنشاء ملف PDF', type: 'error' });
+            }
           };
 
           const regsCount = useMemo(() => {
@@ -1401,36 +1678,48 @@
                   </div>
                 )}
 
-                {/* Alphabet Scrollbar - New Design with Dots */}
-                {view === 'list' && !debouncedQuery && !selectedRegFilter && statusFilter === 'ALL' && yearFilter === 'ALL' && (
-                  <div className="alphabet-scrollbar no-print">
-                    {arabicLetters.map(letter => {
-                      const hasStudents = studentsByLetter[letter]?.length > 0;
-                      return (
-                        <div
-                          key={letter}
-                          className={`alphabet-letter-dot ${hasStudents ? '' : 'opacity-30'}`}
-                          onMouseEnter={() => handleLetterHover(letter)}
-                          onMouseLeave={() => setHoveredLetter(null)}
-                          onClick={() => hasStudents && scrollToLetter(letter)}
-                          style={{ backgroundColor: hasStudents ? '' : '#e2e8f0' }}
-                        />
-                      );
-                    })}
+                {/* New Touch Scrollable Alphabet Bar */}
+                {view === 'list' && !debouncedQuery && !selectedRegFilter && statusFilter === 'ALL' && yearFilter === 'ALL' && sortBy === 'alphabetical' && (
+                  <div 
+                    ref={alphabetScrollRef}
+                    className="touch-alphabet-scrollbar no-print"
+                  >
+                    <div 
+                      ref={scrollContentRef}
+                      className="alphabet-scroll-content"
+                    >
+                      {arabicLetters.map(letter => {
+                        const hasStudents = studentsByLetter[letter]?.length > 0;
+                        return (
+                          <div
+                            key={letter}
+                            data-letter={letter}
+                            className={`alphabet-letter-item ${activeLetter === letter ? 'active' : ''} ${hasStudents ? 'has-students' : ''}`}
+                            onClick={() => handleLetterClick(letter)}
+                            style={{ opacity: hasStudents ? 1 : 0.3 }}
+                          >
+                            {letter}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
-                {/* Floating letter popup */}
-                {hoveredLetter && (
+                {/* Scroll indicator */}
+                {showScrollIndicator && (
                   <div 
-                    className="floating-letter-popup"
+                    className="alphabet-scroll-indicator"
                     style={{
-                      left: mousePosition.x,
-                      top: mousePosition.y - 60
+                      position: 'fixed',
+                      top: indicatorPosition.y - 50,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 100
                     }}
                   >
-                    {hoveredLetter}
-                    <span>{hoveredLetterCount} طالب</span>
+                    {indicatorLetter}
+                    <span>{indicatorCount} طالب</span>
                   </div>
                 )}
 
@@ -1542,19 +1831,25 @@
                               <div className="flex flex-wrap gap-2">
                                 <button 
                                   onClick={() => shareViaWhatsApp(students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted))}
-                                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-green-700"
+                                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-green-700 share-option-button"
                                 >
-                                  <Share2 size={14} /> مشاركة
+                                  <Share2 size={14} /> مشاركة نص
+                                </button>
+                                <button 
+                                  onClick={() => sharePDFViaWhatsApp(students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted))}
+                                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-700 share-option-button"
+                                >
+                                  <FileDown size={14} /> مشاركة PDF
                                 </button>
                                 <button 
                                   onClick={exportSelectedToPDF}
-                                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-700"
+                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700 share-option-button"
                                 >
-                                  <FileDown size={14} /> PDF
+                                  <FileText size={14} /> تصدير PDF
                                 </button>
                                 <button 
                                   onClick={() => setShowPrintSelectedModal(true)}
-                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700"
+                                  className="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-amber-700 share-option-button"
                                 >
                                   <Printer size={14} /> طباعة
                                 </button>
@@ -2099,440 +2394,4 @@
                         <button onClick={() => setView('trash')} className="w-full py-3 bg-slate-50 rounded-xl font-bold flex justify-between px-3 hover:bg-slate-100 transition-colors text-sm items-center"><span>سلة المحذوفات</span> <ArrowRight size={16}/></button>
                         <button onClick={() => setView('stats')} className="w-full py-3 bg-blue-50 text-blue-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-blue-100 transition-transform active:scale-95 text-sm"><BarChart3 size={18}/> إحصائيات القيود</button>
                         <button onClick={() => exportToExcel(students.filter(s=>!s.isDeleted))} className="w-full py-3 bg-emerald-50 text-emerald-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-emerald-100 transition-transform active:scale-95 text-sm"><Download size={18}/> تصدير إلى Excel</button>
-                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-indigo-100 transition-transform active:scale-95 text-sm"><FileSpreadsheet size={18}/> إنشاء نموذج (2000 طالب)</button>
-                        <label className={`w-full py-3 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold flex items-center justify-between px-3 cursor-pointer transition-colors text-sm`}>
-                            <span className="flex items-center gap-2"><Upload size={18}/> استيراد من Excel</span>
-                            <input type="file" className="hidden" accept=".xlsx" onChange={handleImport} disabled={importing} />
-                        </label>
-                        <div className="pt-3 border-t border-slate-100 mt-1">
-                           <button onClick={() => setConfirmConfig({ title: "حذف جميع البيانات", message: "هل أنت متأكد من حذف جميع البيانات نهائياً؟ لا يمكن التراجع عن هذا الإجراء.", onConfirm: executeDeleteAll, isDestructive: true })} className="w-full py-3 bg-red-50 text-red-600 rounded-xl font-bold px-3 flex items-center gap-2 hover:bg-red-100 transition-transform active:scale-95 text-sm"><Trash2 size={18}/> حذف جميع البيانات</button>
-                        </div>
-                      </div>
-                    </Modal>
-                )}
-
-                {/* Stats Modal */}
-                {view === 'stats' && (
-                    <Modal onClose={() => setView('list')}>
-                        <div className="bg-white rounded-2xl shadow-xl p-5 space-y-4 max-h-[80vh] flex flex-col w-full">
-                            <h2 className="text-lg font-bold flex items-center gap-2">
-                                <BarChart3 size={20} className="text-blue-600" /> توزيع الطلاب حسب القيد
-                            </h2>
-                            <div className="overflow-y-auto flex-1 custom-scrollbar">
-                                <table className="w-full text-right border-collapse">
-                                    <thead className="bg-slate-50 sticky top-0 z-10">
-                                        <tr>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
-                                            <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {regStats.length > 0 ? regStats.map((item) => (
-                                            <tr key={item.reg} className="hover:bg-slate-50 transition-colors">
-                                                <td className="p-3 font-bold text-slate-700 text-sm align-top">قيد {item.reg}</td>
-                                                <td className="p-3 font-bold text-slate-900 text-sm">
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <span className="bg-slate-100 text-slate-800 px-2 py-1 rounded-lg w-fit text-xs">
-                                                            الإجمالي: {item.total} طالب
-                                                        </span>
-                                                        <div className="flex flex-wrap gap-1.5 text-[10px]">
-                                                            {item.active > 0 && <span className="bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">مستمر: {item.active}</span>}
-                                                            {item.transferred > 0 && <span className="bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-100">منقول: {item.transferred}</span>}
-                                                            {item.left > 0 && <span className="bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-100">تارك: {item.left}</span>}
-                                                            {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">متخرج: {item.graduated}</span>}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )) : (
-                                            <tr>
-                                                <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                             <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
-                        </div>
-                    </Modal>
-                )}
-
-                {/* Print Template Customization Modal */}
-                {showPrintTemplateModal && (
-                  <Modal onClose={() => setShowPrintTemplateModal(false)}>
-                    <div className="bg-white rounded-2xl p-5 space-y-4">
-                      <h3 className="text-lg font-bold">تخصيص قالب الطباعة</h3>
-                      <p className="text-xs text-slate-500">اختر الحقول التي تريد ظهورها في المطبوعات</p>
-                      
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
-                          <span className="font-bold text-sm">الاسم الكامل</span>
-                          <input 
-                            type="checkbox" 
-                            checked={printTemplateFields.includes('name')}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'name']);
-                              } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'name'));
-                              }
-                            }}
-                            className="rounded border-slate-300"
-                          />
-                        </label>
-                        
-                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
-                          <span className="font-bold text-sm">رقم القيد</span>
-                          <input 
-                            type="checkbox" 
-                            checked={printTemplateFields.includes('regNumber')}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'regNumber']);
-                              } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'regNumber'));
-                              }
-                            }}
-                            className="rounded border-slate-300"
-                          />
-                        </label>
-                        
-                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
-                          <span className="font-bold text-sm">رقم الصفحة</span>
-                          <input 
-                            type="checkbox" 
-                            checked={printTemplateFields.includes('pageNumber')}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'pageNumber']);
-                              } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'pageNumber'));
-                              }
-                            }}
-                            className="rounded border-slate-300"
-                          />
-                        </label>
-                        
-                        <label className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer print-template-item">
-                          <span className="font-bold text-sm">الحالة الدراسية (م - ن - ت - خ)</span>
-                          <input 
-                            type="checkbox" 
-                            checked={printTemplateFields.includes('status')}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'status']);
-                              } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'status'));
-                              }
-                            }}
-                            className="rounded border-slate-300"
-                          />
-                        </label>
-                      </div>
-
-                      <div className="flex gap-3 pt-3">
-                        <button 
-                          onClick={() => {
-                            setPrintTemplateFields(['name', 'regNumber', 'pageNumber', 'status']);
-                            setShowPrintTemplateModal(false);
-                          }}
-                          className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm"
-                        >
-                          تطبيق وحفظ
-                        </button>
-                        <button 
-                          onClick={() => setShowPrintTemplateModal(false)}
-                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
-                        >
-                          إغلاق
-                        </button>
-                      </div>
-                    </div>
-                  </Modal>
-                )}
-
-                {/* Print Selected Modal */}
-                {showPrintSelectedModal && (
-                  <Modal onClose={() => setShowPrintSelectedModal(false)}>
-                    <div className="bg-white rounded-2xl p-5 text-center space-y-4">
-                      <h3 className="text-lg font-bold">طباعة الطلاب المحددين</h3>
-                      <p className="text-sm text-slate-600">عدد الطلاب المحددين: {selectedStudents.length}</p>
-                      <div className="flex gap-3">
-                        <button 
-                          onClick={printSelectedStudents}
-                          className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm"
-                        >
-                          طباعة
-                        </button>
-                        <button 
-                          onClick={() => setShowPrintSelectedModal(false)}
-                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
-                        >
-                          إلغاء
-                        </button>
-                      </div>
-                    </div>
-                  </Modal>
-                )}
-
-                {/* Share Modal - Improved */}
-                {showShareModal && (
-                  <Modal onClose={() => setShowShareModal(false)} zIndex="z-[70]">
-                    <div className="bg-white rounded-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-                      <h3 className="text-lg font-bold flex items-center gap-2">
-                        <MessageSquare size={20} className="text-green-600" />
-                        مشاركة عبر واتساب
-                      </h3>
-                      
-                      <div className="share-text-container">
-                        <h3>📋 سجل القيد العام - بيانات الطلاب</h3>
-                        {shareStudents.map((s, index) => {
-                          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
-                          const statusClass = s.status === 'active' ? 'status-active' : 
-                                             s.status === 'transferred' ? 'status-transferred' : 
-                                             s.status === 'left' ? 'status-left' : 'status-graduated';
-                          
-                          return (
-                            <div key={s.id} className="share-student-item">
-                              <div className="share-student-name">
-                                {index + 1}. {cleanName(s.firstName)} {s.lastName || ''}
-                              </div>
-                              <div className="share-student-details">
-                                <div className="share-detail-item">
-                                  <span className="share-detail-label">📌 رقم القيد:</span>
-                                  <span className="share-detail-value">{s.regNumber}</span>
-                                </div>
-                                <div className="share-detail-item">
-                                  <span className="share-detail-label">📄 رقم الصفحة:</span>
-                                  <span className="share-detail-value">{s.pageNumber}</span>
-                                </div>
-                                <div className="share-detail-item">
-                                  <span className="share-detail-label">🎓 الحالة:</span>
-                                  <span className={`share-status-badge ${statusClass}`}>
-                                    {statusMap[s.status || 'active']}
-                                    {s.status === 'transferred' && s.transferredSchool && ` → ${s.transferredSchool}`}
-                                  </span>
-                                </div>
-                                <div className="share-detail-item">
-                                  <span className="share-detail-label">📅 تاريخ القيد:</span>
-                                  <span className="share-detail-value">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</span>
-                                </div>
-                                {s.notes && (
-                                  <div className="share-detail-item col-span-2">
-                                    <span className="share-detail-label">📝 ملاحظات:</span>
-                                    <span className="share-detail-value">{s.notes}</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        <div className="mt-3 text-center font-bold">
-                          📊 إجمالي الطلاب: {shareStudents.length}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <a 
-                          href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-700"
-                          onClick={() => setShowShareModal(false)}
-                        >
-                          <MessageSquare size={18} />
-                          فتح واتساب
-                        </a>
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(shareText);
-                            setAlertConfig({ message: 'تم نسخ النص', type: 'success' });
-                          }}
-                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm hover:bg-slate-200"
-                        >
-                          نسخ النص
-                        </button>
-                      </div>
-                    </div>
-                  </Modal>
-                )}
-
-                {/* Print Modal */}
-                {showPrintModal && (
-                    <Modal onClose={() => setShowPrintModal(false)}>
-                       <div className="bg-white rounded-2xl p-5 text-center space-y-3 shadow-xl">
-                          <h3 className="text-lg font-bold">خيارات الطباعة</h3>
-                          <button 
-                            onClick={() => { 
-                              setPrintMode('list'); 
-                              setPrintRegInput(''); 
-                              setShowPrintModal(false); 
-                              setTimeout(() => window.print(), 500); 
-                            }} 
-                            className={`w-full py-2.5 ${currentTheme.primary} ${currentTheme.hover} text-white rounded-xl font-bold transition-colors text-sm`}
-                          >
-                            طباعة السجل الحالي بالكامل
-                          </button>
-                          <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div>
-                          <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
-                               <option value="">اختر رقم القيد...</option>
-                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort().map(r => <option key={r} value={r}>قيد رقم {r}</option>)}
-                          </select>
-                          <button 
-                            onClick={() => { 
-                              setPrintMode('list'); 
-                              setSelectedRegFilter(printRegInput); 
-                              setShowPrintModal(false); 
-                              setTimeout(() => window.print(), 500); 
-                            }} 
-                            className={`w-full py-2.5 ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white rounded-xl font-bold disabled:opacity-50 transition-colors text-sm`} 
-                            disabled={!printRegInput}
-                          >
-                            طباعة القيد المحدد
-                          </button>
-                       </div>
-                    </Modal>
-                )}
-
-                {/* Detail Modal */}
-                {view === 'detail' && selectedId && (() => {
-                    const s = students.find(x => x.id === selectedId);
-                    if (!s) return null;
-                    const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
-                    const statusColors = { 'active': 'bg-emerald-100 text-emerald-700', 'transferred': 'bg-amber-100 text-amber-700', 'left': 'bg-rose-100 text-rose-700', 'graduated': 'bg-blue-100 text-blue-700' };
-
-                    return (
-                      <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
-                         <div className="bg-white rounded-3xl shadow-2xl p-5 md:p-6 space-y-6 animate-slide-up relative overflow-hidden">
-                             <div className="absolute top-0 right-0 w-24 h-24 bg-slate-50 rounded-full -mr-8 -mt-8"></div>
-            
-                            <div className="relative">
-                                <h1 className="text-2xl font-extrabold text-slate-900 mb-1">{cleanName(s.firstName)}</h1>
-                                <h2 className="text-lg font-bold text-slate-400">{s.lastName || ""}</h2>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                               <div className={`${currentTheme.primary} text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]`}>
-                                   <span className="text-slate-200 text-[10px] font-bold uppercase tracking-wider mb-1">رقم القيد</span>
-                                   <span className="text-3xl font-mono font-black">{s.regNumber}</span>
-                               </div>
-                               <div className="bg-white border-2 border-slate-100 p-4 rounded-xl shadow-sm flex flex-col items-center justify-center transform transition-transform hover:scale-[1.02]">
-                                   <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">رقم الصفحة</span>
-                                   <span className="text-3xl font-mono font-black text-slate-800">{s.pageNumber}</span>
-                               </div>
-                            </div>
-
-                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-3">
-                                <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-white rounded-lg shadow-sm"><Calendar size={16} className="text-slate-500"/></div>
-                                        <div>
-                                            <div className="text-[10px] font-bold text-slate-400">تاريخ القيد</div>
-                                            <div className="font-bold text-slate-800 text-sm">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-1.5 bg-white rounded-lg shadow-sm"><Info size={16} className="text-slate-500"/></div>
-                                        <div>
-                                            <div className="text-[10px] font-bold text-slate-400">الوضع الأكاديمي</div>
-                                            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold mt-0.5 ${statusColors[s.status] || statusColors['active']}`}>
-                                                {statusLabels[s.status] || 'مستمر'}
-                                                {s.status === 'transferred' && s.transferredSchool && (
-                                                  <span className="mr-1 text-amber-600">→ {s.transferredSchool}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                {s.notes && (
-                                    <div className="pt-3 border-t border-slate-200">
-                                        <div className="text-[10px] font-bold text-slate-400 mb-1">ملاحظات</div>
-                                        <p className="text-slate-700 font-medium leading-relaxed text-sm">{s.notes}</p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <button 
-                              onClick={() => { 
-                                setSelectedId(s.id); 
-                                setPrintMode('single'); 
-                                setTimeout(() => window.print(), 500); 
-                              }} 
-                              className={`w-full ${currentTheme.secondary} ${currentTheme.secondaryHover} text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm`}
-                            >
-                              <Printer size={18}/> طباعة البطاقة الشخصية
-                            </button>
-                            
-                            <button 
-                              onClick={() => shareViaWhatsApp([s])}
-                              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm"
-                            >
-                              <Share2 size={18}/> مشاركة عبر واتساب
-                            </button>
-                            
-                            <div className="flex gap-2">
-                                <button 
-                                  onClick={() => { setView('edit'); setSimilarStudents([]); }} 
-                                  className="flex-1 bg-slate-100 py-2.5 rounded-xl font-bold hover:bg-slate-200 text-slate-700 transition-colors text-sm"
-                                >
-                                  تعديل البيانات
-                                </button>
-                                {view !== 'trash' && (
-                                    <button 
-                                      onClick={() => setConfirmConfig({ 
-                                        title: "حذف الطالب", 
-                                        message: "هل تريد نقل هذا الطالب إلى سلة المحذوفات؟", 
-                                        onConfirm: async () => { 
-                                          await updateDoc(doc(db, "students", s.id), { isDeleted: true }); 
-                                          setView('list'); 
-                                          setConfirmConfig(null); 
-                                          setSelectedId(null); 
-                                          setAlertConfig({ message: 'تم نقل الطالب إلى سلة المحذوفات', type: 'success' }); 
-                                          await refreshStats(); 
-                                        } 
-                                      })} 
-                                      className="flex-1 bg-red-50 text-red-600 py-2.5 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm"
-                                    >
-                                      حذف
-                                    </button>
-                                )}
-                            </div>
-                         </div>
-                      </Modal>
-                    );
-                })()}
-
-                {confirmConfig && <ConfirmModal title={confirmConfig.title} message={confirmConfig.message} onConfirm={confirmConfig.onConfirm} onCancel={() => setConfirmConfig(null)} isDestructive={confirmConfig.isDestructive} />}
-                {alertConfig && <AlertModal message={alertConfig.message} type={alertConfig.type} onClose={() => setAlertConfig(null)} />}
-                
-                {importing && (
-                  <Modal onClose={() => {}} zIndex="z-[80]">
-                    <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-4 shadow-2xl">
-                      <div className="relative flex items-center justify-center">
-                          <div className="animate-spin text-blue-600"><Loader2 size={64} /></div>
-                          <div className="absolute text-sm font-bold text-blue-800" dir="ltr">{importProgress}%</div>
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-800">جاري استيراد البيانات...</h3>
-                      <p className="text-slate-500">يرجى الانتظار قليلاً</p>
-                      <div className="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden">
-                          <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}></div>
-                      </div>
-                    </div>
-                  </Modal>
-                )}
-              </div>
-              
-              {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `كشف الطلاب - قيد رقم ${selectedRegFilter}` : "كشف القيد العام"} selectedFields={printTemplateFields} />}
-              {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
-              {printMode === 'selected' && <PrintView students={students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted)} title="الطلاب المحددين" selectedFields={printTemplateFields} />}
-            </>
-          );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+                        <button onClick={generateTemplate} className="w-full py-3 bg-indigo-50 text-indigo-700 rounded-xl font-bold px-3 flex items
