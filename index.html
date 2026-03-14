@@ -207,99 +207,11 @@
         transform: translateX(-4px);
       }
 
-      /* Updated Alphabet Scrollbar - Touch friendly */
-      .alphabet-scrollbar {
-        position: fixed;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 45px;
-        max-height: 70vh;
-        background-color: rgba(255, 255, 255, 0.95);
-        border-radius: 30px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        backdrop-filter: blur(8px);
-        border: 1px solid #e2e8f0;
-        z-index: 40;
-        padding: 10px 0;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        direction: ltr;
-      }
-      
-      .alphabet-scrollbar ul {
-        list-style: none;
-        padding: 0;
-        margin: 0;
+      /* Modal Centering Fix */
+      .modal-overlay {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        width: 100%;
-      }
-      
-      .alphabet-scrollbar li {
-        width: 100%;
-        text-align: center;
-        padding: 5px 0;
-        font-size: 16px;
-        font-weight: bold;
-        color: #334155;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-      
-      .alphabet-scrollbar li.active {
-        background-color: #2563eb;
-        color: white;
-        font-weight: 800;
-        transform: scale(1.1);
-        box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
-        border-radius: 20px;
-        width: 90%;
-        margin: 2px auto;
-      }
-      
-      .alphabet-scrollbar li:active {
-        background-color: #2563eb;
-        color: white;
-        border-radius: 20px;
-      }
-      
-      html.dark .alphabet-scrollbar {
-        background-color: #1e293b;
-        border-color: #334155;
-      }
-      
-      html.dark .alphabet-scrollbar li {
-        color: #cbd5e1;
-      }
-
-      /* Floating Letter Popup */
-      .floating-letter-popup {
-        position: fixed;
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 30px;
-        font-size: 18px;
-        font-weight: bold;
-        z-index: 100;
-        pointer-events: none;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        animation: fade-in 0.15s ease-out;
-        border: 2px solid #3b82f6;
-        min-width: 60px;
-        text-align: center;
-        transform: translate(-50%, -50%);
-      }
-      
-      .floating-letter-popup span {
-        display: block;
-        font-size: 12px;
-        color: #94a3b8;
-        margin-top: 2px;
+        justify-content: center;
       }
       
       /* Section header with letter */
@@ -398,14 +310,8 @@
       
       /* Responsive adjustments */
       @media (max-width: 768px) {
-        .alphabet-scrollbar {
-          width: 35px;
-          right: 5px;
-        }
-        
-        .alphabet-scrollbar li {
-          font-size: 14px;
-          padding: 4px 0;
+        .modal-overlay .max-w-lg {
+          width: 90%;
         }
       }
     </style>
@@ -444,7 +350,7 @@
           ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, 
           ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, 
           Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, 
-          MessageSquare, Grid, List, CheckSquare, School, FileDown, FileUp, File as FileIcon
+          MessageSquare, Grid, List, CheckSquare, FileDown, FileUp, File as FileIcon
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer, enableNetwork, disableNetwork } from "firebase/firestore";
@@ -497,7 +403,6 @@
             'رقم القيد': s.regNumber,
             'رقم الصفحة': s.pageNumber,
             'الحالة الدراسية': statusMap[s.status || 'active'] || 'مستمر',
-            'المدرسة المنقول إليها': s.transferredSchool || '',
             'ملاحظات': s.notes || '',
             'تاريخ التسجيل': new Date(s.createdAt).toLocaleDateString('ar-EG')
           }));
@@ -508,11 +413,18 @@
         };
 
         const exportToPDF = (students, title = "سجل القيد العام") => {
+          // Set RTL and Arabic language for proper rendering
           const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: 'a4'
+            format: 'a4',
+            putOnlyUsedFonts: true,
+            hotfix: true // Enable hotfixes for better RTL support
           });
+          
+          // Set document properties for Arabic
+          doc.setLanguage("ar");
+          doc.setDirection = "rtl";
           
           doc.setFont('cairo', 'normal');
           doc.setFontSize(18);
@@ -538,20 +450,28 @@
             styles: { font: 'cairo', fontSize: 8, halign: 'right' },
             headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
             alternateRowStyles: { fillColor: [241, 245, 249] },
-            margin: { top: 30, right: 10, bottom: 10, left: 10 }
+            margin: { top: 30, right: 10, bottom: 10, left: 10 },
+            tableLineColor: [0, 0, 0],
+            tableLineWidth: 0.1,
           });
           
           doc.save(`سجل_الطلاب_${new Date().getTime()}.pdf`);
         };
 
-        // New function to generate PDF blob for sharing
+        // New function to generate PDF blob for sharing with proper Arabic encoding
         const generatePDFBlob = (studentsToShare, title = "سجل القيد العام") => {
           return new Promise((resolve) => {
             const doc = new jsPDF({
               orientation: 'portrait',
               unit: 'mm',
-              format: 'a4'
+              format: 'a4',
+              putOnlyUsedFonts: true,
+              hotfix: true // Enable hotfixes for better RTL support
             });
+            
+            // Set document properties for Arabic
+            doc.setLanguage("ar");
+            doc.setDirection = "rtl";
             
             doc.setFont('cairo', 'normal');
             doc.setFontSize(18);
@@ -577,7 +497,9 @@
               styles: { font: 'cairo', fontSize: 8, halign: 'right' },
               headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
               alternateRowStyles: { fillColor: [241, 245, 249] },
-              margin: { top: 30, right: 10, bottom: 10, left: 10 }
+              margin: { top: 30, right: 10, bottom: 10, left: 10 },
+              tableLineColor: [0, 0, 0],
+              tableLineWidth: 0.1,
             });
             
             // Convert to blob
@@ -656,7 +578,6 @@
                   'رقم القيد': reg.toString(),
                   'رقم الصفحة': pageNum.toString(),
                   'الحالة الدراسية': 'مستمر',
-                  'المدرسة المنقول إليها': '',
                   'ملاحظات': ''
                });
             }
@@ -699,9 +620,20 @@
           </div>
         );
 
+        // Fixed Modal Component - Centered properly
         const Modal = ({ children, onClose, zIndex = "z-50" }) => (
-          <div className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto`} onClick={onClose}>
-            <div className="w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
+          <div 
+            className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto modal-overlay`} 
+            onClick={onClose}
+          >
+            <div 
+              className="w-full max-w-lg relative" 
+              onClick={e => e.stopPropagation()}
+              style={{ 
+                position: 'relative',
+                margin: 'auto'
+              }}
+            >
                 <button 
                     onClick={onClose} 
                     className="absolute -top-2 -left-2 p-2 bg-white text-slate-600 hover:bg-slate-100 rounded-full shadow-lg transition-all z-[60]"
@@ -795,9 +727,6 @@
                       <div className="flex flex-col border-b-2 border-slate-200 pb-2">
                          <span className="text-base font-bold text-slate-500 mb-1">الوضع الأكاديمي</span>
                          <span className="text-2xl font-bold text-slate-900">{statusLabels[student.status || 'active']}</span>
-                         {student.status === 'transferred' && student.transferredSchool && (
-                           <span className="text-sm font-bold text-amber-600 mt-1">إلى: {student.transferredSchool}</span>
-                         )}
                       </div>
                       <div className="flex flex-col border-b-2 border-slate-200 pb-2">
                          <span className="text-base font-bold text-slate-500 mb-1">تاريخ القيد</span>
@@ -975,9 +904,6 @@
           const [showShareModal, setShowShareModal] = useState(false);
           const [shareText, setShareText] = useState('');
           const [shareStudents, setShareStudents] = useState([]);
-          const [hoveredLetter, setHoveredLetter] = useState(null);
-          const [hoveredLetterCount, setHoveredLetterCount] = useState(0);
-          const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
           const [showPrintSelectedModal, setShowPrintSelectedModal] = useState(false);
           const [editFormData, setEditFormData] = useState(null);
 
@@ -985,7 +911,7 @@
 
           const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
 
-          // Group students by first letter
+          // Group students by first letter for display only (without scrollbar)
           const studentsByLetter = useMemo(() => {
             const groups = {};
             const sorted = [...students].filter(s => !s.isDeleted).sort((a, b) => a.firstName.localeCompare(b.firstName));
@@ -1000,32 +926,6 @@
             
             return groups;
           }, [students]);
-
-          const arabicLetters = ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
-
-          // Scroll to letter function
-          const scrollToLetter = (letter) => {
-            const element = document.getElementById(`section-${letter}`);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          };
-
-          // Track mouse for tooltip
-          const handleMouseMove = (e) => {
-            setMousePosition({ x: e.clientX, y: e.clientY });
-          };
-
-          // Handle letter hover
-          const handleLetterHover = (letter) => {
-            setHoveredLetter(letter);
-            setHoveredLetterCount(studentsByLetter[letter]?.length || 0);
-          };
-
-          useEffect(() => {
-            window.addEventListener('mousemove', handleMouseMove);
-            return () => window.removeEventListener('mousemove', handleMouseMove);
-          }, []);
 
           // Keyboard shortcuts
           useEffect(() => {
@@ -1264,7 +1164,6 @@
                   regNumber: student.regNumber,
                   pageNumber: student.pageNumber,
                   status: student.status || 'active',
-                  transferredSchool: student.transferredSchool || '',
                   notes: student.notes || '',
                   createdAt: formatDateForInput(student.createdAt)
                 });
@@ -1297,7 +1196,6 @@
                        regNumber: String(reg).trim(),
                        pageNumber: String(page || '').trim(),
                        status: 'active',
-                       transferredSchool: row['المدرسة المنقول إليها'] || '',
                        isDeleted: false,
                        createdAt: Date.now() + count
                     });
@@ -1394,10 +1292,6 @@
               text += `└ 📄 رقم الصفحة: ${s.pageNumber}\n`;
               text += `└ 🎓 الحالة: ${statusMap[s.status || 'active']}`;
               
-              if (s.status === 'transferred' && s.transferredSchool) {
-                text += ` (منقول إلى: ${s.transferredSchool})`;
-              }
-              
               text += `\n└ 📅 تاريخ القيد: ${new Date(s.createdAt).toLocaleDateString('ar-EG')}\n`;
               
               if (s.notes) {
@@ -1493,43 +1387,6 @@
                   <div className="offline-indicator flex items-center gap-2">
                     <WifiOff size={16} />
                     <span>وضع عدم الاتصال</span>
-                  </div>
-                )}
-
-                {/* Updated Alphabet Scrollbar - Touch scrollable list */}
-                {view === 'list' && !debouncedQuery && !selectedRegFilter && statusFilter === 'ALL' && yearFilter === 'ALL' && (
-                  <div className="alphabet-scrollbar no-print">
-                    <ul>
-                      {arabicLetters.map(letter => {
-                        const hasStudents = studentsByLetter[letter]?.length > 0;
-                        return (
-                          <li
-                            key={letter}
-                            className={hasStudents ? '' : 'opacity-30'}
-                            onMouseEnter={() => handleLetterHover(letter)}
-                            onMouseLeave={() => setHoveredLetter(null)}
-                            onClick={() => hasStudents && scrollToLetter(letter)}
-                            style={{ color: hasStudents ? '' : '#94a3b8' }}
-                          >
-                            {letter}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Floating letter popup */}
-                {hoveredLetter && (
-                  <div 
-                    className="floating-letter-popup"
-                    style={{
-                      left: mousePosition.x,
-                      top: mousePosition.y - 60
-                    }}
-                  >
-                    {hoveredLetter}
-                    <span>{hoveredLetterCount} طالب</span>
                   </div>
                 )}
 
@@ -1721,7 +1578,7 @@
                                 </button>
                           </div>
 
-                          {/* Desktop Table View with Alphabet Sections */}
+                          {/* Desktop Table View with Alphabet Sections (No Side Scrollbar) */}
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
                             {sortBy === 'alphabetical' && !debouncedQuery ? (
                               Object.keys(studentsByLetter).sort().map(letter => (
@@ -2059,7 +1916,6 @@
                                 pageNumber: pageNum,
                                 notes: form.get('notes'),
                                 status: form.get('status') || 'active',
-                                transferredSchool: form.get('transferredSchool') || '',
                                 isDeleted: false,
                                 createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now()
                             };
@@ -2136,32 +1992,6 @@
                                     <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">متخرج</div>
                                 </label>
                               </div>
-                           </div>
-
-                           {/* Transferred School Field */}
-                           <div>
-                             <input 
-                               type="radio" 
-                               name="status" 
-                               value="transferred" 
-                               id="status-transferred-edit" 
-                               className="hidden" 
-                               defaultChecked={editFormData?.status === 'transferred'}
-                             />
-                             {(editFormData?.status === 'transferred' || view === 'add') && (
-                               <div className="animate-fade-in mt-2">
-                                 <label className="block text-[10px] font-bold text-slate-400 mb-2">المدرسة المنقول إليها</label>
-                                 <div className="relative">
-                                   <School size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                                   <input 
-                                     name="transferredSchool" 
-                                     defaultValue={editFormData?.transferredSchool || ''} 
-                                     className="w-full p-2.5 pr-10 rounded-xl bg-slate-50 outline-none border font-bold text-sm" 
-                                     placeholder="أدخل اسم المدرسة المنقول إليها..." 
-                                   />
-                                 </div>
-                               </div>
-                             )}
                            </div>
 
                            <input name="notes" defaultValue={editFormData?.notes || ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
@@ -2415,7 +2245,6 @@
                                   <span className="share-detail-label">🎓 الحالة:</span>
                                   <span className={`share-status-badge ${statusClass}`}>
                                     {statusMap[s.status || 'active']}
-                                    {s.status === 'transferred' && s.transferredSchool && ` → ${s.transferredSchool}`}
                                   </span>
                                 </div>
                                 <div className="share-detail-item">
@@ -2556,9 +2385,6 @@
                                             <div className="text-[10px] font-bold text-slate-400">الوضع الأكاديمي</div>
                                             <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold mt-0.5 ${statusColors[s.status] || statusColors['active']}`}>
                                                 {statusLabels[s.status] || 'مستمر'}
-                                                {s.status === 'transferred' && s.transferredSchool && (
-                                                  <span className="mr-1 text-amber-600">→ {s.transferredSchool}</span>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -2659,4 +2485,4 @@
         root.render(<App />);
     </script>
 </body>
-</html>
+    </html>
