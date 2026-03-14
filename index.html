@@ -426,7 +426,7 @@
           doc.setLanguage("ar");
           doc.setDirection = "rtl";
           
-          doc.setFont('cairo', 'normal');
+          doc.setFont('helvetica', 'normal');
           doc.setFontSize(18);
           doc.text(title, 105, 15, { align: 'center' });
           
@@ -447,7 +447,7 @@
             head: [['#', 'الاسم الكامل', 'رقم القيد', 'رقم الصفحة', 'الحالة']],
             body: tableData,
             startY: 30,
-            styles: { font: 'cairo', fontSize: 8, halign: 'right' },
+            styles: { font: 'helvetica', fontSize: 8, halign: 'right' },
             headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
             alternateRowStyles: { fillColor: [241, 245, 249] },
             margin: { top: 30, right: 10, bottom: 10, left: 10 },
@@ -492,7 +492,7 @@
               
               // Header Section
               doc.setFontSize(12);
-              doc.setFont('cairo', 'bold');
+              doc.setFont('helvetica', 'bold');
               doc.text("جمهورية العراق", 105, 25, { align: 'center' });
               doc.text("وزارة التربية", 105, 32, { align: 'center' });
               doc.text("المديرية العامة للتربية", 105, 39, { align: 'center' });
@@ -514,7 +514,7 @@
               doc.rect(20, 90, 170, 20, 'S');
               
               doc.setFontSize(14);
-              doc.setFont('cairo', 'bold');
+              doc.setFont('helvetica', 'bold');
               const fullName = `${cleanName(student.firstName)} ${student.lastName || ''}`;
               doc.text(fullName, 105, 103, { align: 'center' });
               
@@ -525,7 +525,7 @@
               doc.setFontSize(10);
               doc.text("رقم القيد العام", 62.5, 130, { align: 'center' });
               doc.setFontSize(18);
-              doc.setFont('cairo', 'bold');
+              doc.setFont('helvetica', 'bold');
               doc.text(student.regNumber.toString(), 62.5, 145, { align: 'center' });
               
               doc.setFillColor(255, 165, 0);
@@ -533,7 +533,7 @@
               doc.setFontSize(10);
               doc.text("رقم الصفحة", 142.5, 130, { align: 'center' });
               doc.setFontSize(18);
-              doc.setFont('cairo', 'bold');
+              doc.setFont('helvetica', 'bold');
               doc.text(student.pageNumber.toString(), 142.5, 145, { align: 'center' });
               
               // Reset text color
@@ -541,9 +541,9 @@
               
               // Status and Date
               doc.setFontSize(12);
-              doc.setFont('cairo', 'bold');
+              doc.setFont('helvetica', 'bold');
               doc.text("الوضع الأكاديمي:", 30, 180);
-              doc.setFont('cairo', 'normal');
+              doc.setFont('helvetica', 'normal');
               
               let statusColor = [16, 185, 129]; // emerald
               if (student.status === 'transferred') statusColor = [245, 158, 11]; // amber
