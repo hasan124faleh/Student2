@@ -206,6 +206,126 @@
       .print-template-item:hover {
         transform: translateX(-4px);
       }
+
+      /* Alphabet Scrollbar */
+      .alphabet-scrollbar {
+        position: fixed;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        z-index: 40;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 8px 4px;
+        border-radius: 20px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(4px);
+        border: 1px solid #e2e8f0;
+        max-height: 80vh;
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      
+      .alphabet-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .alphabet-letter {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+        color: #1e293b;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        position: relative;
+      }
+      
+      .alphabet-letter:hover {
+        background-color: #2563eb;
+        color: white;
+        transform: scale(1.1);
+      }
+      
+      .alphabet-letter.active {
+        background-color: #2563eb;
+        color: white;
+      }
+      
+      .alphabet-letter[data-count]:after {
+        content: attr(data-count);
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background-color: #ef4444;
+        color: white;
+        font-size: 8px;
+        font-weight: bold;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+      
+      .alphabet-letter:hover:after {
+        opacity: 1;
+      }
+      
+      /* Section highlight */
+      .alphabet-section {
+        scroll-margin-top: 70px;
+      }
+      
+      .section-header {
+        position: sticky;
+        top: 56px;
+        background-color: #f8fafc;
+        z-index: 30;
+        padding: 8px 16px;
+        margin: 8px 0;
+        font-weight: bold;
+        font-size: 20px;
+        color: #1e293b;
+        border-bottom: 2px solid #2563eb;
+      }
+      
+      html.dark .section-header {
+        background-color: #0f172a;
+        color: #f8fafc;
+      }
+      
+      html.dark .alphabet-scrollbar {
+        background-color: #1e293b;
+        border-color: #334155;
+      }
+      
+      html.dark .alphabet-letter {
+        color: #f8fafc;
+      }
+      
+      .tooltip-floating {
+        position: fixed;
+        background-color: #1e293b;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 100;
+        pointer-events: none;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        animation: fade-in 0.2s ease;
+      }
     </style>
 
     <!-- React & Babel Support -->
@@ -234,7 +354,7 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, MessageSquare, Grid, List, CheckSquare
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, MessageSquare, Grid, List, CheckSquare, School
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer, enableNetwork, disableNetwork } from "firebase/firestore";
@@ -285,6 +405,7 @@
             'رقم القيد': s.regNumber,
             'رقم الصفحة': s.pageNumber,
             'الحالة الدراسية': statusMap[s.status || 'active'] || 'مستمر',
+            'المدرسة المنقول إليها': s.transferredSchool || '',
             'ملاحظات': s.notes || '',
             'تاريخ التسجيل': new Date(s.createdAt).toLocaleDateString('ar-EG')
           }));
@@ -319,6 +440,7 @@
                   'رقم القيد': reg.toString(),
                   'رقم الصفحة': pageNum.toString(),
                   'الحالة الدراسية': 'مستمر',
+                  'المدرسة المنقول إليها': '',
                   'ملاحظات': ''
                });
             }
@@ -457,6 +579,9 @@
                       <div className="flex flex-col border-b-2 border-slate-200 pb-2">
                          <span className="text-base font-bold text-slate-500 mb-1">الوضع الأكاديمي</span>
                          <span className="text-2xl font-bold text-slate-900">{statusLabels[student.status || 'active']}</span>
+                         {student.status === 'transferred' && student.transferredSchool && (
+                           <span className="text-sm font-bold text-amber-600 mt-1">إلى: {student.transferredSchool}</span>
+                         )}
                       </div>
                       <div className="flex flex-col border-b-2 border-slate-200 pb-2">
                          <span className="text-base font-bold text-slate-500 mb-1">تاريخ القيد</span>
@@ -633,10 +758,50 @@
           const [printTemplateFields, setPrintTemplateFields] = useState(['name', 'regNumber', 'pageNumber']);
           const [showShareModal, setShowShareModal] = useState(false);
           const [shareText, setShareText] = useState('');
+          const [activeLetter, setActiveLetter] = useState('');
+          const [hoverLetter, setHoverLetter] = useState('');
+          const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
           const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
+
+          // Group students by first letter
+          const studentsByLetter = useMemo(() => {
+            const groups = {};
+            const sorted = [...students].filter(s => !s.isDeleted).sort((a, b) => a.firstName.localeCompare(b.firstName));
+            
+            sorted.forEach(student => {
+              const firstChar = student.firstName.charAt(0);
+              if (!groups[firstChar]) {
+                groups[firstChar] = [];
+              }
+              groups[firstChar].push(student);
+            });
+            
+            return groups;
+          }, [students]);
+
+          const arabicLetters = ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
+
+          // Scroll to letter function
+          const scrollToLetter = (letter) => {
+            setActiveLetter(letter);
+            const element = document.getElementById(`section-${letter}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          };
+
+          // Track mouse for tooltip
+          const handleMouseMove = (e) => {
+            setMousePosition({ x: e.clientX, y: e.clientY });
+          };
+
+          useEffect(() => {
+            window.addEventListener('mousemove', handleMouseMove);
+            return () => window.removeEventListener('mousemove', handleMouseMove);
+          }, []);
 
           // Keyboard shortcuts
           useEffect(() => {
@@ -888,6 +1053,7 @@
                        regNumber: String(reg).trim(),
                        pageNumber: String(page || '').trim(),
                        status: 'active',
+                       transferredSchool: row['المدرسة المنقول إليها'] || '',
                        isDeleted: false,
                        createdAt: Date.now() + count
                     });
@@ -981,6 +1147,9 @@
               text += `📌 رقم القيد: ${s.regNumber}\n`;
               text += `📄 رقم الصفحة: ${s.pageNumber}\n`;
               text += `🎓 الحالة: ${statusMap[s.status || 'active']}\n`;
+              if (s.status === 'transferred' && s.transferredSchool) {
+                text += `🏫 المدرسة المنقول إليها: ${s.transferredSchool}\n`;
+              }
               if (s.notes) text += `📝 ملاحظات: ${s.notes}\n`;
               text += `📅 تاريخ القيد: ${new Date(s.createdAt).toLocaleDateString('ar-EG')}\n\n`;
             });
@@ -1046,6 +1215,40 @@
                   <div className="offline-indicator flex items-center gap-2">
                     <WifiOff size={16} />
                     <span>وضع عدم الاتصال</span>
+                  </div>
+                )}
+
+                {/* Alphabet Scrollbar */}
+                {view === 'list' && !debouncedQuery && !selectedRegFilter && statusFilter === 'ALL' && yearFilter === 'ALL' && (
+                  <div className="alphabet-scrollbar no-print">
+                    {arabicLetters.map(letter => {
+                      const count = studentsByLetter[letter]?.length || 0;
+                      return (
+                        <div
+                          key={letter}
+                          className={`alphabet-letter ${activeLetter === letter ? 'active' : ''}`}
+                          data-count={count > 0 ? count : null}
+                          onMouseEnter={() => setHoverLetter(letter)}
+                          onMouseLeave={() => setHoverLetter('')}
+                          onClick={() => scrollToLetter(letter)}
+                        >
+                          {letter}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Floating tooltip for alphabet */}
+                {hoverLetter && (
+                  <div 
+                    className="tooltip-floating"
+                    style={{
+                      left: mousePosition.x + 20,
+                      top: mousePosition.y - 40
+                    }}
+                  >
+                    {hoverLetter} - {studentsByLetter[hoverLetter]?.length || 0} طالب
                   </div>
                 )}
 
@@ -1219,137 +1422,288 @@
                                 </button>
                           </div>
 
-                          {/* Desktop Table View */}
+                          {/* Desktop Table View with Alphabet Sections */}
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
-                            <table className="w-full text-right border-collapse">
-                              <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                <tr>
-                                  <th className="px-2 py-2 w-12 text-center">
-                                    <input 
-                                      type="checkbox" 
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedStudents(displayed.map(s => s.id));
-                                        } else {
-                                          setSelectedStudents([]);
-                                        }
-                                      }}
-                                      checked={selectedStudents.length === displayed.length && displayed.length > 0}
-                                      className="rounded border-slate-300"
-                                    />
-                                  </th>
-                                  <th className="px-4 py-2 w-12 text-center">#</th>
-                                  <th className="px-4 py-2">اسم الطالب</th>
-                                  <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
-                                  <th className="px-4 py-2 w-24 text-center">الصفحة</th>
-                                  <th className="px-4 py-2 w-20 text-center">الحالة</th>
-                                  {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-100 text-xs">
-                                {displayed.map((s, idx) => (
-                                  <tr key={s.id} className={`hover:bg-blue-50/40 transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
-                                    <td className="px-2 py-2 text-center">
-                                      <input 
-                                        type="checkbox"
-                                        checked={selectedStudents.includes(s.id)}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          if (e.target.checked) {
-                                            setSelectedStudents([...selectedStudents, s.id]);
-                                          } else {
-                                            setSelectedStudents(selectedStudents.filter(id => id !== s.id));
-                                          }
-                                        }}
-                                        className="rounded border-slate-300"
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    </td>
-                                    <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                    <td className="px-4 py-2">
-                                        <div 
-                                          className="flex items-center gap-2 cursor-pointer" 
-                                          onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
-                                        >
-                                            <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
-                                            <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
-                                                {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
-                                    <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
-                                    <td className="px-4 py-2 text-center">
-                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                        s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
-                                        s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
-                                        s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
-                                        'bg-emerald-100 text-emerald-700'
-                                      }`}>
-                                        {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
-                                      </span>
-                                    </td>
-                                    {view === 'trash' && (
-                                        <td className="px-4 py-2 text-center flex gap-1 justify-center">
-                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
-                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                            {sortBy === 'alphabetical' && !debouncedQuery && Object.keys(studentsByLetter).sort().map(letter => (
+                              <div key={letter} id={`section-${letter}`} className="alphabet-section">
+                                <div className="section-header flex items-center gap-2">
+                                  <span className={`${currentTheme.primary} text-white w-8 h-8 rounded-full flex items-center justify-center`}>
+                                    {letter}
+                                  </span>
+                                  <span>الطلاب الذين يبدأ اسمهم بحرف {letter}</span>
+                                  <span className="text-sm text-slate-400">({studentsByLetter[letter].length} طالب)</span>
+                                </div>
+                                <table className="w-full text-right border-collapse">
+                                  <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
+                                    <tr>
+                                      <th className="px-2 py-2 w-12 text-center">
+                                        <input 
+                                          type="checkbox" 
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setSelectedStudents(studentsByLetter[letter].map(s => s.id));
+                                            } else {
+                                              setSelectedStudents(selectedStudents.filter(id => !studentsByLetter[letter].some(s => s.id === id)));
+                                            }
+                                          }}
+                                          checked={studentsByLetter[letter].length > 0 && studentsByLetter[letter].every(s => selectedStudents.includes(s.id))}
+                                          className="rounded border-slate-300"
+                                        />
+                                      </th>
+                                      <th className="px-4 py-2 w-12 text-center">#</th>
+                                      <th className="px-4 py-2">اسم الطالب</th>
+                                      <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
+                                      <th className="px-4 py-2 w-24 text-center">الصفحة</th>
+                                      <th className="px-4 py-2 w-20 text-center">الحالة</th>
+                                      {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-100 text-xs">
+                                    {studentsByLetter[letter].map((s, idx) => (
+                                      <tr key={s.id} className={`hover:bg-blue-50/40 transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                        <td className="px-2 py-2 text-center">
+                                          <input 
+                                            type="checkbox"
+                                            checked={selectedStudents.includes(s.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              if (e.target.checked) {
+                                                setSelectedStudents([...selectedStudents, s.id]);
+                                              } else {
+                                                setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                              }
+                                            }}
+                                            className="rounded border-slate-300"
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
                                         </td>
-                                    )}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-
-                          {/* Mobile Card View */}
-                          <div className="md:hidden space-y-2 mt-3">
-                             {displayed.map((s, idx) => (
-                                 <div key={s.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
-                                    <div className="absolute top-2 right-2">
-                                      <input 
-                                        type="checkbox"
-                                        checked={selectedStudents.includes(s.id)}
-                                        onChange={(e) => {
-                                          if (e.target.checked) {
-                                            setSelectedStudents([...selectedStudents, s.id]);
-                                          } else {
-                                            setSelectedStudents(selectedStudents.filter(id => id !== s.id));
-                                          }
-                                        }}
-                                        className="rounded border-slate-300 ml-2"
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    </div>
-                                    <div 
-                                      className={`${view === 'trash' ? 'cursor-default' : 'cursor-pointer'}`}
-                                      onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
-                                    >
-                                      <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
-                                      <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center mr-8">
-                                         <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
-                                         {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
-                                      </h3>
-                                      <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 mr-8">
-                                          <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
-                                          <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
-                                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                        <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
+                                        <td className="px-4 py-2">
+                                            <div 
+                                              className="flex items-center gap-2 cursor-pointer" 
+                                              onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                            >
+                                                <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
+                                                <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
+                                                    {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
+                                        <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
+                                        <td className="px-4 py-2 text-center">
+                                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                             s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
                                             s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
                                             s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
                                             'bg-emerald-100 text-emerald-700'
                                           }`}>
-                                            {s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}
+                                            {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
                                           </span>
-                                      </div>
+                                        </td>
+                                        {view === 'trash' && (
+                                          <td className="px-4 py-2 text-center flex gap-1 justify-center">
+                                               <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
+                                               <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                                          </td>
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ))}
+                            {sortBy !== 'alphabetical' && (
+                              <table className="w-full text-right border-collapse">
+                                <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
+                                  <tr>
+                                    <th className="px-2 py-2 w-12 text-center">
+                                      <input 
+                                        type="checkbox" 
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            setSelectedStudents(displayed.map(s => s.id));
+                                          } else {
+                                            setSelectedStudents([]);
+                                          }
+                                        }}
+                                        checked={selectedStudents.length === displayed.length && displayed.length > 0}
+                                        className="rounded border-slate-300"
+                                      />
+                                    </th>
+                                    <th className="px-4 py-2 w-12 text-center">#</th>
+                                    <th className="px-4 py-2">اسم الطالب</th>
+                                    <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
+                                    <th className="px-4 py-2 w-24 text-center">الصفحة</th>
+                                    <th className="px-4 py-2 w-20 text-center">الحالة</th>
+                                    {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-xs">
+                                  {displayed.map((s, idx) => (
+                                    <tr key={s.id} className={`hover:bg-blue-50/40 transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                      <td className="px-2 py-2 text-center">
+                                        <input 
+                                          type="checkbox"
+                                          checked={selectedStudents.includes(s.id)}
+                                          onChange={(e) => {
+                                            e.stopPropagation();
+                                            if (e.target.checked) {
+                                              setSelectedStudents([...selectedStudents, s.id]);
+                                            } else {
+                                              setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                            }
+                                          }}
+                                          className="rounded border-slate-300"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </td>
+                                      <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
+                                      <td className="px-4 py-2">
+                                          <div 
+                                            className="flex items-center gap-2 cursor-pointer" 
+                                            onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                          >
+                                              <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
+                                              <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
+                                                  {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
+                                              </span>
+                                          </div>
+                                      </td>
+                                      <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
+                                      <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
+                                      <td className="px-4 py-2 text-center">
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                          s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
+                                          s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
+                                          s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
+                                          'bg-emerald-100 text-emerald-700'
+                                        }`}>
+                                          {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
+                                        </span>
+                                      </td>
                                       {view === 'trash' && (
-                                        <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2 mr-8">
-                                             <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
-                                             <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
-                                        </div>
+                                          <td className="px-4 py-2 text-center flex gap-1 justify-center">
+                                               <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
+                                               <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                                          </td>
                                       )}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+
+                          {/* Mobile Card View with Alphabet Sections */}
+                          <div className="md:hidden space-y-2 mt-3">
+                            {sortBy === 'alphabetical' && !debouncedQuery ? (
+                              Object.keys(studentsByLetter).sort().map(letter => (
+                                <div key={letter} id={`section-${letter}`} className="alphabet-section">
+                                  <div className="section-header flex items-center gap-2 text-sm">
+                                    <span className={`${currentTheme.primary} text-white w-6 h-6 rounded-full flex items-center justify-center text-xs`}>
+                                      {letter}
+                                    </span>
+                                    <span>({studentsByLetter[letter].length})</span>
+                                  </div>
+                                  {studentsByLetter[letter].map((s, idx) => (
+                                    <div key={s.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
+                                      <div className="absolute top-2 right-2">
+                                        <input 
+                                          type="checkbox"
+                                          checked={selectedStudents.includes(s.id)}
+                                          onChange={(e) => {
+                                            if (e.target.checked) {
+                                              setSelectedStudents([...selectedStudents, s.id]);
+                                            } else {
+                                              setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                            }
+                                          }}
+                                          className="rounded border-slate-300 ml-2"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                      <div 
+                                        className={`${view === 'trash' ? 'cursor-default' : 'cursor-pointer'}`}
+                                        onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                      >
+                                        <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                        <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center mr-8">
+                                           <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
+                                           {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
+                                        </h3>
+                                        <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 mr-8">
+                                            <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
+                                            <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                              s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
+                                              s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
+                                              s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
+                                              'bg-emerald-100 text-emerald-700'
+                                            }`}>
+                                              {s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}
+                                            </span>
+                                        </div>
+                                        {view === 'trash' && (
+                                          <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2 mr-8">
+                                               <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
+                                               <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
-                                 </div>
-                             ))}
+                                  ))}
+                                </div>
+                              ))
+                            ) : (
+                              displayed.map((s, idx) => (
+                                <div key={s.id} className="bg-white rounded-xl p-3 shadow-sm border border-slate-200 relative mb-2 hover:bg-slate-50 group transition-colors">
+                                  <div className="absolute top-2 right-2">
+                                    <input 
+                                      type="checkbox"
+                                      checked={selectedStudents.includes(s.id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedStudents([...selectedStudents, s.id]);
+                                        } else {
+                                          setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                        }
+                                      }}
+                                      className="rounded border-slate-300 ml-2"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                  <div 
+                                    className={`${view === 'trash' ? 'cursor-default' : 'cursor-pointer'}`}
+                                    onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                  >
+                                    <div className={`absolute top-0 bottom-0 left-0 w-1 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+                                    <h3 className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors flex items-center mr-8">
+                                       <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
+                                       {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
+                                    </h3>
+                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 mr-8">
+                                        <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
+                                        <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                                          s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
+                                          s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
+                                          s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
+                                          'bg-emerald-100 text-emerald-700'
+                                        }`}>
+                                          {s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}
+                                        </span>
+                                    </div>
+                                    {view === 'trash' && (
+                                      <div className="mt-2 pt-2 border-t border-slate-100 flex gap-2 mr-8">
+                                           <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="flex-1 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><RotateCcw size={14}/> استعادة</button>
+                                           <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="flex-1 py-1.5 bg-red-50 text-red-600 rounded-lg font-bold text-xs flex items-center justify-center gap-1"><Trash2 size={14}/> حذف نهائي</button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))
+                            )}
                           </div>
                           <div ref={loadMoreRef} className="h-10"></div>
                         </div>
@@ -1405,6 +1759,7 @@
                                 pageNumber: pageNum,
                                 notes: form.get('notes'),
                                 status: form.get('status') || 'active',
+                                transferredSchool: form.get('transferredSchool') || '',
                                 isDeleted: false,
                                 createdAt: view === 'edit' ? new Date(form.get('createdAt')).getTime() : Date.now()
                             };
@@ -1478,6 +1833,40 @@
                                 </label>
                               </div>
                            </div>
+
+                           {/* Transferred School Field - Shows only when "منقول" is selected */}
+                           {(() => {
+                             const studentStatus = view === 'edit' ? students.find(s=>s.id===selectedId)?.status : null;
+                             const [showTransferred, setShowTransferred] = useState(view === 'add' ? false : studentStatus === 'transferred');
+                             
+                             return (
+                               <>
+                                 <input 
+                                   type="radio" 
+                                   name="status" 
+                                   value="transferred" 
+                                   id="status-transferred" 
+                                   className="hidden" 
+                                   onChange={(e) => setShowTransferred(e.target.checked)} 
+                                 />
+                                 {showTransferred && (
+                                   <div className="animate-fade-in">
+                                     <label className="block text-[10px] font-bold text-slate-400 mb-2">المدرسة المنقول إليها</label>
+                                     <div className="relative">
+                                       <School size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                                       <input 
+                                         name="transferredSchool" 
+                                         defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.transferredSchool : ''} 
+                                         className="w-full p-2.5 pr-10 rounded-xl bg-slate-50 outline-none border font-bold text-sm" 
+                                         placeholder="أدخل اسم المدرسة المنقول إليها..." 
+                                       />
+                                     </div>
+                                   </div>
+                                 )}
+                               </>
+                             );
+                           })()}
+
                            <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
                            <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>حفظ البيانات</button>
                         </form>
@@ -1670,9 +2059,9 @@
                   </Modal>
                 )}
 
-                {/* Share Modal */}
+                {/* Share Modal - Now with higher z-index */}
                 {showShareModal && (
-                  <Modal onClose={() => setShowShareModal(false)}>
+                  <Modal onClose={() => setShowShareModal(false)} zIndex="z-[70]">
                     <div className="bg-white rounded-2xl p-5 space-y-4">
                       <h3 className="text-lg font-bold">مشاركة عبر واتساب</h3>
                       <textarea 
@@ -1788,6 +2177,9 @@
                                             <div className="text-[10px] font-bold text-slate-400">الوضع الأكاديمي</div>
                                             <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold mt-0.5 ${statusColors[s.status] || statusColors['active']}`}>
                                                 {statusLabels[s.status] || 'مستمر'}
+                                                {s.status === 'transferred' && s.transferredSchool && (
+                                                  <span className="mr-1 text-amber-600">→ {s.transferredSchool}</span>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
