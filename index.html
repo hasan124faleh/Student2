@@ -207,23 +207,24 @@
         transform: translateX(-4px);
       }
 
-      /* Alphabet Scrollbar */
+      /* Alphabet Scrollbar - Updated Design */
       .alphabet-scrollbar {
         position: fixed;
-        left: 10px;
+        right: 10px;
         top: 50%;
         transform: translateY(-50%);
+        width: 40px;
+        height: 80vh;
+        background-color: rgba(255, 255, 255, 0.95);
+        border-radius: 30px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(8px);
+        border: 1px solid #e2e8f0;
+        z-index: 40;
+        padding: 15px 0;
         display: flex;
         flex-direction: column;
-        gap: 2px;
-        z-index: 40;
-        background-color: rgba(255, 255, 255, 0.9);
-        padding: 8px 4px;
-        border-radius: 20px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        backdrop-filter: blur(4px);
-        border: 1px solid #e2e8f0;
-        max-height: 80vh;
+        align-items: center;
         overflow-y: auto;
         scrollbar-width: none;
       }
@@ -232,60 +233,68 @@
         display: none;
       }
       
-      .alphabet-letter {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        color: #1e293b;
-        cursor: pointer;
-        border-radius: 8px;
+      .alphabet-letter-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: #f1f5f9;
+        margin: 4px 0;
         transition: all 0.2s ease;
+        cursor: pointer;
+        border: 1px solid #cbd5e1;
         position: relative;
       }
       
-      .alphabet-letter:hover {
+      .alphabet-letter-dot.active {
         background-color: #2563eb;
-        color: white;
+        border-color: #2563eb;
+        transform: scale(1.2);
+        box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+      }
+      
+      .alphabet-letter-dot:hover {
+        background-color: #2563eb;
+        border-color: #2563eb;
         transform: scale(1.1);
       }
       
-      .alphabet-letter.active {
-        background-color: #2563eb;
-        color: white;
+      html.dark .alphabet-scrollbar {
+        background-color: #1e293b;
+        border-color: #334155;
       }
       
-      .alphabet-letter[data-count]:after {
-        content: attr(data-count);
-        position: absolute;
-        top: -2px;
-        right: -2px;
-        background-color: #ef4444;
+      html.dark .alphabet-letter-dot {
+        background-color: #334155;
+        border-color: #475569;
+      }
+
+      /* Floating Letter Popup */
+      .floating-letter-popup {
+        position: fixed;
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         color: white;
-        font-size: 8px;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-size: 18px;
         font-weight: bold;
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 0.2s ease;
+        z-index: 100;
+        pointer-events: none;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        animation: fade-in 0.15s ease-out;
+        border: 2px solid #3b82f6;
+        min-width: 60px;
+        text-align: center;
+        transform: translate(-50%, -50%);
       }
       
-      .alphabet-letter:hover:after {
-        opacity: 1;
+      .floating-letter-popup span {
+        display: block;
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 2px;
       }
       
-      /* Section highlight */
-      .alphabet-section {
-        scroll-margin-top: 70px;
-      }
-      
+      /* Section header with letter */
       .section-header {
         position: sticky;
         top: 56px;
@@ -304,27 +313,92 @@
         color: #f8fafc;
       }
       
-      html.dark .alphabet-scrollbar {
-        background-color: #1e293b;
-        border-color: #334155;
+      .alphabet-section {
+        scroll-margin-top: 70px;
       }
       
-      html.dark .alphabet-letter {
-        color: #f8fafc;
+      /* Share text styling */
+      .share-text-container {
+        font-family: 'Cairo', sans-serif;
+        line-height: 1.6;
+        background-color: #f8fafc;
+        padding: 16px;
+        border-radius: 12px;
       }
       
-      .tooltip-floating {
-        position: fixed;
-        background-color: #1e293b;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 8px;
+      .share-text-container h3 {
+        color: #1e293b;
+        font-size: 18px;
+        font-weight: 800;
+        margin-bottom: 12px;
+        text-align: center;
+        border-bottom: 2px solid #2563eb;
+        padding-bottom: 8px;
+      }
+      
+      .share-student-item {
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 10px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+      
+      .share-student-name {
+        font-size: 16px;
+        font-weight: 800;
+        color: #2563eb;
+        margin-bottom: 6px;
+      }
+      
+      .share-student-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
         font-size: 14px;
-        font-weight: bold;
-        z-index: 100;
-        pointer-events: none;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        animation: fade-in 0.2s ease;
+      }
+      
+      .share-detail-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      
+      .share-detail-label {
+        color: #64748b;
+        font-weight: 600;
+      }
+      
+      .share-detail-value {
+        color: #1e293b;
+        font-weight: 700;
+      }
+      
+      .share-status-badge {
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-block;
+      }
+      
+      .status-active { background: #d1fae5; color: #065f46; }
+      .status-transferred { background: #fed7aa; color: #92400e; }
+      .status-left { background: #ffe4e6; color: #b91c1c; }
+      .status-graduated { background: #dbeafe; color: #1e40af; }
+      
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .alphabet-scrollbar {
+          width: 30px;
+          right: 5px;
+        }
+        
+        .alphabet-letter-dot {
+          width: 18px;
+          height: 18px;
+        }
       }
     </style>
 
@@ -341,7 +415,9 @@
         "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
         "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
         "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
-        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs"
+        "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs",
+        "jspdf": "https://esm.sh/jspdf@2.5.1",
+        "jspdf-autotable": "https://esm.sh/jspdf-autotable@3.5.31"
       }
     }
     </script>
@@ -354,12 +430,20 @@
         import ReactDOM from 'react-dom/client';
         import { 
           Users, LogOut, Settings, Search, Plus, Printer, 
-          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, ArrowRight, Save, X, FileText, CheckCircle2, XCircle, AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, MessageSquare, Grid, List, CheckSquare, School
+          Trash2, FileSpreadsheet, Download, Upload, AlertTriangle, 
+          ArrowRight, Save, X, FileText, CheckCircle2, XCircle, 
+          AlertCircle, ArrowUp, Filter, UserCheck, SortAsc, Type, 
+          ChevronDown, ListFilter, RotateCcw, Info, Calendar, Clock, 
+          ArrowLeft, Palette, Loader2, BarChart3, PieChart, Moon, Sun, 
+          Mic, MicOff, Maximize2, Minimize2, Wifi, WifiOff, Share2, 
+          MessageSquare, Grid, List, CheckSquare, School, FileDown, FileUp
         } from 'lucide-react';
         import { initializeApp } from "firebase/app";
         import { initializeFirestore, persistentLocalCache, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, writeBatch, onSnapshot, query, where, getCountFromServer, enableNetwork, disableNetwork } from "firebase/firestore";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
         import * as XLSX from 'xlsx';
+        import jsPDF from 'jspdf';
+        import autoTable from 'jspdf-autotable';
 
         // ==========================================
         // FIREBASE CONFIG
@@ -413,6 +497,43 @@
           const workbook = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(workbook, worksheet, "الطلاب");
           XLSX.writeFile(workbook, "سجل_القيود_العام.xlsx");
+        };
+
+        const exportToPDF = (students, title = "سجل القيد العام") => {
+          const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+          });
+          
+          doc.setFont('cairo', 'normal');
+          doc.setFontSize(18);
+          doc.text(title, 105, 15, { align: 'center' });
+          
+          doc.setFontSize(10);
+          doc.text(`تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}`, 105, 22, { align: 'center' });
+          
+          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+          
+          const tableData = students.map((s, index) => [
+            index + 1,
+            cleanName(s.firstName) + (s.lastName ? ` / ${s.lastName}` : ''),
+            s.regNumber,
+            s.pageNumber,
+            statusMap[s.status || 'active']
+          ]);
+          
+          autoTable(doc, {
+            head: [['#', 'الاسم الكامل', 'رقم القيد', 'رقم الصفحة', 'الحالة']],
+            body: tableData,
+            startY: 30,
+            styles: { font: 'cairo', fontSize: 8, halign: 'right' },
+            headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
+            alternateRowStyles: { fillColor: [241, 245, 249] },
+            margin: { top: 30, right: 10, bottom: 10, left: 10 }
+          });
+          
+          doc.save(`سجل_الطلاب_${new Date().getTime()}.pdf`);
         };
 
         const generateTemplate = () => {
@@ -488,10 +609,10 @@
             <div className="w-full max-w-lg relative" onClick={e => e.stopPropagation()}>
                 <button 
                     onClick={onClose} 
-                    className="absolute top-3 left-3 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all z-[60]"
+                    className="absolute -top-2 -left-2 p-2 bg-white text-slate-600 hover:bg-slate-100 rounded-full shadow-lg transition-all z-[60]"
                     title="إغلاق"
                 >
-                    <X size={20} />
+                    <X size={18} />
                 </button>
                 {children}
             </div>
@@ -758,9 +879,12 @@
           const [printTemplateFields, setPrintTemplateFields] = useState(['name', 'regNumber', 'pageNumber']);
           const [showShareModal, setShowShareModal] = useState(false);
           const [shareText, setShareText] = useState('');
-          const [activeLetter, setActiveLetter] = useState('');
-          const [hoverLetter, setHoverLetter] = useState('');
+          const [shareStudents, setShareStudents] = useState([]);
+          const [hoveredLetter, setHoveredLetter] = useState(null);
+          const [hoveredLetterCount, setHoveredLetterCount] = useState(0);
           const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+          const [showPrintSelectedModal, setShowPrintSelectedModal] = useState(false);
+          const [editFormData, setEditFormData] = useState(null);
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
@@ -786,7 +910,6 @@
 
           // Scroll to letter function
           const scrollToLetter = (letter) => {
-            setActiveLetter(letter);
             const element = document.getElementById(`section-${letter}`);
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -796,6 +919,12 @@
           // Track mouse for tooltip
           const handleMouseMove = (e) => {
             setMousePosition({ x: e.clientX, y: e.clientY });
+          };
+
+          // Handle letter hover
+          const handleLetterHover = (letter) => {
+            setHoveredLetter(letter);
+            setHoveredLetterCount(studentsByLetter[letter]?.length || 0);
           };
 
           useEffect(() => {
@@ -829,6 +958,7 @@
                 setShowThemeModal(false);
                 setShowPrintTemplateModal(false);
                 setShowShareModal(false);
+                setShowPrintSelectedModal(false);
               }
             };
             window.addEventListener('keydown', handleKeyDown);
@@ -1028,6 +1158,25 @@
             return () => observer.disconnect();
           }, [students.length]);
 
+          // Set edit form data when editing
+          useEffect(() => {
+            if (view === 'edit' && selectedId) {
+              const student = students.find(s => s.id === selectedId);
+              if (student) {
+                setEditFormData({
+                  firstName: cleanName(student.firstName),
+                  lastName: student.lastName || '',
+                  regNumber: student.regNumber,
+                  pageNumber: student.pageNumber,
+                  status: student.status || 'active',
+                  transferredSchool: student.transferredSchool || '',
+                  notes: student.notes || '',
+                  createdAt: formatDateForInput(student.createdAt)
+                });
+              }
+            }
+          }, [view, selectedId, students]);
+
           const handleImport = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
@@ -1137,24 +1286,36 @@
             setSimilarStudents(matches);
           };
 
-          // Share via WhatsApp
+          // Share via WhatsApp with improved formatting
           const shareViaWhatsApp = (studentsToShare) => {
             const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+            
+            // Format the text nicely
             let text = "📋 *سجل القيد العام - بيانات الطلاب*\n\n";
             
             studentsToShare.forEach((s, index) => {
               text += `*${index + 1}. ${cleanName(s.firstName)} ${s.lastName || ''}*\n`;
-              text += `📌 رقم القيد: ${s.regNumber}\n`;
-              text += `📄 رقم الصفحة: ${s.pageNumber}\n`;
-              text += `🎓 الحالة: ${statusMap[s.status || 'active']}\n`;
+              text += `└ 📌 رقم القيد: ${s.regNumber}\n`;
+              text += `└ 📄 رقم الصفحة: ${s.pageNumber}\n`;
+              text += `└ 🎓 الحالة: ${statusMap[s.status || 'active']}`;
+              
               if (s.status === 'transferred' && s.transferredSchool) {
-                text += `🏫 المدرسة المنقول إليها: ${s.transferredSchool}\n`;
+                text += ` (منقول إلى: ${s.transferredSchool})`;
               }
-              if (s.notes) text += `📝 ملاحظات: ${s.notes}\n`;
-              text += `📅 تاريخ القيد: ${new Date(s.createdAt).toLocaleDateString('ar-EG')}\n\n`;
+              
+              text += `\n└ 📅 تاريخ القيد: ${new Date(s.createdAt).toLocaleDateString('ar-EG')}\n`;
+              
+              if (s.notes) {
+                text += `└ 📝 ملاحظات: ${s.notes}\n`;
+              }
+              
+              text += `\n`;
             });
             
+            text += `📊 *إجمالي الطلاب: ${studentsToShare.length}*`;
+            
             setShareText(text);
+            setShareStudents(studentsToShare);
             setShowShareModal(true);
           };
 
@@ -1205,6 +1366,28 @@
             }
           };
 
+          // Print selected students
+          const printSelectedStudents = () => {
+            if (selectedStudents.length === 0) {
+              setAlertConfig({ message: 'الرجاء تحديد طلاب للطباعة أولاً', type: 'warning' });
+              return;
+            }
+            const selected = students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted);
+            setPrintMode('selected');
+            setTimeout(() => window.print(), 500);
+            setShowPrintSelectedModal(false);
+          };
+
+          // Export selected to PDF
+          const exportSelectedToPDF = () => {
+            if (selectedStudents.length === 0) {
+              setAlertConfig({ message: 'الرجاء تحديد طلاب للتصدير أولاً', type: 'warning' });
+              return;
+            }
+            const selected = students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted);
+            exportToPDF(selected, 'الطلاب المحددين');
+          };
+
           if (!user) return <Login />;
         
           return (
@@ -1218,37 +1401,36 @@
                   </div>
                 )}
 
-                {/* Alphabet Scrollbar */}
+                {/* Alphabet Scrollbar - New Design with Dots */}
                 {view === 'list' && !debouncedQuery && !selectedRegFilter && statusFilter === 'ALL' && yearFilter === 'ALL' && (
                   <div className="alphabet-scrollbar no-print">
                     {arabicLetters.map(letter => {
-                      const count = studentsByLetter[letter]?.length || 0;
+                      const hasStudents = studentsByLetter[letter]?.length > 0;
                       return (
                         <div
                           key={letter}
-                          className={`alphabet-letter ${activeLetter === letter ? 'active' : ''}`}
-                          data-count={count > 0 ? count : null}
-                          onMouseEnter={() => setHoverLetter(letter)}
-                          onMouseLeave={() => setHoverLetter('')}
-                          onClick={() => scrollToLetter(letter)}
-                        >
-                          {letter}
-                        </div>
+                          className={`alphabet-letter-dot ${hasStudents ? '' : 'opacity-30'}`}
+                          onMouseEnter={() => handleLetterHover(letter)}
+                          onMouseLeave={() => setHoveredLetter(null)}
+                          onClick={() => hasStudents && scrollToLetter(letter)}
+                          style={{ backgroundColor: hasStudents ? '' : '#e2e8f0' }}
+                        />
                       );
                     })}
                   </div>
                 )}
 
-                {/* Floating tooltip for alphabet */}
-                {hoverLetter && (
+                {/* Floating letter popup */}
+                {hoveredLetter && (
                   <div 
-                    className="tooltip-floating"
+                    className="floating-letter-popup"
                     style={{
-                      left: mousePosition.x + 20,
-                      top: mousePosition.y - 40
+                      left: mousePosition.x,
+                      top: mousePosition.y - 60
                     }}
                   >
-                    {hoverLetter} - {studentsByLetter[hoverLetter]?.length || 0} طالب
+                    {hoveredLetter}
+                    <span>{hoveredLetterCount} طالب</span>
                   </div>
                 )}
 
@@ -1355,18 +1537,30 @@
 
                           {/* Selection Actions */}
                           {selectedStudents.length > 0 && (
-                            <div className="bg-blue-50 p-2 rounded-xl border border-blue-200 flex items-center justify-between animate-fade-in">
+                            <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 flex flex-wrap items-center justify-between gap-2 animate-fade-in">
                               <span className="text-xs font-bold text-blue-700">تم تحديد {selectedStudents.length} طالب</span>
-                              <div className="flex gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 <button 
-                                  onClick={() => shareViaWhatsApp(selectedStudents.map(id => students.find(s => s.id === id)).filter(Boolean))}
-                                  className="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1"
+                                  onClick={() => shareViaWhatsApp(students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted))}
+                                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-green-700"
                                 >
                                   <Share2 size={14} /> مشاركة
                                 </button>
                                 <button 
+                                  onClick={exportSelectedToPDF}
+                                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-700"
+                                >
+                                  <FileDown size={14} /> PDF
+                                </button>
+                                <button 
+                                  onClick={() => setShowPrintSelectedModal(true)}
+                                  className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700"
+                                >
+                                  <Printer size={14} /> طباعة
+                                </button>
+                                <button 
                                   onClick={() => setSelectedStudents([])}
-                                  className="px-3 py-1 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold"
+                                  className="px-3 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300"
                                 >
                                   إلغاء التحديد
                                 </button>
@@ -1398,122 +1592,123 @@
                           </div>
 
                           {/* Action Buttons */}
-                          <div className="flex gap-3">
+                          <div className="flex flex-wrap gap-2">
                                 <button 
                                   onClick={() => { setSelectedId(null); setView('add'); setSimilarStudents([]); }} 
                                   data-tooltip="إضافة طالب جديد (Ctrl+N)"
-                                  className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}
+                                  className={`flex-1 min-w-[120px] ${currentTheme.primary} ${currentTheme.hover} text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-colors`}
                                 >
-                                  <Plus size={16} /> إضافة طالب جديد
+                                  <Plus size={16} /> إضافة طالب
                                 </button>
                                 <button 
                                   onClick={() => setShowPrintModal(true)} 
                                   data-tooltip="طباعة السجل (Ctrl+P)"
-                                  className="flex-1 bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+                                  className="flex-1 min-w-[120px] bg-white text-slate-700 border px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
                                 >
-                                  <Printer size={16} /> طباعة السجل
+                                  <Printer size={16} /> طباعة
                                 </button>
                                 <button 
                                   onClick={() => setShowPrintTemplateModal(true)}
                                   data-tooltip="تخصيص قالب الطباعة"
-                                  className="flex-1 bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"
+                                  className="flex-1 min-w-[120px] bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-indigo-100 transition-colors"
                                 >
-                                  <FileText size={16} /> تخصيص الطباعة
+                                  <FileText size={16} /> تخصيص
                                 </button>
                           </div>
 
                           {/* Desktop Table View with Alphabet Sections */}
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
-                            {sortBy === 'alphabetical' && !debouncedQuery && Object.keys(studentsByLetter).sort().map(letter => (
-                              <div key={letter} id={`section-${letter}`} className="alphabet-section">
-                                <div className="section-header flex items-center gap-2">
-                                  <span className={`${currentTheme.primary} text-white w-8 h-8 rounded-full flex items-center justify-center`}>
-                                    {letter}
-                                  </span>
-                                  <span>الطلاب الذين يبدأ اسمهم بحرف {letter}</span>
-                                  <span className="text-sm text-slate-400">({studentsByLetter[letter].length} طالب)</span>
-                                </div>
-                                <table className="w-full text-right border-collapse">
-                                  <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                    <tr>
-                                      <th className="px-2 py-2 w-12 text-center">
-                                        <input 
-                                          type="checkbox" 
-                                          onChange={(e) => {
-                                            if (e.target.checked) {
-                                              setSelectedStudents(studentsByLetter[letter].map(s => s.id));
-                                            } else {
-                                              setSelectedStudents(selectedStudents.filter(id => !studentsByLetter[letter].some(s => s.id === id)));
-                                            }
-                                          }}
-                                          checked={studentsByLetter[letter].length > 0 && studentsByLetter[letter].every(s => selectedStudents.includes(s.id))}
-                                          className="rounded border-slate-300"
-                                        />
-                                      </th>
-                                      <th className="px-4 py-2 w-12 text-center">#</th>
-                                      <th className="px-4 py-2">اسم الطالب</th>
-                                      <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
-                                      <th className="px-4 py-2 w-24 text-center">الصفحة</th>
-                                      <th className="px-4 py-2 w-20 text-center">الحالة</th>
-                                      {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100 text-xs">
-                                    {studentsByLetter[letter].map((s, idx) => (
-                                      <tr key={s.id} className={`hover:bg-blue-50/40 transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
-                                        <td className="px-2 py-2 text-center">
+                            {sortBy === 'alphabetical' && !debouncedQuery ? (
+                              Object.keys(studentsByLetter).sort().map(letter => (
+                                <div key={letter} id={`section-${letter}`} className="alphabet-section">
+                                  <div className="section-header flex items-center gap-2">
+                                    <span className={`${currentTheme.primary} text-white w-8 h-8 rounded-full flex items-center justify-center`}>
+                                      {letter}
+                                    </span>
+                                    <span>الطلاب الذين يبدأ اسمهم بحرف {letter}</span>
+                                    <span className="text-sm text-slate-400">({studentsByLetter[letter].length} طالب)</span>
+                                  </div>
+                                  <table className="w-full text-right border-collapse">
+                                    <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
+                                      <tr>
+                                        <th className="px-2 py-2 w-12 text-center">
                                           <input 
-                                            type="checkbox"
-                                            checked={selectedStudents.includes(s.id)}
+                                            type="checkbox" 
                                             onChange={(e) => {
-                                              e.stopPropagation();
                                               if (e.target.checked) {
-                                                setSelectedStudents([...selectedStudents, s.id]);
+                                                setSelectedStudents(studentsByLetter[letter].map(s => s.id));
                                               } else {
-                                                setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                                setSelectedStudents(selectedStudents.filter(id => !studentsByLetter[letter].some(s => s.id === id)));
                                               }
                                             }}
+                                            checked={studentsByLetter[letter].length > 0 && studentsByLetter[letter].every(s => selectedStudents.includes(s.id))}
                                             className="rounded border-slate-300"
-                                            onClick={(e) => e.stopPropagation()}
                                           />
-                                        </td>
-                                        <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
-                                        <td className="px-4 py-2">
-                                            <div 
-                                              className="flex items-center gap-2 cursor-pointer" 
-                                              onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
-                                            >
-                                                <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
-                                                <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
-                                                    {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
-                                        <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
-                                        <td className="px-4 py-2 text-center">
-                                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                            s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
-                                            s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
-                                            s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
-                                            'bg-emerald-100 text-emerald-700'
-                                          }`}>
-                                            {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
-                                          </span>
-                                        </td>
-                                        {view === 'trash' && (
-                                          <td className="px-4 py-2 text-center flex gap-1 justify-center">
-                                               <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
-                                               <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                          </td>
-                                        )}
+                                        </th>
+                                        <th className="px-4 py-2 w-12 text-center">#</th>
+                                        <th className="px-4 py-2">اسم الطالب</th>
+                                        <th className="px-4 py-2 w-28 text-center">رقم القيد</th>
+                                        <th className="px-4 py-2 w-24 text-center">الصفحة</th>
+                                        <th className="px-4 py-2 w-20 text-center">الحالة</th>
+                                        {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
                                       </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            ))}
-                            {sortBy !== 'alphabetical' && (
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-xs">
+                                      {studentsByLetter[letter].map((s, idx) => (
+                                        <tr key={s.id} className={`hover:bg-blue-50/40 transition-all border-b border-slate-50 group h-10 ${view === 'trash' ? 'cursor-default' : ''}`}>
+                                          <td className="px-2 py-2 text-center">
+                                            <input 
+                                              type="checkbox"
+                                              checked={selectedStudents.includes(s.id)}
+                                              onChange={(e) => {
+                                                e.stopPropagation();
+                                                if (e.target.checked) {
+                                                  setSelectedStudents([...selectedStudents, s.id]);
+                                                } else {
+                                                  setSelectedStudents(selectedStudents.filter(id => id !== s.id));
+                                                }
+                                              }}
+                                              className="rounded border-slate-300"
+                                              onClick={(e) => e.stopPropagation()}
+                                            />
+                                          </td>
+                                          <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
+                                          <td className="px-4 py-2">
+                                              <div 
+                                                className="flex items-center gap-2 cursor-pointer" 
+                                                onClick={() => { if(view !== 'trash') { setSelectedId(s.id); setView('detail'); }}}
+                                              >
+                                                  <div className={`w-2 h-2 rounded-full shrink-0 ${s.status === 'graduated' ? 'bg-blue-500' : s.status === 'left' ? 'bg-rose-500' : s.status === 'transferred' ? 'bg-amber-500' : 'bg-emerald-500'}`} title={s.status === 'graduated' ? 'متخرج' : s.status === 'left' ? 'تارك' : s.status === 'transferred' ? 'منقول' : 'مستمر'}></div>
+                                                  <span className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">
+                                                      {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
+                                                  </span>
+                                              </div>
+                                          </td>
+                                          <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
+                                          <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
+                                          <td className="px-4 py-2 text-center">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                              s.status === 'graduated' ? 'bg-blue-100 text-blue-700' : 
+                                              s.status === 'left' ? 'bg-rose-100 text-rose-700' : 
+                                              s.status === 'transferred' ? 'bg-amber-100 text-amber-700' : 
+                                              'bg-emerald-100 text-emerald-700'
+                                            }`}>
+                                              {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
+                                            </span>
+                                          </td>
+                                          {view === 'trash' && (
+                                            <td className="px-4 py-2 text-center flex gap-1 justify-center">
+                                                 <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
+                                                 <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
+                                            </td>
+                                          )}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              ))
+                            ) : (
                               <table className="w-full text-right border-collapse">
                                 <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
                                   <tr>
@@ -1632,7 +1827,7 @@
                                            <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
                                            {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
                                         </h3>
-                                        <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 mr-8">
+                                        <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2 mr-8">
                                             <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
                                             <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
                                             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -1682,7 +1877,7 @@
                                        <span className="text-slate-400 font-mono ml-2 text-xs bg-slate-50 px-1.5 py-0.5 rounded-md border border-slate-100">#{idx + 1}</span>
                                        {cleanName(s.firstName)}{s.lastName ? <span className="text-slate-500 mr-1">/ {s.lastName}</span> : ''}
                                     </h3>
-                                    <div className="mt-2 flex gap-2 border-t border-slate-100 pt-2 mr-8">
+                                    <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2 mr-8">
                                         <span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm transition-colors`}>قيد {s.regNumber}</span>
                                         <span className="bg-[#FFA500] text-white px-2 py-0.5 rounded text-xs font-bold shadow-sm">صفحة {s.pageNumber}</span>
                                         <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -1729,10 +1924,10 @@
                     </div>
                 )}
 
-                {/* Add/Edit Modal */}
+                {/* Add/Edit Modal - Fixed */}
                 {(view === 'add' || view === 'edit') && (
-                    <Modal onClose={() => { setView('list'); setSimilarStudents([]); }}>
-                      <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4">
+                    <Modal onClose={() => { setView('list'); setSimilarStudents([]); setEditFormData(null); }}>
+                      <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
                         <h2 className="text-lg font-bold">{view === 'add' ? 'إضافة طالب جديد' : 'تعديل بيانات الطالب'}</h2>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
@@ -1774,13 +1969,17 @@
                                 await refreshStats();
                                 setView('list');
                                 setSimilarStudents([]);
-                            } catch(err) { setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); }
+                                setEditFormData(null);
+                            } catch(err) { 
+                                console.error(err);
+                                setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); 
+                            }
                         }} className="space-y-3">
                            <div>
                                <input 
                                    name="firstName" 
                                    required 
-                                   defaultValue={view === 'edit' ? cleanName(students.find(s=>s.id===selectedId)?.firstName) : ''} 
+                                   defaultValue={editFormData?.firstName || ''} 
                                    className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} 
                                    placeholder="الاسم الرباعي" 
                                    onChange={(e) => checkSimilarStudents(e.target.value)} 
@@ -1806,68 +2005,61 @@
                                    </div>
                                )}
                            </div>
-                           <input name="lastName" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.lastName : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="العائلة (اختياري)" />
+                           <input name="lastName" defaultValue={editFormData?.lastName || ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="العائلة (اختياري)" />
                            <div className="grid grid-cols-2 gap-3">
-                             <input name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم القيد" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.regNumber : ''} />
-                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.pageNumber : ''} />
+                             <input name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم القيد" defaultValue={editFormData?.regNumber || ''} />
+                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={editFormData?.pageNumber || ''} />
                            </div>
-                           <input type="date" name="createdAt" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" defaultValue={view === 'edit' ? formatDateForInput(students.find(s=>s.id===selectedId)?.createdAt) : formatDateForInput(Date.now())} />
+                           <input type="date" name="createdAt" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" defaultValue={editFormData?.createdAt || formatDateForInput(Date.now())} />
                            <div>
                               <label className="block text-[10px] font-bold text-slate-400 mb-2 uppercase tracking-widest">الوضع الأكاديمي</label>
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 <label className="cursor-pointer group">
-                                    <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' || students.find(s=>s.id===selectedId)?.status === 'active'} />
+                                    <input type="radio" name="status" value="active" className="peer hidden" defaultChecked={view==='add' ? true : editFormData?.status === 'active'} />
                                     <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-emerald-500 peer-checked:text-white peer-checked:border-emerald-500 transition-all">مستمر</div>
                                 </label>
                                 <label className="cursor-pointer group">
-                                    <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'transferred'} />
+                                    <input type="radio" name="status" value="transferred" className="peer hidden" defaultChecked={editFormData?.status === 'transferred'} />
                                     <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white peer-checked:border-amber-500 transition-all">منقول</div>
                                 </label>
                                 <label className="cursor-pointer group">
-                                    <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'left'} />
+                                    <input type="radio" name="status" value="left" className="peer hidden" defaultChecked={editFormData?.status === 'left'} />
                                     <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-rose-500 peer-checked:text-white peer-checked:border-rose-500 transition-all">تارك</div>
                                 </label>
                                 <label className="cursor-pointer group">
-                                    <input type="radio" name="status" value="graduated" className="peer hidden" defaultChecked={students.find(s=>s.id===selectedId)?.status === 'graduated'} />
+                                    <input type="radio" name="status" value="graduated" className="peer hidden" defaultChecked={editFormData?.status === 'graduated'} />
                                     <div className="py-2 px-1 rounded-xl border-2 border-slate-100 text-center font-bold text-xs text-slate-500 peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-all">متخرج</div>
                                 </label>
                               </div>
                            </div>
 
-                           {/* Transferred School Field - Shows only when "منقول" is selected */}
-                           {(() => {
-                             const studentStatus = view === 'edit' ? students.find(s=>s.id===selectedId)?.status : null;
-                             const [showTransferred, setShowTransferred] = useState(view === 'add' ? false : studentStatus === 'transferred');
-                             
-                             return (
-                               <>
-                                 <input 
-                                   type="radio" 
-                                   name="status" 
-                                   value="transferred" 
-                                   id="status-transferred" 
-                                   className="hidden" 
-                                   onChange={(e) => setShowTransferred(e.target.checked)} 
-                                 />
-                                 {showTransferred && (
-                                   <div className="animate-fade-in">
-                                     <label className="block text-[10px] font-bold text-slate-400 mb-2">المدرسة المنقول إليها</label>
-                                     <div className="relative">
-                                       <School size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                                       <input 
-                                         name="transferredSchool" 
-                                         defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.transferredSchool : ''} 
-                                         className="w-full p-2.5 pr-10 rounded-xl bg-slate-50 outline-none border font-bold text-sm" 
-                                         placeholder="أدخل اسم المدرسة المنقول إليها..." 
-                                       />
-                                     </div>
-                                   </div>
-                                 )}
-                               </>
-                             );
-                           })()}
+                           {/* Transferred School Field */}
+                           <div>
+                             <input 
+                               type="radio" 
+                               name="status" 
+                               value="transferred" 
+                               id="status-transferred-edit" 
+                               className="hidden" 
+                               defaultChecked={editFormData?.status === 'transferred'}
+                             />
+                             {(editFormData?.status === 'transferred' || view === 'add') && (
+                               <div className="animate-fade-in mt-2">
+                                 <label className="block text-[10px] font-bold text-slate-400 mb-2">المدرسة المنقول إليها</label>
+                                 <div className="relative">
+                                   <School size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                                   <input 
+                                     name="transferredSchool" 
+                                     defaultValue={editFormData?.transferredSchool || ''} 
+                                     className="w-full p-2.5 pr-10 rounded-xl bg-slate-50 outline-none border font-bold text-sm" 
+                                     placeholder="أدخل اسم المدرسة المنقول إليها..." 
+                                   />
+                                 </div>
+                               </div>
+                             )}
+                           </div>
 
-                           <input name="notes" defaultValue={view === 'edit' ? students.find(s=>s.id===selectedId)?.notes : ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
+                           <input name="notes" defaultValue={editFormData?.notes || ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
                            <button className={`w-full ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm`}>حفظ البيانات</button>
                         </form>
                       </div>
@@ -2059,23 +2251,93 @@
                   </Modal>
                 )}
 
-                {/* Share Modal - Now with higher z-index */}
+                {/* Print Selected Modal */}
+                {showPrintSelectedModal && (
+                  <Modal onClose={() => setShowPrintSelectedModal(false)}>
+                    <div className="bg-white rounded-2xl p-5 text-center space-y-4">
+                      <h3 className="text-lg font-bold">طباعة الطلاب المحددين</h3>
+                      <p className="text-sm text-slate-600">عدد الطلاب المحددين: {selectedStudents.length}</p>
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={printSelectedStudents}
+                          className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm"
+                        >
+                          طباعة
+                        </button>
+                        <button 
+                          onClick={() => setShowPrintSelectedModal(false)}
+                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
+                        >
+                          إلغاء
+                        </button>
+                      </div>
+                    </div>
+                  </Modal>
+                )}
+
+                {/* Share Modal - Improved */}
                 {showShareModal && (
                   <Modal onClose={() => setShowShareModal(false)} zIndex="z-[70]">
-                    <div className="bg-white rounded-2xl p-5 space-y-4">
-                      <h3 className="text-lg font-bold">مشاركة عبر واتساب</h3>
-                      <textarea 
-                        value={shareText}
-                        onChange={(e) => setShareText(e.target.value)}
-                        className="w-full h-64 p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm font-medium"
-                        dir="ltr"
-                      />
+                    <div className="bg-white rounded-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <MessageSquare size={20} className="text-green-600" />
+                        مشاركة عبر واتساب
+                      </h3>
+                      
+                      <div className="share-text-container">
+                        <h3>📋 سجل القيد العام - بيانات الطلاب</h3>
+                        {shareStudents.map((s, index) => {
+                          const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+                          const statusClass = s.status === 'active' ? 'status-active' : 
+                                             s.status === 'transferred' ? 'status-transferred' : 
+                                             s.status === 'left' ? 'status-left' : 'status-graduated';
+                          
+                          return (
+                            <div key={s.id} className="share-student-item">
+                              <div className="share-student-name">
+                                {index + 1}. {cleanName(s.firstName)} {s.lastName || ''}
+                              </div>
+                              <div className="share-student-details">
+                                <div className="share-detail-item">
+                                  <span className="share-detail-label">📌 رقم القيد:</span>
+                                  <span className="share-detail-value">{s.regNumber}</span>
+                                </div>
+                                <div className="share-detail-item">
+                                  <span className="share-detail-label">📄 رقم الصفحة:</span>
+                                  <span className="share-detail-value">{s.pageNumber}</span>
+                                </div>
+                                <div className="share-detail-item">
+                                  <span className="share-detail-label">🎓 الحالة:</span>
+                                  <span className={`share-status-badge ${statusClass}`}>
+                                    {statusMap[s.status || 'active']}
+                                    {s.status === 'transferred' && s.transferredSchool && ` → ${s.transferredSchool}`}
+                                  </span>
+                                </div>
+                                <div className="share-detail-item">
+                                  <span className="share-detail-label">📅 تاريخ القيد:</span>
+                                  <span className="share-detail-value">{new Date(s.createdAt).toLocaleDateString('ar-EG')}</span>
+                                </div>
+                                {s.notes && (
+                                  <div className="share-detail-item col-span-2">
+                                    <span className="share-detail-label">📝 ملاحظات:</span>
+                                    <span className="share-detail-value">{s.notes}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="mt-3 text-center font-bold">
+                          📊 إجمالي الطلاب: {shareStudents.length}
+                        </div>
+                      </div>
+
                       <div className="flex gap-3">
                         <a 
                           href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2"
+                          className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-green-700"
                           onClick={() => setShowShareModal(false)}
                         >
                           <MessageSquare size={18} />
@@ -2086,7 +2348,7 @@
                             navigator.clipboard.writeText(shareText);
                             setAlertConfig({ message: 'تم نسخ النص', type: 'success' });
                           }}
-                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
+                          className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm hover:bg-slate-200"
                         >
                           نسخ النص
                         </button>
@@ -2264,6 +2526,7 @@
               
               {printMode === 'list' && <PrintView students={filtered} title={selectedRegFilter ? `كشف الطلاب - قيد رقم ${selectedRegFilter}` : "كشف القيد العام"} selectedFields={printTemplateFields} />}
               {printMode === 'single' && students.find(s=>s.id===selectedId) && <SingleStudentPrint student={students.find(s=>s.id===selectedId)} />}
+              {printMode === 'selected' && <PrintView students={students.filter(s => selectedStudents.includes(s.id) && !s.isDeleted)} title="الطلاب المحددين" selectedFields={printTemplateFields} />}
             </>
           );
         };
