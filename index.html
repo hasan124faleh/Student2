@@ -458,48 +458,128 @@
           doc.save(`سجل_الطلاب_${new Date().getTime()}.pdf`);
         };
 
-        // New function to generate PDF blob for sharing with proper Arabic encoding
-        const generatePDFBlob = (studentsToShare, title = "سجل القيد العام") => {
+        // New function to generate PDF blob for sharing with proper Arabic encoding (Student Cards)
+        const generateStudentCardsPDFBlob = (studentsToShare, title = "بطاقات الطلاب") => {
           return new Promise((resolve) => {
             const doc = new jsPDF({
               orientation: 'portrait',
               unit: 'mm',
               format: 'a4',
               putOnlyUsedFonts: true,
-              hotfix: true // Enable hotfixes for better RTL support
+              hotfix: true
             });
             
             // Set document properties for Arabic
             doc.setLanguage("ar");
             doc.setDirection = "rtl";
             
-            doc.setFont('cairo', 'normal');
-            doc.setFontSize(18);
-            doc.text(title, 105, 15, { align: 'center' });
+            const statusLabels = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
+            const printDate = new Date().toLocaleDateString('ar-EG');
             
-            doc.setFontSize(10);
-            doc.text(`تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}`, 105, 22, { align: 'center' });
-            
-            const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
-            
-            const tableData = studentsToShare.map((s, index) => [
-              index + 1,
-              cleanName(s.firstName) + (s.lastName ? ` / ${s.lastName}` : ''),
-              s.regNumber,
-              s.pageNumber,
-              statusMap[s.status || 'active']
-            ]);
-            
-            autoTable(doc, {
-              head: [['#', 'الاسم الكامل', 'رقم القيد', 'رقم الصفحة', 'الحالة']],
-              body: tableData,
-              startY: 30,
-              styles: { font: 'cairo', fontSize: 8, halign: 'right' },
-              headStyles: { fillColor: [37, 99, 235], textColor: 255, fontSize: 9 },
-              alternateRowStyles: { fillColor: [241, 245, 249] },
-              margin: { top: 30, right: 10, bottom: 10, left: 10 },
-              tableLineColor: [0, 0, 0],
-              tableLineWidth: 0.1,
+            studentsToShare.forEach((student, index) => {
+              if (index > 0) {
+                doc.addPage();
+              }
+              
+              // Draw decorative borders
+              doc.setDrawColor(30, 41, 59);
+              doc.setLineWidth(0.5);
+              doc.rect(10, 10, 190, 277);
+              
+              doc.setDrawColor(30, 41, 59);
+              doc.setLineWidth(0.3);
+              doc.rect(15, 15, 180, 267);
+              
+              // Header Section
+              doc.setFontSize(12);
+              doc.setFont('cairo', 'bold');
+              doc.text("جمهورية العراق", 105, 25, { align: 'center' });
+              doc.text("وزارة التربية", 105, 32, { align: 'center' });
+              doc.text("المديرية العامة للتربية", 105, 39, { align: 'center' });
+              
+              // Emoji representation (simple)
+              doc.setFontSize(20);
+              doc.text("🎓", 105, 55, { align: 'center' });
+              
+              doc.setFontSize(16);
+              doc.text("بطاقة الطالب الشخصية", 105, 70, { align: 'center' });
+              
+              doc.setFontSize(10);
+              doc.text(`تاريخ الطباعة: ${printDate}`, 105, 80, { align: 'center' });
+              
+              // Student Name
+              doc.setFillColor(241, 245, 249);
+              doc.rect(20, 90, 170, 20, 'F');
+              doc.setDrawColor(30, 41, 59);
+              doc.rect(20, 90, 170, 20, 'S');
+              
+              doc.setFontSize(14);
+              doc.setFont('cairo', 'bold');
+              const fullName = `${cleanName(student.firstName)} ${student.lastName || ''}`;
+              doc.text(fullName, 105, 103, { align: 'center' });
+              
+              // Registration Numbers
+              doc.setFillColor(37, 99, 235);
+              doc.setTextColor(255, 255, 255);
+              doc.rect(25, 120, 75, 30, 'F');
+              doc.setFontSize(10);
+              doc.text("رقم القيد العام", 62.5, 130, { align: 'center' });
+              doc.setFontSize(18);
+              doc.setFont('cairo', 'bold');
+              doc.text(student.regNumber.toString(), 62.5, 145, { align: 'center' });
+              
+              doc.setFillColor(255, 165, 0);
+              doc.rect(105, 120, 75, 30, 'F');
+              doc.setFontSize(10);
+              doc.text("رقم الصفحة", 142.5, 130, { align: 'center' });
+              doc.setFontSize(18);
+              doc.setFont('cairo', 'bold');
+              doc.text(student.pageNumber.toString(), 142.5, 145, { align: 'center' });
+              
+              // Reset text color
+              doc.setTextColor(0, 0, 0);
+              
+              // Status and Date
+              doc.setFontSize(12);
+              doc.setFont('cairo', 'bold');
+              doc.text("الوضع الأكاديمي:", 30, 180);
+              doc.setFont('cairo', 'normal');
+              
+              let statusColor = [16, 185, 129]; // emerald
+              if (student.status === 'transferred') statusColor = [245, 158, 11]; // amber
+              if (student.status === 'left') statusColor = [239, 68, 68]; // rose
+              if (student.status === 'graduated') statusColor = [59, 130, 246]; // blue
+              
+              doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+              doc.rect(100, 170, 60, 12, 'F');
+              doc.setTextColor(255, 255, 255);
+              doc.text(statusLabels[student.status || 'active'], 130, 178, { align: 'center' });
+              
+              doc.setTextColor(0, 0, 0);
+              doc.text("تاريخ القيد:", 30, 200);
+              doc.text(new Date(student.createdAt).toLocaleDateString('ar-EG'), 100, 200);
+              
+              // Notes if any
+              if (student.notes) {
+                doc.text("ملاحظات:", 30, 220);
+                doc.setFontSize(10);
+                doc.text(student.notes, 100, 220);
+              }
+              
+              // Signature lines
+              doc.line(30, 260, 80, 260);
+              doc.setFontSize(8);
+              doc.text("توقيع الموظف المختص", 55, 268, { align: 'center' });
+              
+              doc.line(130, 260, 180, 260);
+              doc.text("ختم وتوقيع المدير", 155, 268, { align: 'center' });
+              
+              // Watermark
+              doc.setGState(new doc.GState({ opacity: 0.1 }));
+              doc.setFontSize(60);
+              doc.setTextColor(100, 100, 100);
+              doc.text("وثيقة رسمية", 105, 150, { align: 'center', angle: -45 });
+              doc.setGState(new doc.GState({ opacity: 1 }));
             });
             
             // Convert to blob
@@ -508,10 +588,10 @@
           });
         };
 
-        // New function to share PDF via WhatsApp
-        const shareViaWhatsAppPDF = async (studentsToShare, title = "سجل القيد العام") => {
+        // New function to share PDF via WhatsApp (Modified to use Student Cards)
+        const shareViaWhatsAppPDF = async (studentsToShare, title = "بطاقات الطلاب") => {
           try {
-            const pdfBlob = await generatePDFBlob(studentsToShare, title);
+            const pdfBlob = await generateStudentCardsPDFBlob(studentsToShare, title);
             
             // Create a file from the blob
             const file = new File([pdfBlob], `${title}.pdf`, { type: 'application/pdf' });
@@ -1251,6 +1331,37 @@
             } catch(e) { console.error(e); }
           };
 
+          // Bulk delete function
+          const handleBulkDelete = async () => {
+            if (selectedStudents.length === 0) {
+              setAlertConfig({ message: 'الرجاء تحديد طلاب للحذف أولاً', type: 'warning' });
+              return;
+            }
+            
+            setConfirmConfig({
+              title: "حذف مجموعة طلاب",
+              message: `هل أنت متأكد من نقل (${selectedStudents.length}) طالب إلى سلة المحذوفات؟`,
+              isDestructive: true,
+              onConfirm: async () => {
+                try {
+                  const batch = writeBatch(db);
+                  selectedStudents.forEach(id => {
+                    const ref = doc(db, "students", id);
+                    batch.update(ref, { isDeleted: true });
+                  });
+                  await batch.commit();
+                  await refreshStats();
+                  setSelectedStudents([]);
+                  setConfirmConfig(null);
+                  setAlertConfig({ message: `تم نقل ${selectedStudents.length} طالب إلى سلة المحذوفات`, type: 'success' });
+                } catch (error) {
+                  console.error("Error bulk deleting:", error);
+                  setAlertConfig({ message: "فشل في حذف الطلاب", type: 'error' });
+                }
+              }
+            });
+          };
+
           const handleDeleteForever = (id) => {
             setConfirmConfig({
                 title: "حذف نهائي",
@@ -1519,6 +1630,13 @@
                                   className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-indigo-700"
                                 >
                                   <Printer size={14} /> طباعة
+                                </button>
+                                {/* New Bulk Delete Button */}
+                                <button 
+                                  onClick={handleBulkDelete}
+                                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-700"
+                                >
+                                  <Trash2 size={14} /> حذف المحدد
                                 </button>
                                 <button 
                                   onClick={() => setSelectedStudents([])}
@@ -2485,4 +2603,4 @@
         root.render(<App />);
     </script>
 </body>
-    </html>
+</html>
