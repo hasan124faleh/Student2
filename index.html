@@ -69,6 +69,75 @@
         margin-bottom: 12px;
       }
       
+      /* Alphabet Navigation Bar */
+      .alphabet-nav {
+        position: sticky;
+        top: 56px;
+        z-index: 35;
+        background-color: #f8fafc;
+        padding: 8px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      html.dark .alphabet-nav {
+        background-color: #1e293b;
+        border-bottom-color: #334155;
+      }
+      
+      .alphabet-letter {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 18px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        color: #1e293b;
+      }
+      
+      .alphabet-letter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      }
+      
+      .alphabet-letter.active {
+        background-color: #2563eb;
+        color: white;
+        border-color: #2563eb;
+      }
+      
+      html.dark .alphabet-letter {
+        background-color: #0f172a;
+        border-color: #334155;
+        color: #f8fafc;
+      }
+      
+      html.dark .alphabet-letter.active {
+        background-color: #3b82f6;
+        color: white;
+      }
+      
+      .letter-count {
+        font-size: 9px;
+        margin-right: 2px;
+        color: #64748b;
+      }
+      
+      html.dark .letter-count {
+        color: #94a3b8;
+      }
+      
       /* Print Styles */
       @media print {
         @page { 
@@ -217,7 +286,7 @@
       /* Section header with letter */
       .section-header {
         position: sticky;
-        top: 56px;
+        top: 108px;
         background-color: #f8fafc;
         z-index: 30;
         padding: 8px 16px;
@@ -234,7 +303,7 @@
       }
       
       .alphabet-section {
-        scroll-margin-top: 70px;
+        scroll-margin-top: 110px;
       }
       
       /* Share text styling */
@@ -312,6 +381,17 @@
       @media (max-width: 768px) {
         .modal-overlay .max-w-lg {
           width: 90%;
+        }
+        .alphabet-letter {
+          width: 32px;
+          height: 32px;
+          font-size: 14px;
+        }
+        .section-header {
+          top: 100px;
+        }
+        .alphabet-section {
+          scroll-margin-top: 100px;
         }
       }
     </style>
@@ -698,7 +778,7 @@
                                  {selectedFields.includes('regNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>}
                                  {selectedFields.includes('pageNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>}
                                  {selectedFields.includes('status') && <th className="p-1 text-center w-[50px] font-bold text-[8.5pt]">الحالة</th>}
-                               </tr>
+                                </tr>
                              </thead>
                              <tbody>
                                {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
@@ -719,11 +799,11 @@
                                      {selectedFields.includes('status') && (
                                        <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? statusMap[s.status || 'active'] : ''}</td>
                                      )}
-                                   </tr>
+                                    </tr>
                                  );
                                })}
                              </tbody>
-                           </table>
+                            </table>
                          </div>
                        );
                      })}
@@ -798,6 +878,7 @@
           const [colorTheme, setColorTheme] = useState(localStorage.getItem('appTheme') || 'slate');
           const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('darkMode') === 'true');
           const [showThemeModal, setShowThemeModal] = useState(false);
+          const [activeLetter, setActiveLetter] = useState(null);
           
           // New state for enhanced features
           const [isFullscreen, setIsFullscreen] = useState(false);
@@ -831,6 +912,21 @@
             
             return groups;
           }, [students]);
+
+          // Function to scroll to specific letter section
+          const scrollToLetter = (letter) => {
+            const element = document.getElementById(`section-${letter}`);
+            if (element) {
+              setActiveLetter(letter);
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              setTimeout(() => setActiveLetter(null), 500);
+            }
+          };
+
+          // Get all available letters for navigation
+          const availableLetters = useMemo(() => {
+            return Object.keys(studentsByLetter).sort();
+          }, [studentsByLetter]);
 
           // Keyboard shortcuts
           useEffect(() => {
@@ -1085,15 +1181,31 @@
               const rows = await readExcel(file);
               const totalRows = rows.length;
               let count = 0;
+              let skipped = 0;
               let batch = writeBatch(db);
               let batchCount = 0;
+              
+              // Get existing students to check for duplicates
+              const existingStudents = students.filter(s => !s.isDeleted);
               
               for (let i = 0; i < totalRows; i++) {
                  const row = rows[i];
                  const fName = row['الاسم الرباعي'] || row['الاسم الكامل'] || row['firstName'] || row['الاسم الأول'];
                  const reg = row['رقم القيد'] || row['regNumber'];
                  const page = row['رقم الصفحة'] || row['pageNumber'];
+                 
                  if (fName && reg) {
+                    // Check for duplicate registration number
+                    const isDuplicate = existingStudents.some(s => 
+                      s.regNumber === String(reg).trim() && 
+                      s.pageNumber === String(page || '').trim()
+                    );
+                    
+                    if (isDuplicate) {
+                      skipped++;
+                      continue;
+                    }
+                    
                     const ref = doc(studentsCollection);
                     batch.set(ref, {
                        firstName: String(fName).trim(),
@@ -1122,8 +1234,15 @@
               
               setImportProgress(100);
               await refreshStats();
-              setAlertConfig({ message: `تم استيراد ${count} سجل بنجاح`, type: 'success' });
-            } catch (e) { setAlertConfig({ message: "فشل الاستيراد", type: 'error' }); }
+              let message = `تم استيراد ${count} سجل بنجاح`;
+              if (skipped > 0) {
+                message += `، تم تخطي ${skipped} سجل مكرر`;
+              }
+              setAlertConfig({ message, type: 'success' });
+            } catch (e) { 
+              console.error(e);
+              setAlertConfig({ message: "فشل الاستيراد: تأكد من تنسيق الملف", type: 'error' }); 
+            }
             setImporting(false);
             setTimeout(() => setImportProgress(0), 500);
           };
@@ -1417,6 +1536,23 @@
                              </div>
                           </div>
 
+                          {/* Alphabet Navigation Bar */}
+                          {sortBy === 'alphabetical' && !debouncedQuery && availableLetters.length > 0 && (
+                            <div className="alphabet-nav">
+                              {availableLetters.map(letter => (
+                                <button
+                                  key={letter}
+                                  onClick={() => scrollToLetter(letter)}
+                                  className={`alphabet-letter ${activeLetter === letter ? 'active' : ''}`}
+                                  data-tooltip={`الطلاب الذين يبدأ اسمهم بحرف ${letter} (${studentsByLetter[letter].length})`}
+                                >
+                                  {letter}
+                                  <span className="letter-count">{studentsByLetter[letter].length}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
                           {/* Selection Actions */}
                           {selectedStudents.length > 0 && (
                             <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 flex flex-wrap items-center justify-between gap-2 animate-fade-in">
@@ -1513,7 +1649,7 @@
                                   </div>
                                   <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                      <tr>
+                                       <tr>
                                         <th className="px-2 py-2 w-12 text-center">
                                           <input 
                                             type="checkbox" 
@@ -1534,7 +1670,7 @@
                                         <th className="px-4 py-2 w-24 text-center">الصفحة</th>
                                         <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                         {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                      </tr>
+                                       </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-xs">
                                       {studentsByLetter[letter].map((s, idx) => (
@@ -1554,7 +1690,7 @@
                                               className="rounded border-slate-300"
                                               onClick={(e) => e.stopPropagation()}
                                             />
-                                          </td>
+                                           </td>
                                           <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
                                           <td className="px-4 py-2">
                                               <div 
@@ -1566,7 +1702,7 @@
                                                       {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
                                                   </span>
                                               </div>
-                                          </td>
+                                           </td>
                                           <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                           <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
                                           <td className="px-4 py-2 text-center">
@@ -1578,23 +1714,23 @@
                                             }`}>
                                               {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
                                             </span>
-                                          </td>
+                                           </td>
                                           {view === 'trash' && (
                                             <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                                  <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
                                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                            </td>
+                                             </td>
                                           )}
-                                        </tr>
+                                         </tr>
                                       ))}
                                     </tbody>
-                                  </table>
+                                   </table>
                                 </div>
                               ))
                             ) : (
                               <table className="w-full text-right border-collapse">
                                 <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                  <tr>
+                                   <tr>
                                     <th className="px-2 py-2 w-12 text-center">
                                       <input 
                                         type="checkbox" 
@@ -1615,7 +1751,7 @@
                                     <th className="px-4 py-2 w-24 text-center">الصفحة</th>
                                     <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                     {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                  </tr>
+                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-xs">
                                   {displayed.map((s, idx) => (
@@ -1635,7 +1771,7 @@
                                           className="rounded border-slate-300"
                                           onClick={(e) => e.stopPropagation()}
                                         />
-                                      </td>
+                                       </td>
                                       <td className="px-4 py-2 text-center text-slate-400 font-mono">{idx + 1}</td>
                                       <td className="px-4 py-2">
                                           <div 
@@ -1647,7 +1783,7 @@
                                                   {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
                                               </span>
                                           </div>
-                                      </td>
+                                       </td>
                                       <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                       <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
                                       <td className="px-4 py-2 text-center">
@@ -1659,17 +1795,17 @@
                                         }`}>
                                           {s.status === 'graduated' ? 'خ' : s.status === 'left' ? 'ت' : s.status === 'transferred' ? 'ن' : 'م'}
                                         </span>
-                                      </td>
+                                       </td>
                                       {view === 'trash' && (
                                           <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                                <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                          </td>
+                                           </td>
                                       )}
-                                    </tr>
+                                     </tr>
                                   ))}
                                 </tbody>
-                              </table>
+                               </table>
                             )}
                           </div>
 
@@ -1977,7 +2113,7 @@
                             <div className="overflow-y-auto flex-1 custom-scrollbar">
                                 <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50 sticky top-0 z-10">
-                                        <tr>
+                                        崇
                                             <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
                                             <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
                                         </tr>
@@ -1998,12 +2134,12 @@
                                                             {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">متخرج: {item.graduated}</span>}
                                                         </div>
                                                     </div>
-                                                </td>
-                                            </tr>
+                                                 </td>
+                                             </tr>
                                         )) : (
-                                            <tr>
+                                             <tr>
                                                 <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
-                                            </tr>
+                                             </tr>
                                         )}
                                     </tbody>
                                 </table>
