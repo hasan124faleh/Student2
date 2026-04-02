@@ -1389,19 +1389,16 @@
                res.sort((a, b) => {
                    const aName = `${a.firstName} ${a.lastName || ''}`.toLowerCase();
                    const bName = `${b.firstName} ${b.lastName || ''}`.toLowerCase();
-                   
                    const aIndex = aName.indexOf(q);
                    const bIndex = bName.indexOf(q);
-                   
-                   if (aIndex !== bIndex) {
-                       return aIndex - bIndex;
-                   }
-                   
+                   if (aIndex !== bIndex) return aIndex - bIndex;
                    if (sortBy === 'alphabetical') return a.firstName.localeCompare(b.firstName);
+                   if (sortBy === 'byPage') return Number(a.pageNumber) - Number(b.pageNumber);
                    return b.createdAt - a.createdAt;
                });
             } else {
                if (sortBy === 'alphabetical') res.sort((a,b) => a.firstName.localeCompare(b.firstName));
+               else if (sortBy === 'byPage') res.sort((a,b) => Number(a.pageNumber) - Number(b.pageNumber));
                else res.sort((a,b) => b.createdAt - a.createdAt);
             }
             return res;
@@ -1586,10 +1583,9 @@
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 items-center mb-4">
                               <select value={selectedRegFilter} onChange={(e) => setSelectedRegFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
                                   <option value="">جميع القيود</option>
-                                  {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => {
-                                    const sampleStudent = students.find(s => !s.isDeleted && s.regNumber === r);
-                                    return <option key={r} value={r}>قيد {r}{sampleStudent ? ` - ${cleanName(sampleStudent.firstName)}` : ''}</option>;
-                                  })}
+                                  {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => (
+                                    <option key={r} value={r}>قيد {r}</option>
+                                  ))}
                               </select>
                               <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
                                   <option value="ALL">جميع الحالات</option>
@@ -1601,6 +1597,7 @@
                               <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
                                   <option value="recent">الأحدث أولاً</option>
                                   <option value="alphabetical">ترتيب أبجدي</option>
+                                  <option value="byPage">حسب الصفحة</option>
                               </select>
                               <select value={yearFilter} onChange={e => setYearFilter(e.target.value)} className="bg-white rounded-lg px-2 py-2 border border-slate-200 text-xs font-bold outline-none h-9">
                                   <option value="ALL">جميع السنوات</option>
@@ -2538,10 +2535,9 @@
                           <div className="text-slate-400 text-[10px]">أو طباعة قيد محدد</div>
                           <select value={printRegInput} onChange={(e) => setPrintRegInput(e.target.value)} className={`w-full p-2.5 border rounded-xl text-center font-bold outline-none text-sm ${currentTheme.ring}`}>
                                <option value="">اختر رقم القيد...</option>
-                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => {
-                                 const sampleStudent = students.find(s => !s.isDeleted && s.regNumber === r);
-                                 return <option key={r} value={r}>قيد {r}{sampleStudent ? ` - ${cleanName(sampleStudent.firstName)}` : ''}</option>;
-                               })}
+                               {Array.from(new Set(students.filter(s => !s.isDeleted).map(s => s.regNumber))).sort((a,b) => Number(a)-Number(b)).map(r => (
+                                 <option key={r} value={r}>قيد {r}</option>
+                               ))}
                           </select>
                           <button 
                             onClick={() => { 
