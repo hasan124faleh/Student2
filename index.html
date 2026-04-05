@@ -234,7 +234,7 @@
       }
       
       .alphabet-section {
-        scroll-margin-top: 70px;
+        scroll-margin-top: 130px;
       }
       
       /* Alphabet navigation bar */
@@ -1637,9 +1637,15 @@
                                 <button
                                   key={letter}
                                   onClick={() => {
-                                    const section = document.getElementById(`section-${letter}`);
+                                    const offset = 130;
+                                    // Check which view is visible (desktop md:block, mobile md:hidden)
+                                    const desktopSection = document.getElementById(`section-${letter}`);
+                                    const mobileSection = document.getElementById(`mobile-section-${letter}`);
+                                    const isMobile = window.innerWidth < 768;
+                                    const section = isMobile ? (mobileSection || desktopSection) : (desktopSection || mobileSection);
                                     if (section) {
-                                      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      const top = section.getBoundingClientRect().top + window.pageYOffset - offset;
+                                      window.scrollTo({ top, behavior: 'smooth' });
                                     }
                                   }}
                                   className="alphabet-nav-btn"
@@ -1829,7 +1835,7 @@
                           <div className="md:hidden space-y-2 mt-3">
                             {sortBy === 'alphabetical' && !debouncedQuery ? (
                               Object.keys(studentsByLetter).sort().map(letter => (
-                                <div key={letter} id={`section-${letter}`} className="alphabet-section">
+                                <div key={letter} id={`mobile-section-${letter}`} className="alphabet-section">
                                   <div className="section-header flex items-center gap-2 text-sm">
                                     <span className={`${currentTheme.primary} text-white w-6 h-6 rounded-full flex items-center justify-center text-xs`}>
                                       {letter}
