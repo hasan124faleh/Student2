@@ -417,7 +417,7 @@
 
         const app = initializeApp(firebaseConfig);
         
-        // Initialize Firestore with Persistent Local Cache (Modern Way)
+        // Initialize Firestore with Persistent Local Cache
         const db = initializeFirestore(app, {
             localCache: persistentLocalCache()
         });
@@ -456,16 +456,14 @@
         };
 
         const exportToPDF = (students, title = "سجل القيد العام") => {
-          // Set RTL and Arabic language for proper rendering
           const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4',
             putOnlyUsedFonts: true,
-            hotfix: true // Enable hotfixes for better RTL support
+            hotfix: true
           });
           
-          // Set document properties for Arabic
           doc.setLanguage("ar");
           doc.setDirection = "rtl";
           
@@ -568,7 +566,6 @@
           </div>
         );
 
-        // Fixed Modal Component - Centered properly
         const Modal = ({ children, onClose, zIndex = "z-50" }) => (
           <div 
             className={`fixed inset-0 bg-slate-900/60 ${zIndex} flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in overflow-y-auto modal-overlay`} 
@@ -742,7 +739,7 @@
                                  {selectedFields.includes('regNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>}
                                  {selectedFields.includes('pageNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>}
                                  {selectedFields.includes('status') && <th className="p-1 text-center w-[50px] font-bold text-[8.5pt]">الحالة</th>}
-                               </tr>
+                                </tr>
                              </thead>
                              <tbody>
                                {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
@@ -766,7 +763,7 @@
                                      {selectedFields.includes('status') && (
                                        <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? statusMap[s.status || 'active'] : ''}</td>
                                      )}
-                                   </tr>
+                                    </tr>
                                  );
                                })}
                              </tbody>
@@ -869,7 +866,7 @@
 
           const [stats, setStats] = React.useState({ total: 0, active: 0, graduated: 0 });
 
-          // Group students by first letter for display only - based on filtered students to respect current filters
+          // Group students by first letter for display only
           const filteredForGroups = useMemo(() => {
             let res = students.filter(s => view === 'trash' ? s.isDeleted : !s.isDeleted);
             if (selectedRegFilter) res = res.filter(s => s.regNumber === selectedRegFilter);
@@ -897,7 +894,6 @@
             return groups;
           }, [filteredForGroups]);
 
-          // List of available letters for fast navigation
           const alphabetLetters = useMemo(() => {
             return Object.keys(studentsByLetter).sort((a,b) => a.localeCompare(b));
           }, [studentsByLetter]);
@@ -905,24 +901,20 @@
           // Keyboard shortcuts
           useEffect(() => {
             const handleKeyDown = (e) => {
-              // Ctrl+F for search
               if (e.ctrlKey && e.key === 'f') {
                 e.preventDefault();
                 document.getElementById('searchInput')?.focus();
               }
-              // Ctrl+P for print
               if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
                 setShowPrintModal(true);
               }
-              // Ctrl+N for new student
               if (e.ctrlKey && e.key === 'n') {
                 e.preventDefault();
                 setSelectedId(null);
                 setView('add');
                 setSimilarStudents([]);
               }
-              // Esc to close modals
               if (e.key === 'Escape') {
                 setShowPrintModal(false);
                 setShowThemeModal(false);
@@ -1169,7 +1161,6 @@
                  const reg = row['رقم القيد'] || row['regNumber'];
                  const page = row['رقم الصفحة'] || row['pageNumber'];
                  
-                 // Skip if essential fields are missing (no regNumber or no pageNumber)
                  if (!fName || !reg || !page) {
                     skippedCount++;
                     continue;
@@ -1178,7 +1169,6 @@
                  const regNum = String(reg).trim();
                  const pageNum = String(page).trim();
                  
-                 // Also skip if regNumber or pageNumber is empty after trim
                  if (regNum === '' || pageNum === '') {
                     skippedCount++;
                     continue;
@@ -1252,7 +1242,6 @@
             } catch(e) { console.error(e); }
           };
 
-          // Bulk delete function
           const handleBulkDelete = async () => {
             if (selectedStudents.length === 0) {
               setAlertConfig({ message: 'الرجاء تحديد طلاب للحذف أولاً', type: 'warning' });
@@ -1346,11 +1335,9 @@
             recognition.start();
           };
 
-          // Share via WhatsApp with improved formatting
           const shareViaWhatsApp = (studentsToShare) => {
             const statusMap = { 'active': 'مستمر', 'transferred': 'منقول', 'left': 'تارك', 'graduated': 'متخرج' };
             
-            // Format the text nicely
             let text = "📋 *سجل القيد العام - بيانات الطلاب*\n\n";
             
             studentsToShare.forEach((s, index) => {
@@ -1406,7 +1393,6 @@
 
           const displayed = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
           
-          // Toggle fullscreen
           const toggleFullscreen = () => {
             if (!document.fullscreenElement) {
               document.documentElement.requestFullscreen();
@@ -1419,7 +1405,6 @@
             }
           };
 
-          // Print selected students
           const printSelectedStudents = () => {
             if (selectedStudents.length === 0) {
               setAlertConfig({ message: 'الرجاء تحديد طلاب للطباعة أولاً', type: 'warning' });
@@ -1451,7 +1436,6 @@
                       <span>سجل القيد العام</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      {/* Tooltip buttons */}
                       <button 
                         onClick={toggleFullscreen} 
                         data-tooltip={isFullscreen ? 'خروج من ملء الشاشة' : 'وضع ملء الشاشة'}
@@ -1562,7 +1546,6 @@
                                 >
                                   <Printer size={14} /> طباعة
                                 </button>
-                                {/* New Bulk Delete Button */}
                                 <button 
                                   onClick={handleBulkDelete}
                                   className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-red-700"
@@ -1638,7 +1621,6 @@
                                   key={letter}
                                   onClick={() => {
                                     const offset = 130;
-                                    // Check which view is visible (desktop md:block, mobile md:hidden)
                                     const desktopSection = document.getElementById(`section-${letter}`);
                                     const mobileSection = document.getElementById(`mobile-section-${letter}`);
                                     const isMobile = window.innerWidth < 768;
@@ -1657,7 +1639,7 @@
                             </div>
                           )}
 
-                          {/* Desktop Table View with Alphabet Sections (No Side Scrollbar) */}
+                          {/* Desktop Table View with Alphabet Sections */}
                           <div className="hidden md:block bg-white rounded-2xl border shadow-xl overflow-hidden mt-3">
                             {sortBy === 'alphabetical' && !debouncedQuery ? (
                               Object.keys(studentsByLetter).sort().map(letter => (
@@ -1671,7 +1653,7 @@
                                   </div>
                                   <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                        <tr>
+                                         <tr>
                                         <th className="px-2 py-2 w-12 text-center">
                                           <input 
                                             type="checkbox" 
@@ -1692,7 +1674,7 @@
                                         <th className="px-4 py-2 w-24 text-center">الصفحة</th>
                                         <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                         {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                        </tr>
+                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-xs">
                                       {studentsByLetter[letter].map((s, idx) => (
@@ -1724,7 +1706,7 @@
                                                       {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
                                                   </span>
                                               </div>
-                                            </td>
+                                          </td>
                                           <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                           <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
                                           <td className="px-4 py-2 text-center">
@@ -1741,18 +1723,18 @@
                                             <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                                  <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
                                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                              </td>
+                                               </td>
                                           )}
-                                        </tr>
+                                         </tr>
                                       ))}
                                     </tbody>
-                                  </table>
+                                   </table>
                                 </div>
                               ))
                             ) : (
                               <table className="w-full text-right border-collapse">
                                 <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                    <tr>
+                                     <tr>
                                     <th className="px-2 py-2 w-12 text-center">
                                       <input 
                                         type="checkbox" 
@@ -1773,7 +1755,7 @@
                                     <th className="px-4 py-2 w-24 text-center">الصفحة</th>
                                     <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                     {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                    </tr>
+                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-xs">
                                   {displayed.map((s, idx) => (
@@ -1805,7 +1787,7 @@
                                                   {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
                                               </span>
                                           </div>
-                                        </td>
+                                      </td>
                                       <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                       <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
                                       <td className="px-4 py-2 text-center">
@@ -1822,12 +1804,12 @@
                                           <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                                <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                            </td>
+                                             </td>
                                       )}
-                                    </tr>
+                                     </tr>
                                   ))}
                                 </tbody>
-                              </table>
+                               </table>
                             )}
                           </div>
 
@@ -1965,7 +1947,7 @@
                     </div>
                 )}
 
-                {/* Add/Edit Modal - Fixed with Voice Input */}
+                {/* Add/Edit Modal - Fixed with Voice Input and RegNumber Input */}
                 {(view === 'add' || view === 'edit') && (
                     <Modal onClose={() => { setView('list'); setSimilarStudents([]); setEditFormData(null); setSavedStudentName(null); }}>
                       <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
@@ -1989,6 +1971,12 @@
                             const form = new FormData(e.target);
                             const regNum = String(form.get('regNumber')).trim();
                             const pageNum = String(form.get('pageNumber')).trim();
+                            
+                            // Validate regNumber and pageNumber are not empty
+                            if (!regNum || !pageNum) {
+                                setAlertConfig({ message: "يرجى إدخال رقم القيد ورقم الصفحة", type: 'error' });
+                                return;
+                            }
                             
                             const isDuplicate = students.some(s => 
                                 !s.isDeleted && 
@@ -2019,20 +2007,17 @@
                                     await updateDoc(doc(db, "students", selectedId), data);
                                     setSavedStudentName({ name: `${cleanName(fName)} ${lName || ''}`.trim(), reg: regNum, page: pageNum });
                                     setAlertConfig({ message: 'تم تعديل البيانات بنجاح', type: 'success' });
+                                    setView('list');
+                                    setSimilarStudents([]);
+                                    setEditFormData(null);
                                 } else {
                                     await addDoc(studentsCollection, data);
                                     setSavedStudentName({ name: `${cleanName(fName)} ${lName || ''}`.trim(), reg: regNum, page: pageNum });
                                     setAlertConfig({ message: 'تم إضافة الطالب بنجاح', type: 'success' });
+                                    e.target.reset();
+                                    setSimilarStudents([]);
                                 }
                                 await refreshStats();
-                                if (view === 'edit') {
-                                  setView('list');
-                                  setSimilarStudents([]);
-                                  setEditFormData(null);
-                                } else {
-                                  e.target.reset();
-                                  setSimilarStudents([]);
-                                }
                             } catch(err) { 
                                 console.error(err);
                                 setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); 
@@ -2099,15 +2084,25 @@
                            <div className="grid grid-cols-2 gap-3">
                              <div>
                                <label className="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">رقم القيد</label>
-                               <select name="regNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm text-center" defaultValue={editFormData?.regNumber || ''}>
-                                 <option value="">اختر القيد...</option>
-                                 {Array.from(new Set([
-                                   ...students.filter(s => !s.isDeleted).map(s => s.regNumber),
-                                   ...customRegs
-                                 ])).sort((a, b) => Number(a) - Number(b)).map(r => (
-                                   <option key={r} value={r}>{r}</option>
-                                 ))}
-                               </select>
+                               <div className="relative">
+                                 <input 
+                                   type="text" 
+                                   name="regNumber" 
+                                   required 
+                                   defaultValue={editFormData?.regNumber || ''} 
+                                   list="regNumbersList"
+                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm text-center`}
+                                   placeholder="أدخل رقم القيد"
+                                 />
+                                 <datalist id="regNumbersList">
+                                   {Array.from(new Set([
+                                     ...students.filter(s => !s.isDeleted).map(s => s.regNumber),
+                                     ...customRegs
+                                   ])).sort((a, b) => Number(a) - Number(b)).map(r => (
+                                     <option key={r} value={r}>قيد {r}</option>
+                                   ))}
+                                 </datalist>
+                               </div>
                              </div>
                              <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={editFormData?.pageNumber || ''} />
                            </div>
@@ -2269,10 +2264,10 @@
                             <div className="overflow-y-auto flex-1 custom-scrollbar">
                                 <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50 sticky top-0 z-10">
-                                          <tr>
+                                           <tr>
                                             <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
                                             <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
-                                          </tr>
+                                           </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {regStats.length > 0 ? regStats.map((item) => (
@@ -2290,22 +2285,22 @@
                                                             {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">متخرج: {item.graduated}</span>}
                                                         </div>
                                                     </div>
-                                                  </td>
-                                              </tr>
+                                                   </td>
+                                               </tr>
                                         )) : (
-                                              <tr>
+                                               <tr>
                                                 <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
-                                              </tr>
+                                               </tr>
                                         )}
                                     </tbody>
-                                  </table>
+                                   </table>
                             </div>
                              <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
                         </div>
                     </Modal>
                 )}
 
-                {/* Print Template Customization Modal with Last Name Option */}
+                {/* Print Template Customization Modal - FIXED: independent checkboxes */}
                 {showPrintTemplateModal && (
                   <Modal onClose={() => setShowPrintTemplateModal(false)}>
                     <div className="bg-white rounded-2xl p-5 space-y-4">
@@ -2320,9 +2315,9 @@
                             checked={printTemplateFields.includes('name')}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'name']);
+                                setPrintTemplateFields(prev => [...prev, 'name']);
                               } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'name'));
+                                setPrintTemplateFields(prev => prev.filter(f => f !== 'name'));
                               }
                             }}
                             className="rounded border-slate-300"
@@ -2336,9 +2331,9 @@
                             checked={printTemplateFields.includes('lastName')}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'lastName']);
+                                setPrintTemplateFields(prev => [...prev, 'lastName']);
                               } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'lastName'));
+                                setPrintTemplateFields(prev => prev.filter(f => f !== 'lastName'));
                               }
                             }}
                             className="rounded border-slate-300"
@@ -2352,9 +2347,9 @@
                             checked={printTemplateFields.includes('regNumber')}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'regNumber']);
+                                setPrintTemplateFields(prev => [...prev, 'regNumber']);
                               } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'regNumber'));
+                                setPrintTemplateFields(prev => prev.filter(f => f !== 'regNumber'));
                               }
                             }}
                             className="rounded border-slate-300"
@@ -2368,9 +2363,9 @@
                             checked={printTemplateFields.includes('pageNumber')}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'pageNumber']);
+                                setPrintTemplateFields(prev => [...prev, 'pageNumber']);
                               } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'pageNumber'));
+                                setPrintTemplateFields(prev => prev.filter(f => f !== 'pageNumber'));
                               }
                             }}
                             className="rounded border-slate-300"
@@ -2384,9 +2379,9 @@
                             checked={printTemplateFields.includes('status')}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setPrintTemplateFields([...printTemplateFields, 'status']);
+                                setPrintTemplateFields(prev => [...prev, 'status']);
                               } else {
-                                setPrintTemplateFields(printTemplateFields.filter(f => f !== 'status'));
+                                setPrintTemplateFields(prev => prev.filter(f => f !== 'status'));
                               }
                             }}
                             className="rounded border-slate-300"
@@ -2397,6 +2392,7 @@
                       <div className="flex gap-3 pt-3">
                         <button 
                           onClick={() => {
+                            // Set all fields including lastName and status independently
                             setPrintTemplateFields(['name', 'regNumber', 'pageNumber', 'status', 'lastName']);
                             setShowPrintTemplateModal(false);
                           }}
@@ -2439,7 +2435,7 @@
                   </Modal>
                 )}
 
-                {/* Share Modal - Improved */}
+                {/* Share Modal */}
                 {showShareModal && (
                   <Modal onClose={() => setShowShareModal(false)} zIndex="z-[70]">
                     <div className="bg-white rounded-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
