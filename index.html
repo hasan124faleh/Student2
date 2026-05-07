@@ -739,7 +739,7 @@
                                  {selectedFields.includes('regNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">قيد</th>}
                                  {selectedFields.includes('pageNumber') && <th className="p-1 text-center w-[40px] font-bold text-[8.5pt]">ص</th>}
                                  {selectedFields.includes('status') && <th className="p-1 text-center w-[50px] font-bold text-[8.5pt]">الحالة</th>}
-                                </tr>
+                               </tr>
                              </thead>
                              <tbody>
                                {Array.from({ length: ROWS_PER_COLUMN_MAX }).map((_, rowIndex) => {
@@ -763,7 +763,7 @@
                                      {selectedFields.includes('status') && (
                                        <td className="px-1 text-center font-bold font-mono text-[10.5pt] align-middle">{s ? statusMap[s.status || 'active'] : ''}</td>
                                      )}
-                                    </tr>
+                                   </tr>
                                  );
                                })}
                              </tbody>
@@ -861,6 +861,14 @@
           const [showAddRegModal, setShowAddRegModal] = useState(false);
           const [newRegInput, setNewRegInput] = useState('');
           const [savedStudentName, setSavedStudentName] = useState(null);
+
+          // Refs for clear buttons
+          const firstNameRef = useRef(null);
+          const lastNameRef = useRef(null);
+          const regNumberRef = useRef(null);
+          const pageNumberRef = useRef(null);
+          const notesRef = useRef(null);
+          const searchInputRef = useRef(null);
 
           const currentTheme = themeColors[colorTheme] || themeColors.slate;
 
@@ -1508,17 +1516,27 @@
                             </div>
                           )}
 
-                          {/* Search Bar with Voice */}
+                          {/* Search Bar with Voice and Clear Button */}
                           <div className="bg-slate-50 p-1.5 rounded-xl border border-slate-200 transition-all mb-3">
                              <div className={`relative flex items-center bg-white rounded-lg border border-slate-200 px-3 py-1 focus-within:ring-2 ${currentTheme.ring} transition-all`}>
                                  <Search className="text-slate-400 ml-1" size={16} />
                                  <input 
                                    id="searchInput" 
+                                   ref={searchInputRef}
                                    className="flex-1 bg-transparent outline-none text-slate-700 h-8 font-bold text-xs" 
                                    placeholder="ابحث باسم الطالب... (Ctrl+F)" 
                                    value={search} 
                                    onChange={(e) => setSearch(e.target.value)} 
                                  />
+                                 {search && (
+                                   <button 
+                                     onClick={() => { setSearch(''); if (searchInputRef.current) searchInputRef.current.value = ''; }}
+                                     data-tooltip="مسح البحث"
+                                     className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-red-500 transition-colors"
+                                   >
+                                     <X size={16} />
+                                   </button>
+                                 )}
                                  <button 
                                    onClick={startVoiceSearch}
                                    data-tooltip="بحث صوتي"
@@ -1653,7 +1671,7 @@
                                   </div>
                                   <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-[10px] font-bold uppercase">
-                                         <tr>
+                                        <tr>
                                         <th className="px-2 py-2 w-12 text-center">
                                           <input 
                                             type="checkbox" 
@@ -1674,7 +1692,7 @@
                                         <th className="px-4 py-2 w-24 text-center">الصفحة</th>
                                         <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                         {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                         </tr>
+                                      </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-xs">
                                       {studentsByLetter[letter].map((s, idx) => (
@@ -1723,12 +1741,12 @@
                                             <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                                  <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
                                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                               </td>
+                                                </td>
                                           )}
-                                         </tr>
+                                        </tr>
                                       ))}
                                     </tbody>
-                                   </table>
+                                  </table>
                                 </div>
                               ))
                             ) : (
@@ -1755,7 +1773,7 @@
                                     <th className="px-4 py-2 w-24 text-center">الصفحة</th>
                                     <th className="px-4 py-2 w-20 text-center">الحالة</th>
                                     {view === 'trash' && <th className="px-4 py-2 w-32 text-center">إجراءات</th>}
-                                     </tr>
+                                  </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 text-xs">
                                   {displayed.map((s, idx) => (
@@ -1787,7 +1805,7 @@
                                                   {cleanName(s.firstName)}{s.lastName ? ` / ${s.lastName}` : ''}
                                               </span>
                                           </div>
-                                      </td>
+                                       </td>
                                       <td className="px-4 py-2 text-center"><span className={`${currentTheme.primary} text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm transition-colors text-[10px]`}>{s.regNumber}</span></td>
                                       <td className="px-4 py-2 text-center"><span className="bg-[#FFA500] text-white px-2 py-0.5 rounded-md font-mono inline-block min-w-[40px] shadow-sm text-[10px]">{s.pageNumber}</span></td>
                                       <td className="px-4 py-2 text-center">
@@ -1804,12 +1822,12 @@
                                           <td className="px-4 py-2 text-center flex gap-1 justify-center">
                                                <button onClick={(e) => { e.stopPropagation(); handleRestore(s.id); }} className="p-1.5 bg-emerald-100 text-emerald-600 rounded-lg hover:bg-emerald-200" title="استعادة"><RotateCcw size={14}/></button>
                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteForever(s.id); }} className="p-1.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200" title="حذف نهائي"><Trash2 size={14}/></button>
-                                             </td>
+                                              </td>
                                       )}
-                                     </tr>
+                                    </tr>
                                   ))}
                                 </tbody>
-                               </table>
+                              </table>
                             )}
                           </div>
 
@@ -1947,7 +1965,7 @@
                     </div>
                 )}
 
-                {/* Add/Edit Modal - Fixed with Voice Input and RegNumber Input */}
+                {/* Add/Edit Modal - Fixed with Clear Buttons and Voice Input */}
                 {(view === 'add' || view === 'edit') && (
                     <Modal onClose={() => { setView('list'); setSimilarStudents([]); setEditFormData(null); setSavedStudentName(null); }}>
                       <div className="bg-white rounded-2xl shadow-2xl p-5 space-y-4 max-h-[80vh] overflow-y-auto">
@@ -2022,30 +2040,40 @@
                                 console.error(err);
                                 setAlertConfig({ message: "حدث خطأ أثناء الحفظ", type: 'error' }); 
                             }
-                        }} className="space-y-3">
+                        }} className="space-y-3}>
                            <div>
                                <div className="relative">
                                  <input 
                                    name="firstName" 
+                                   ref={firstNameRef}
                                    required 
                                    defaultValue={editFormData?.firstName || ''} 
-                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} 
+                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm pr-2`} 
                                    placeholder="الاسم الرباعي" 
                                    onChange={(e) => checkSimilarStudents(e.target.value)} 
                                    autoComplete="off"
                                  />
-                                 <button
-                                   type="button"
-                                   onClick={() => startVoiceInput('firstName', (val) => {
-                                     const input = document.querySelector('input[name="firstName"]');
-                                     if (input) input.value = val;
-                                     checkSimilarStudents(val);
-                                   })}
-                                   className="absolute left-2 top-1/2 transform -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
-                                   data-tooltip="إدخال صوتي"
-                                 >
-                                   <Mic size={18} />
-                                 </button>
+                                 <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                                   <button
+                                     type="button"
+                                     onClick={() => { if (firstNameRef.current) firstNameRef.current.value = ''; checkSimilarStudents(''); }}
+                                     className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                                     data-tooltip="إفراغ الحقل"
+                                   >
+                                     <X size={16} />
+                                   </button>
+                                   <button
+                                     type="button"
+                                     onClick={() => startVoiceInput('firstName', (val) => {
+                                       if (firstNameRef.current) firstNameRef.current.value = val;
+                                       checkSimilarStudents(val);
+                                     })}
+                                     className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                                     data-tooltip="إدخال صوتي"
+                                   >
+                                     <Mic size={18} />
+                                   </button>
+                                 </div>
                                </div>
                                {similarStudents.length > 0 && (
                                    <div className="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2 animate-fade-in">
@@ -2068,18 +2096,33 @@
                                )}
                            </div>
                            <div className="relative">
-                             <input name="lastName" defaultValue={editFormData?.lastName || ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="العائلة (اختياري)" />
-                             <button
-                               type="button"
-                               onClick={() => startVoiceInput('lastName', (val) => {
-                                 const input = document.querySelector('input[name="lastName"]');
-                                 if (input) input.value = val;
-                               })}
-                               className="absolute left-2 top-1/2 transform -translate-y-1/2 p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
-                               data-tooltip="إدخال صوتي"
-                             >
-                               <Mic size={18} />
-                             </button>
+                             <input 
+                               name="lastName" 
+                               ref={lastNameRef}
+                               defaultValue={editFormData?.lastName || ''} 
+                               className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm pr-2`} 
+                               placeholder="العائلة (اختياري)" 
+                             />
+                             <div className="absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                               <button
+                                 type="button"
+                                 onClick={() => { if (lastNameRef.current) lastNameRef.current.value = ''; }}
+                                 className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                                 data-tooltip="إفراغ الحقل"
+                               >
+                                 <X size={16} />
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={() => startVoiceInput('lastName', (val) => {
+                                   if (lastNameRef.current) lastNameRef.current.value = val;
+                                 })}
+                                 className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors"
+                                 data-tooltip="إدخال صوتي"
+                               >
+                                 <Mic size={18} />
+                               </button>
+                             </div>
                            </div>
                            <div className="grid grid-cols-2 gap-3">
                              <div>
@@ -2088,12 +2131,21 @@
                                  <input 
                                    type="text" 
                                    name="regNumber" 
+                                   ref={regNumberRef}
                                    required 
                                    defaultValue={editFormData?.regNumber || ''} 
                                    list="regNumbersList"
-                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm text-center`}
+                                   className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm text-center pr-2`}
                                    placeholder="أدخل رقم القيد"
                                  />
+                                 <button
+                                   type="button"
+                                   onClick={() => { if (regNumberRef.current) regNumberRef.current.value = ''; }}
+                                   className="absolute left-1 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                   data-tooltip="إفراغ الحقل"
+                                 >
+                                   <X size={14} />
+                                 </button>
                                  <datalist id="regNumbersList">
                                    {Array.from(new Set([
                                      ...students.filter(s => !s.isDeleted).map(s => s.regNumber),
@@ -2104,7 +2156,24 @@
                                  </datalist>
                                </div>
                              </div>
-                             <input name="pageNumber" required className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm" placeholder="رقم الصفحة" defaultValue={editFormData?.pageNumber || ''} />
+                             <div className="relative">
+                               <input 
+                                 name="pageNumber" 
+                                 ref={pageNumberRef}
+                                 required 
+                                 className={`w-full p-2.5 rounded-xl bg-slate-50 border outline-none text-center font-bold text-sm pr-6`} 
+                                 placeholder="رقم الصفحة" 
+                                 defaultValue={editFormData?.pageNumber || ''} 
+                               />
+                               <button
+                                 type="button"
+                                 onClick={() => { if (pageNumberRef.current) pageNumberRef.current.value = ''; }}
+                                 className="absolute left-1 top-1/2 transform -translate-y-1/2 p-1 text-slate-400 hover:text-red-500 transition-colors"
+                                 data-tooltip="إفراغ الحقل"
+                               >
+                                 <X size={14} />
+                               </button>
+                             </div>
                            </div>
                            <input type="date" name="createdAt" className="w-full p-2.5 rounded-xl bg-slate-50 border outline-none font-bold text-sm" defaultValue={editFormData?.createdAt || formatDateForInput(Date.now())} />
                            <div>
@@ -2129,7 +2198,24 @@
                               </div>
                            </div>
 
-                           <input name="notes" defaultValue={editFormData?.notes || ''} className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm`} placeholder="ملاحظات (اختياري)" />
+                           <div className="relative">
+                             <textarea 
+                               name="notes" 
+                               ref={notesRef}
+                               defaultValue={editFormData?.notes || ''} 
+                               className={`w-full p-2.5 rounded-xl bg-slate-50 outline-none border ${currentTheme.ring} font-bold text-sm pr-2`} 
+                               placeholder="ملاحظات (اختياري)" 
+                               rows="2"
+                             />
+                             <button
+                               type="button"
+                               onClick={() => { if (notesRef.current) notesRef.current.value = ''; }}
+                               className="absolute left-2 top-1/2 transform -translate-y-1/2 p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                               data-tooltip="إفراغ الحقل"
+                             >
+                               <X size={16} />
+                             </button>
+                           </div>
                            <div className="flex gap-2">
                              <button className={`flex-1 ${currentTheme.primary} ${currentTheme.hover} text-white py-2.5 rounded-xl font-bold shadow-xl transition-colors text-sm flex items-center justify-center gap-2`}>
                                <Save size={16}/> حفظ البيانات
@@ -2155,7 +2241,7 @@
                             <button 
                               key={key} 
                               onClick={() => { setColorTheme(key); setShowThemeModal(false); }}
-                              className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${colorTheme === key ? `border-black bg-slate-50` : 'border-transparent hover:bg-slate-50'}`}
+                              className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${colorTheme === key ? 'border-black bg-slate-50' : 'border-transparent hover:bg-slate-50'}`}
                             >
                                <div className={`w-6 h-6 rounded-full ${value.primary}`}></div>
                                <span className="font-bold text-slate-700 text-sm">{value.name}</span>
@@ -2264,10 +2350,10 @@
                             <div className="overflow-y-auto flex-1 custom-scrollbar">
                                 <table className="w-full text-right border-collapse">
                                     <thead className="bg-slate-50 sticky top-0 z-10">
-                                           <tr>
+                                            <tr>
                                             <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">رقم القيد</th>
                                             <th className="p-3 text-sm font-bold text-slate-500 border-b border-slate-200">عدد الطلاب</th>
-                                           </tr>
+                                            </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {regStats.length > 0 ? regStats.map((item) => (
@@ -2285,15 +2371,15 @@
                                                             {item.graduated > 0 && <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">متخرج: {item.graduated}</span>}
                                                         </div>
                                                     </div>
-                                                   </td>
-                                               </tr>
+                                                    </td>
+                                            </tr>
                                         )) : (
-                                               <tr>
+                                               </td>
                                                 <td colSpan="2" className="p-4 text-center text-slate-400 font-bold text-sm">لا توجد بيانات متاحة</td>
                                                </tr>
                                         )}
                                     </tbody>
-                                   </table>
+                                </table>
                             </div>
                              <button onClick={() => setView('list')} className="w-full py-3 bg-slate-100 font-bold rounded-xl text-slate-600 text-sm hover:bg-slate-200 transition-colors">إغلاق</button>
                         </div>
@@ -2392,8 +2478,7 @@
                       <div className="flex gap-3 pt-3">
                         <button 
                           onClick={() => {
-                            // Set all fields including lastName and status independently
-                            setPrintTemplateFields(['name', 'regNumber', 'pageNumber', 'status', 'lastName']);
+                            // Just close the modal without resetting (keep current selection)
                             setShowPrintTemplateModal(false);
                           }}
                           className="flex-1 py-2.5 bg-green-600 text-white rounded-xl font-bold text-sm"
@@ -2404,7 +2489,7 @@
                           onClick={() => setShowPrintTemplateModal(false)}
                           className="flex-1 py-2.5 bg-slate-100 rounded-xl font-bold text-sm"
                         >
-                          إغلاق
+                          إلغاء
                         </button>
                       </div>
                     </div>
